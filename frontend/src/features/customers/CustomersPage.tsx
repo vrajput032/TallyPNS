@@ -1,0 +1,143 @@
+import {
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  useReactTable,
+  type ColumnDef,
+} from "@tanstack/react-table";
+import { Pencil, Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { CustomerFormDialog } from "./CustomerFormDialog";
+import { useCustomers, useDeleteCustomer } from "./useCustomers";
+import type { Customer } from "./types";
+
+const columns: ColumnDef<Customer>[] = [
+  { accessorKey: "name", header: "Name" },
+  { accessorKey: "phone", header: "Phone" },
+  { accessorKey: "email", header: "Email" },
+  { accessorKey: "gstin", header: "GSTIN" },
+  {
+    accessorKey: "openingBalance",
+    header: "Opening Balance",
+    cell: ({ row }) => Number(row.original.openingBalance).toFixed(2),
+  },
+];
+
+export function CustomersPage() {
+  const { data: customers, isLoading } = useCustomers();
+  const deleteCustomer = useDeleteCustomer();
+  const [globalFilter, setGlobalFilter] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+
+  const table = useReactTable({
+    data: customers ?? [],
+    columns,
+    state: { globalFilter },
+    onGlobalFilterChange: setGlobalFilter,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+  });
+
+  function handleCreate() {
+    setEditingCustomer(null);
+    setDialogOpen(true);
+  }
+
+  function handleEdit(customer: Customer) {
+    setEditingCustomer(customer);
+    setDialogOpen(true);
+  }
+
+  function handleDelete(customer: Customer) {
+    if (!confirm(`Delete customer "${customer.name}"?`)) return;
+    deleteCustomer.mutate(customer.id, {
+      onSuccess: () => toast.success("Customer deleted"),
+      onError: () => toast.error("Failed to delete customer"),
+    });
+  }
+
+  return (
+    <div className="grid gap-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Customers</h1>
+        <Button onClick={handleCreate}>
+          <Plus className="size-4" />
+          New Customer
+        </Button>
+      </div>
+
+      <Input
+        placeholder="Search customers..."
+        value={globalFilter}
+        onChange={(e) => setGlobalFilter(e.target.value)}
+        className="max-w-sm"
+      />
+
+      <div className="rounded-md border bg-card">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
+                <TableHead className="w-24 text-right">Actions</TableHead>
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={columns.length + 1} className="text-center text-muted-foreground">
+                  Loading...
+                </TableCell>
+              </TableRow>
+            ) : table.getRowModel().rows.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={columns.length + 1} className="text-center text-muted-foreground">
+                  No customers found.
+                </TableCell>
+              </TableRow>
+            ) : (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" onClick={() => handleEdit(row.original)}>
+                      <Pencil className="size-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(row.original)}>
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <CustomerFormDialog open={dialogOpen} onOpenChange={setDialogOpen} customer={editingCustomer} />
+    </div>
+  );
+}

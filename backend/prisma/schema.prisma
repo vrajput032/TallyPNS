@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role     @default(STAFF)
+  refreshToken String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Customer {
+  id             String   @id @default(cuid())
+  name           String
+  phone          String?
+  email          String?
+  gstin          String?
+  address        String?
+  openingBalance Decimal  @default(0) @db.Decimal(14, 2)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  salesInvoices  SalesInvoice[]
+}
+
+model Vendor {
+  id             String   @id @default(cuid())
+  name           String
+  phone          String?
+  email          String?
+  gstin          String?
+  address        String?
+  openingBalance Decimal  @default(0) @db.Decimal(14, 2)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  purchaseBills  PurchaseBill[]
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  name          String
+  hsn           String?
+  gstRate       Decimal  @default(0) @db.Decimal(5, 2)
+  unit          String   @default("PCS")
+  price         Decimal  @default(0) @db.Decimal(14, 2)
+  openingStock  Decimal  @default(0) @db.Decimal(14, 2)
+  currentStock  Decimal  @default(0) @db.Decimal(14, 2)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  salesInvoiceItems    SalesInvoiceItem[]
+  purchaseBillItems    PurchaseBillItem[]
+  stockMovements       StockMovement[]
+}
+
+model SalesInvoice {
+  id           String   @id @default(cuid())
+  invoiceNo    String   @unique
+  customerId   String
+  customer     Customer @relation(fields: [customerId], references: [id])
+  invoiceDate  DateTime @default(now())
+  totalAmount  Decimal  @default(0) @db.Decimal(14, 2)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  items        SalesInvoiceItem[]
+}
+
+model SalesInvoiceItem {
+  id             String       @id @default(cuid())
+  salesInvoiceId String
+  salesInvoice   SalesInvoice @relation(fields: [salesInvoiceId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product      @relation(fields: [productId], references: [id])
+  quantity       Decimal      @db.Decimal(14, 2)
+  rate           Decimal      @db.Decimal(14, 2)
+  gstRate        Decimal      @db.Decimal(5, 2)
+  amount         Decimal      @db.Decimal(14, 2)
+}
+
+model PurchaseBill {
+  id          String   @id @default(cuid())
+  billNo      String   @unique
+  vendorId    String
+  vendor      Vendor   @relation(fields: [vendorId], references: [id])
+  billDate    DateTime @default(now())
+  totalAmount Decimal  @default(0) @db.Decimal(14, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items       PurchaseBillItem[]
+}
+
+model PurchaseBillItem {
+  id             String       @id @default(cuid())
+  purchaseBillId String
+  purchaseBill   PurchaseBill @relation(fields: [purchaseBillId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product      @relation(fields: [productId], references: [id])
+  quantity       Decimal      @db.Decimal(14, 2)
+  rate           Decimal      @db.Decimal(14, 2)
+  gstRate        Decimal      @db.Decimal(5, 2)
+  amount         Decimal      @db.Decimal(14, 2)
+}
+
+enum StockMovementType {
+  IN
+  OUT
+  ADJUSTMENT
+}
+
+model StockMovement {
+  id        String            @id @default(cuid())
+  productId String
+  product   Product           @relation(fields: [productId], references: [id])
+  type      StockMovementType
+  quantity  Decimal           @db.Decimal(14, 2)
+  reason    String?
+  createdAt DateTime          @default(now())
+}
+
+enum LedgerEntryType {
+  DEBIT
+  CREDIT
+}
+
+model LedgerEntry {
+  id          String          @id @default(cuid())
+  accountName String
+  type        LedgerEntryType
+  amount      Decimal         @db.Decimal(14, 2)
+  narration   String?
+  entryDate   DateTime        @default(now())
+  createdAt   DateTime        @default(now())
+}
