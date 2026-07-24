@@ -73,53 +73,34 @@ pages/stub endpoints, ready to be built out following the same pattern (see
 - `npm run build -w frontend` — production build of the frontend
 - `npm run build -w backend` — compile the backend to `backend/dist`
 
-## Deploy frontend (Cloudflare Pages)
+## Deploy
 
-The Vite SPA deploys to Cloudflare Pages. The Express API does **not** run on Pages; host it
-separately (Render, Railway, Fly, etc.) or keep it local.
+Full workflow: **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** · Checklist: **[docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md)**
 
-### Option A — Git integration (recommended)
-
-1. Push this repo to GitHub (`vrajput032/TallyPNS`).
-2. Cloudflare dashboard: **Workers & Pages → Create → Pages → Connect to Git → TallyPNS**.
-3. Build settings:
-   - **Build command**: `npm run build -w frontend`
-   - **Build output directory**: `frontend/dist`
-   - **Root directory**: `/` (repo root so workspaces resolve)
-4. SPA routing uses [`frontend/public/_redirects`](frontend/public/_redirects) (copied into `dist` by Vite).
-5. Set Pages env var `VITE_API_URL` to your public API base ending in `/api`, then redeploy
-   (Vite bakes env vars in at build time).
-
-### Option B — Wrangler CLI
+**Policy:** batch changes, then deploy once to save Render pipeline minutes.
 
 ```bash
-npm run deploy:frontend
+npm run deploy           # backend (Render) + frontend (Cloudflare) — preferred
+npm run deploy:frontend  # frontend only (rare)
+npm run deploy:backend   # backend only (rare)
 ```
+
+`deploy:backend` pushes to GitHub if needed, then triggers the Render deploy hook.
+Get the hook URL from Render → **tallypns-api** → **Settings** → **Deploy Hook** → add to `backend/.env` as `RENDER_DEPLOY_HOOK_URL`.
+
+Do **not** add `backend/.env` secrets to Cloudflare Pages.
+
+### Cloudflare Pages (reference)
+
+The Vite SPA deploys to Cloudflare Pages. Settings in [`wrangler.toml`](wrangler.toml).
 
 Production API URL is locked in three places so deploy cannot fall back to localhost:
 
 1. `frontend/.env.production`
-2. `npm run deploy:frontend` (forces `VITE_API_URL=...onrender.com/api`)
-3. `frontend/src/lib/apiBaseUrl.ts` (production builds ignore localhost URLs)
+2. `scripts/deploy.sh` / `npm run deploy`
+3. `frontend/src/lib/apiBaseUrl.ts`
 
 Local `npm run dev` still uses `frontend/.env` (`http://localhost:4000/api`).
-
-Settings are also in [`wrangler.toml`](wrangler.toml).
-
-Do **not** add `backend/.env` secrets to Cloudflare Pages.
-
-Prefer `npm run deploy:frontend` for Cloudflare deploys.
-
-## Deploy backend (Render)
-
-The Express API deploys as a free Render web service (see [`render.yaml`](render.yaml)).
-
-1. In Render: **New → Blueprint** (or Web Service) → connect `vrajput032/TallyPNS`.
-2. Set these env vars from `backend/.env`:
-   - `DATABASE_URL` (Supabase pooled URL, port 6543)
-   - `JWT_SECRET` / `JWT_REFRESH_SECRET`
-   - `SUPABASE_URL` / `SUPABASE_KEY`
-3. After deploy, set Cloudflare Pages `VITE_API_URL` to `https://<your-service>.onrender.com/api` and redeploy the frontend.
 
 ## Database backups (recommended)
 

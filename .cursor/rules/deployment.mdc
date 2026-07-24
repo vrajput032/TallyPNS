@@ -1,0 +1,44 @@
+---
+description: Deploy frontend and backend together; avoid wasting Render pipeline minutes
+alwaysApply: true
+---
+
+# Deployment policy
+
+## Default: one deploy, not many
+
+When the user asks to deploy, release, or ship changes:
+
+1. **Batch work first** — finish the feature/fix across frontend and backend before deploying.
+2. **Deploy once** from repo root:
+   ```bash
+   npm run deploy
+   ```
+   This triggers Render (backend) then Cloudflare Pages (frontend) in a single workflow.
+3. **Do not** run separate `deploy:frontend` and `deploy:backend` in the same session unless the user explicitly wants only one side.
+
+## Why
+
+Render free tier limits are **monthly** (pipeline minutes, instance hours). Each backend deploy consumes pipeline minutes. Partial deploys waste quota and can leave production on mismatched frontend/backend commits.
+
+## Before deploying
+
+- Commit and push to `main` (backend builds from GitHub).
+- Never commit `.env`, dumps, or `backups/`.
+- Frontend production API URL is locked via `frontend/.env.production`, `scripts/deploy.sh`, and `frontend/src/lib/apiBaseUrl.ts` — do not rebuild with localhost.
+
+## Commands
+
+| Command | Use when |
+|---------|----------|
+| `npm run deploy` | Normal release (preferred) |
+| `npm run deploy:backend` | Backend-only hotfix (rare) |
+| `npm run deploy:frontend` | Frontend-only UI change with no API changes (rare) |
+
+## After deploying
+
+- Verify backend: `https://tallypns-api.onrender.com/health`
+- Verify frontend: `https://tallypns.pages.dev`
+- If API routes 404, Render may still be on an old commit — check Render dashboard deploy log.
+
+See `docs/DEPLOYMENT.md` for full workflow.
