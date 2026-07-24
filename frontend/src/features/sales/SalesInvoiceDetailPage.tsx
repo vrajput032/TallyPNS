@@ -58,6 +58,7 @@ export function SalesInvoiceDetailPage() {
   }
 
   function handlePrint() {
+    if (!invoice) return;
     document.title = invoice.invoiceNo.replace(/[\\/:*?"<>|]+/g, "-");
     window.print();
     document.title = "PNS ERP";
