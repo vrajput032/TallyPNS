@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: tallypns-api
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: .
+    buildCommand: npm install && npx prisma generate --schema=backend/prisma/schema.prisma && npm run build -w backend
+    startCommand: npm run start -w backend
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false

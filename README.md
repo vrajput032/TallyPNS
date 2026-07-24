@@ -102,3 +102,14 @@ Settings are also in [`wrangler.toml`](wrangler.toml).
 Do **not** add `backend/.env` secrets to Cloudflare Pages.
 
 Until a public API URL is set, the site will load but login/CRUD will fail in the browser.
+
+## Deploy backend (Render)
+
+The Express API deploys as a free Render web service (see [`render.yaml`](render.yaml)).
+
+1. In Render: **New → Blueprint** (or Web Service) → connect `vrajput032/TallyPNS`.
+2. Set these env vars from `backend/.env`:
+   - `DATABASE_URL` (Supabase pooled URL, port 6543)
+   - `JWT_SECRET` / `JWT_REFRESH_SECRET`
+   - `SUPABASE_URL` / `SUPABASE_KEY`
+3. After deploy, set Cloudflare Pages `VITE_API_URL` to `https://<your-service>.onrender.com/api` and redeploy the frontend.
