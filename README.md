@@ -120,3 +120,43 @@ The Express API deploys as a free Render web service (see [`render.yaml`](render
    - `JWT_SECRET` / `JWT_REFRESH_SECRET`
    - `SUPABASE_URL` / `SUPABASE_KEY`
 3. After deploy, set Cloudflare Pages `VITE_API_URL` to `https://<your-service>.onrender.com/api` and redeploy the frontend.
+
+## Database backups (recommended)
+
+**Best option:** full Postgres dumps (`.dump`). These can restore everything if the server or Supabase project is gone.
+
+### 1. One-time setup
+```bash
+brew install libpq && brew link --force libpq
+echo 'export PATH="/opt/homebrew/opt/libpq/bin:$PATH"' >> ~/.zshrc
+```
+
+Ensure `backend/.env` has a working `DIRECT_URL` (port **5432**, not pooler `6543`).
+Use `frontend/.env.example` / `frontend/.env.production.example` as templates — never commit real `.env` files.
+
+### 2. Backup (run regularly, and before risky changes)
+```bash
+npm run db:backup
+```
+Creates `backups/tallypns-YYYYMMDD-HHMMSS.dump` and updates `backups/tallypns-latest.dump`.  
+**Copy that file to Google Drive / iCloud / USB.**
+
+### 3. Restore if something is lost
+Local Docker copy:
+```bash
+docker compose up -d
+npm run db:restore -- backups/tallypns-latest.dump
+```
+
+Into a **new** Supabase database (disaster recovery):
+```bash
+RESTORE_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres" \
+  npm run db:restore -- backups/tallypns-latest.dump
+```
+Then point Render/`backend/.env` at the new project URLs and redeploy.
+
+### Optional: Excel / Google Sheets
+Readable offline copy only — **not** for full restore:
+```bash
+npm run db:export:sheets
+```

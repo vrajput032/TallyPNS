@@ -4,8 +4,9 @@ import {
   useReactTable,
   type ColumnDef,
 } from "@tanstack/react-table";
-import { Eye, Plus } from "lucide-react";
+import { Eye, Plus, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { usePurchaseBills } from "./usePurchase";
+import { useDeletePurchaseBill, usePurchaseBills } from "./usePurchase";
 import type { PurchaseBill } from "./types";
 
 const columns: ColumnDef<PurchaseBill>[] = [
@@ -41,12 +42,25 @@ const columns: ColumnDef<PurchaseBill>[] = [
 export function PurchaseBillsPage() {
   const { data: bills, isLoading } = usePurchaseBills();
   const navigate = useNavigate();
+  const deleteBill = useDeletePurchaseBill();
 
   const table = useReactTable({
     data: bills ?? [],
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
+
+  function handleDelete(bill: PurchaseBill) {
+    if (
+      !confirm(`Delete bill ${bill.billNo}? This will reverse the stock added by this bill.`)
+    ) {
+      return;
+    }
+    deleteBill.mutate(bill.id, {
+      onSuccess: () => toast.success(`Bill ${bill.billNo} deleted`),
+      onError: () => toast.error("Failed to delete bill"),
+    });
+  }
 
   return (
     <div className="grid gap-4">
@@ -74,7 +88,7 @@ export function PurchaseBillsPage() {
                       : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
-                <TableHead className="w-16 text-right">View</TableHead>
+                <TableHead className="w-24 text-right">Actions</TableHead>
               </TableRow>
             ))}
           </TableHeader>
@@ -106,6 +120,13 @@ export function PurchaseBillsPage() {
                       onClick={() => navigate(`/purchase/${row.original.id}`)}
                     >
                       <Eye className="size-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(row.original)}
+                    >
+                      <Trash2 className="size-4" />
                     </Button>
                   </TableCell>
                 </TableRow>

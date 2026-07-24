@@ -32,3 +32,11 @@ purchaseRouter.post(
     res.status(201).json(bill);
   })
 );
+
+purchaseRouter.delete(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    await purchaseService.deletePurchaseBill(req.params.id);
+    res.status(204).send();
+  })
+);

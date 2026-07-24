@@ -39,3 +39,20 @@ export function useCreateSalesInvoice() {
     },
   });
 }
+
+export function useDeleteSalesInvoice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/sales/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: SALES_KEY });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["gst"] });
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+    },
+  });
+}

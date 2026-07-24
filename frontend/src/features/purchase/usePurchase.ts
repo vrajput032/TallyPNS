@@ -39,3 +39,20 @@ export function useCreatePurchaseBill() {
     },
   });
 }
+
+export function useDeletePurchaseBill() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/purchase/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: PURCHASE_KEY });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["gst"] });
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+    },
+  });
+}

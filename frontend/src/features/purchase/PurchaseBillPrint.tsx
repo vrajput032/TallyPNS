@@ -28,7 +28,7 @@ export function PurchaseBillPrint({ bill }: { bill: PurchaseBill }) {
 
   return (
     <div className="-mx-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:overflow-visible sm:px-0 sm:pb-0">
-    <div className="mx-auto min-w-[640px] max-w-3xl border border-black bg-white p-0 text-black sm:min-w-0 print:min-w-0 print:border-0">
+    <div className="mx-auto min-w-[640px] max-w-3xl border border-black bg-white p-0 text-black sm:min-w-0 print:min-w-0">
       <div className="grid grid-cols-2 border-b border-black">
         <div className="border-r border-black p-3">
           <p className="text-sm font-semibold">GSTIN: {bill.vendor.gstin ?? "-"}</p>

@@ -32,3 +32,11 @@ salesRouter.post(
     res.status(201).json(invoice);
   })
 );
+
+salesRouter.delete(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    await salesService.deleteSalesInvoice(req.params.id);
+    res.status(204).send();
+  })
+);

@@ -88,3 +88,39 @@ export async function createSalesInvoice(data: z.infer<typeof createSalesInvoice
     return invoice;
   });
 }
+
+export async function updateInvoiceNo(id: string, invoiceNo: string) {
+  await getSalesInvoice(id);
+  const existing = await prisma.salesInvoice.findUnique({ where: { invoiceNo } });
+  if (existing && existing.id !== id) {
+    throw new ApiError(409, `Invoice number ${invoiceNo} is already in use`);
+  }
+  return prisma.salesInvoice.update({
+    where: { id },
+    data: { invoiceNo },
+    include: { customer: true, items: { include: { product: true } } },
+  });
+}
+
+export async function deleteSalesInvoice(id: string) {
+  const invoice = await getSalesInvoice(id);
+
+  await prisma.$transaction(async (tx) => {
+    for (const item of invoice.items) {
+      await tx.product.update({
+        where: { id: item.productId },
+        data: { currentStock: { increment: Number(item.quantity) } },
+      });
+      await tx.stockMovement.create({
+        data: {
+          productId: item.productId,
+          type: "IN",
+          quantity: item.quantity,
+          reason: `Reversal of deleted sales invoice ${invoice.invoiceNo}`,
+        },
+      });
+    }
+
+    await tx.salesInvoice.delete({ where: { id } });
+  });
+}

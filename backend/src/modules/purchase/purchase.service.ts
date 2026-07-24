@@ -84,3 +84,35 @@ export async function createPurchaseBill(data: z.infer<typeof createPurchaseBill
     return bill;
   });
 }
+
+export async function deletePurchaseBill(id: string) {
+  const bill = await getPurchaseBill(id);
+
+  for (const item of bill.items) {
+    if (Number(item.product.currentStock) < Number(item.quantity)) {
+      throw new ApiError(
+        400,
+        `Cannot delete: insufficient current stock of ${item.product.name} to reverse this bill`
+      );
+    }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    for (const item of bill.items) {
+      await tx.product.update({
+        where: { id: item.productId },
+        data: { currentStock: { decrement: Number(item.quantity) } },
+      });
+      await tx.stockMovement.create({
+        data: {
+          productId: item.productId,
+          type: "OUT",
+          quantity: item.quantity,
+          reason: `Reversal of deleted purchase bill ${bill.billNo}`,
+        },
+      });
+    }
+
+    await tx.purchaseBill.delete({ where: { id } });
+  });
+}

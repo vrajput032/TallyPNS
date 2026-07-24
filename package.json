@@ -9,7 +9,10 @@
     "dev": "concurrently -n backend,frontend -c blue,green \"npm run dev -w backend\" \"npm run dev -w frontend\"",
     "dev:backend": "npm run dev -w backend",
     "dev:frontend": "npm run dev -w frontend",
-    "deploy:frontend": "VITE_API_URL=https://tallypns-api.onrender.com/api npm run build -w frontend && npx wrangler pages deploy frontend/dist --project-name=tallypns --commit-dirty=true"
+    "deploy:frontend": "VITE_API_URL=https://tallypns-api.onrender.com/api npm run build -w frontend && npx wrangler pages deploy frontend/dist --project-name=tallypns --commit-dirty=true",
+    "db:backup": "bash scripts/db-backup.sh",
+    "db:restore": "bash scripts/db-restore.sh",
+    "db:export:sheets": "npm run export:sheets -w backend"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"
