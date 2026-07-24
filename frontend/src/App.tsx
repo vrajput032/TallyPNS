@@ -7,8 +7,13 @@ import { LoginPage } from "@/features/auth/LoginPage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { CustomersPage } from "@/features/customers/CustomersPage";
 import { ProductsPage } from "@/features/products/ProductsPage";
-import { SalesPage } from "@/features/sales/SalesPage";
-import { PurchasePage } from "@/features/purchase/PurchasePage";
+import { VendorsPage } from "@/features/vendors/VendorsPage";
+import { SalesInvoicesPage } from "@/features/sales/SalesInvoicesPage";
+import { SalesInvoiceFormPage } from "@/features/sales/SalesInvoiceFormPage";
+import { SalesInvoiceDetailPage } from "@/features/sales/SalesInvoiceDetailPage";
+import { PurchaseBillsPage } from "@/features/purchase/PurchaseBillsPage";
+import { PurchaseBillFormPage } from "@/features/purchase/PurchaseBillFormPage";
+import { PurchaseBillDetailPage } from "@/features/purchase/PurchaseBillDetailPage";
 import { InventoryPage } from "@/features/inventory/InventoryPage";
 import { CashPage } from "@/features/cash/CashPage";
 import { BankPage } from "@/features/bank/BankPage";
@@ -26,14 +31,19 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<AppShell />}>
               <Route path="/" element={<DashboardPage />} />
-              <Route path="/sales" element={<SalesPage />} />
-              <Route path="/purchase" element={<PurchasePage />} />
+              <Route path="/sales" element={<SalesInvoicesPage />} />
+              <Route path="/sales/new" element={<SalesInvoiceFormPage />} />
+              <Route path="/sales/:id" element={<SalesInvoiceDetailPage />} />
+              <Route path="/purchase" element={<PurchaseBillsPage />} />
+              <Route path="/purchase/new" element={<PurchaseBillFormPage />} />
+              <Route path="/purchase/:id" element={<PurchaseBillDetailPage />} />
               <Route path="/inventory" element={<InventoryPage />} />
               <Route path="/cash" element={<CashPage />} />
               <Route path="/bank" element={<BankPage />} />
               <Route path="/gst" element={<GstPage />} />
               <Route path="/customers" element={<CustomersPage />} />
               <Route path="/products" element={<ProductsPage />} />
+              <Route path="/vendors" element={<VendorsPage />} />
               <Route path="/reports" element={<ReportsPage />} />
             </Route>
           </Route>

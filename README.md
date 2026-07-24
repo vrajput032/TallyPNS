@@ -93,15 +93,22 @@ separately (Render, Railway, Fly, etc.) or keep it local.
 ### Option B — Wrangler CLI
 
 ```bash
-npm run build -w frontend
-npx wrangler pages deploy frontend/dist --project-name=tallypns
+npm run deploy:frontend
 ```
+
+Production API URL is locked in three places so deploy cannot fall back to localhost:
+
+1. `frontend/.env.production`
+2. `npm run deploy:frontend` (forces `VITE_API_URL=...onrender.com/api`)
+3. `frontend/src/lib/apiBaseUrl.ts` (production builds ignore localhost URLs)
+
+Local `npm run dev` still uses `frontend/.env` (`http://localhost:4000/api`).
 
 Settings are also in [`wrangler.toml`](wrangler.toml).
 
 Do **not** add `backend/.env` secrets to Cloudflare Pages.
 
-Until a public API URL is set, the site will load but login/CRUD will fail in the browser.
+Prefer `npm run deploy:frontend` for Cloudflare deploys.
 
 ## Deploy backend (Render)
 

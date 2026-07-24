@@ -22,9 +22,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCustomers } from "@/features/customers/useCustomers";
 import { useProducts } from "@/features/products/useProducts";
-import { useCreateSalesInvoice } from "./useSales";
+import { useVendors } from "@/features/vendors/useVendors";
+import { useCreatePurchaseBill } from "./usePurchase";
 
 const lineItemSchema = z.object({
   productId: z.string().min(1, "Select a product"),
@@ -33,23 +33,23 @@ const lineItemSchema = z.object({
   gstRate: z.coerce.number().min(0).max(100),
 });
 
-const invoiceFormSchema = z.object({
-  customerId: z.string().min(1, "Select a customer"),
+const billFormSchema = z.object({
+  vendorId: z.string().min(1, "Select a vendor"),
   items: z.array(lineItemSchema).min(1, "Add at least one item"),
 });
 
-type InvoiceFormValues = z.infer<typeof invoiceFormSchema>;
+type BillFormValues = z.infer<typeof billFormSchema>;
 
-export function SalesInvoiceFormPage() {
+export function PurchaseBillFormPage() {
   const navigate = useNavigate();
-  const { data: customers } = useCustomers();
+  const { data: vendors } = useVendors();
   const { data: products } = useProducts();
-  const createInvoice = useCreateSalesInvoice();
+  const createBill = useCreatePurchaseBill();
 
-  const form = useForm<InvoiceFormValues>({
-    resolver: zodResolver(invoiceFormSchema),
+  const form = useForm<BillFormValues>({
+    resolver: zodResolver(billFormSchema),
     defaultValues: {
-      customerId: "",
+      vendorId: "",
       items: [{ productId: "", quantity: 1, rate: 0, gstRate: 18 }],
     },
   });
@@ -74,16 +74,16 @@ export function SalesInvoiceFormPage() {
     }
   }
 
-  function onSubmit(values: InvoiceFormValues) {
-    createInvoice.mutate(values, {
-      onSuccess: (invoice) => {
-        toast.success(`Invoice ${invoice.invoiceNo} created`);
-        navigate(`/sales/${invoice.id}`);
+  function onSubmit(values: BillFormValues) {
+    createBill.mutate(values, {
+      onSuccess: (bill) => {
+        toast.success(`Bill ${bill.billNo} created`);
+        navigate(`/purchase/${bill.id}`);
       },
       onError: (error: unknown) => {
         const message =
           (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-          "Failed to create invoice";
+          "Failed to create bill";
         toast.error(message);
       },
     });
@@ -91,35 +91,34 @@ export function SalesInvoiceFormPage() {
 
   return (
     <div className="grid gap-4">
-      <PageHeader title="New Sales Invoice" backTo="/sales" backLabel="Back to Sales" />
+      <PageHeader title="New Purchase Bill" backTo="/purchase" backLabel="Back to Purchase" />
       <Form {...form}>
         <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
           <Card>
             <CardHeader>
-              <CardTitle>Customer</CardTitle>
+              <CardTitle>Vendor</CardTitle>
             </CardHeader>
             <CardContent>
               <FormField
                 control={form.control}
-                name="customerId"
+                name="vendorId"
                 render={({ field }) => (
                   <FormItem className="max-w-sm">
-                    <FormLabel>Bill To</FormLabel>
+                    <FormLabel>Bill From</FormLabel>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a customer">
+                          <SelectValue placeholder="Select a vendor">
                             {(value: string | null) =>
-                              customers?.find((customer) => customer.id === value)?.name ??
-                              "Select a customer"
+                              vendors?.find((vendor) => vendor.id === value)?.name ?? "Select a vendor"
                             }
                           </SelectValue>
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {customers?.map((customer) => (
-                          <SelectItem key={customer.id} value={customer.id}>
-                            {customer.name}
+                        {vendors?.map((vendor) => (
+                          <SelectItem key={vendor.id} value={vendor.id}>
+                            {vendor.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -153,11 +152,11 @@ export function SalesInvoiceFormPage() {
           </Card>
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button type="button" variant="outline" onClick={() => navigate("/sales")}>
+            <Button type="button" variant="outline" onClick={() => navigate("/purchase")}>
               Cancel
             </Button>
-            <Button type="submit" disabled={createInvoice.isPending}>
-              {createInvoice.isPending ? "Saving..." : "Save Invoice"}
+            <Button type="submit" disabled={createBill.isPending}>
+              {createBill.isPending ? "Saving..." : "Save Bill"}
             </Button>
           </div>
         </form>

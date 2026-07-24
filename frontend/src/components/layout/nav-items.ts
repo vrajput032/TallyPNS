@@ -6,6 +6,7 @@ import {
   Receipt,
   ShoppingCart,
   TrendingUp,
+  Truck,
   Users,
   Warehouse,
   FileText,
@@ -20,6 +21,7 @@ export const navItems = [
   { to: "/bank", label: "Bank", icon: Building2 },
   { to: "/gst", label: "GST", icon: Receipt },
   { to: "/customers", label: "Customers", icon: Users },
+  { to: "/vendors", label: "Vendors", icon: Truck },
   { to: "/products", label: "Products", icon: Package },
   { to: "/reports", label: "Reports", icon: FileText },
 ] as const;

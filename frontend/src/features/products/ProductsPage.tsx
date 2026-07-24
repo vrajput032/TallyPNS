@@ -8,6 +8,7 @@ import {
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -79,22 +80,26 @@ export function ProductsPage() {
 
   return (
     <div className="grid gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Products</h1>
-        <Button onClick={handleCreate}>
-          <Plus className="size-4" />
-          New Product
-        </Button>
-      </div>
+      <PageHeader
+        title="Products"
+        backTo="/"
+        backLabel="Back to Dashboard"
+        actions={
+          <Button onClick={handleCreate}>
+            <Plus className="size-4" />
+            New Product
+          </Button>
+        }
+      />
 
       <Input
         placeholder="Search products..."
         value={globalFilter}
         onChange={(e) => setGlobalFilter(e.target.value)}
-        className="max-w-sm"
+        className="w-full max-w-sm"
       />
 
-      <div className="rounded-md border bg-card">
+      <div className="min-w-0 rounded-md border bg-card">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

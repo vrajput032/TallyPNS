@@ -1,4 +1,5 @@
 import { AlertTriangle, IndianRupee, Package, Users } from "lucide-react";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { StatCard } from "./StatCard";
 import { useDashboardSummary } from "./useDashboardSummary";
 
@@ -7,7 +8,7 @@ export function DashboardPage() {
 
   return (
     <div className="grid gap-4">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
+      <PageHeader title="Dashboard" />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Customers"

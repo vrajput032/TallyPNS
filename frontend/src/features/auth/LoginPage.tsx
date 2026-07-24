@@ -50,7 +50,12 @@ export function LoginPage() {
       toast.success("Logged in successfully");
       navigate("/");
     },
-    onError: () => {
+    onError: (error: unknown) => {
+      const status = (error as { response?: { status?: number } })?.response?.status;
+      if (!status) {
+        toast.error("Cannot reach the server. Check your connection.");
+        return;
+      }
       toast.error("Invalid email or password");
     },
   });
