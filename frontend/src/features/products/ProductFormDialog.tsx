@@ -20,6 +20,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useCreateProduct, useUpdateProduct } from "./useProducts";
 import type { Product } from "./types";
 
@@ -39,7 +46,7 @@ const emptyValues: ProductFormValues = {
   name: "",
   hsn: "",
   gstRate: 0,
-  unit: "PCS",
+  unit: "TON",
   price: 0,
   openingStock: 0,
   currentStock: 0,
@@ -137,9 +144,18 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Unit</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="TON">TON (raw material)</SelectItem>
+                        <SelectItem value="KG">KG</SelectItem>
+                        <SelectItem value="PCS">PCS</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -164,7 +180,11 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                 name="price"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Price</FormLabel>
+                    <FormLabel>
+                      {form.watch("unit") === "TON" || form.watch("unit") === "KG"
+                        ? "Price / Kg (₹)"
+                        : "Price / Unit (₹)"}
+                    </FormLabel>
                     <FormControl>
                       <Input type="number" step="0.01" {...field} />
                     </FormControl>
@@ -179,9 +199,12 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                 name="openingStock"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Opening Stock</FormLabel>
+                    <FormLabel>
+                      Opening Stock
+                      {form.watch("unit") === "TON" ? " (Tons)" : ""}
+                    </FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" {...field} />
+                      <Input type="number" step="0.001" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -192,9 +215,12 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                 name="currentStock"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Current Stock</FormLabel>
+                    <FormLabel>
+                      Current Stock
+                      {form.watch("unit") === "TON" ? " (Tons)" : ""}
+                    </FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" {...field} />
+                      <Input type="number" step="0.001" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

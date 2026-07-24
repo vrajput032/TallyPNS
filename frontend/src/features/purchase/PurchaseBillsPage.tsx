@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/table";
 import { useDeletePurchaseBill, usePurchaseBills } from "./usePurchase";
 import type { PurchaseBill } from "./types";
+import { PaymentStatusBadge } from "@/features/payments/PaymentStatusBadge";
+import { formatInr } from "@/lib/formatInr";
 
 const columns: ColumnDef<PurchaseBill>[] = [
   { accessorKey: "billNo", header: "Bill No." },
@@ -35,7 +37,19 @@ const columns: ColumnDef<PurchaseBill>[] = [
   {
     accessorKey: "totalAmount",
     header: "Total",
-    cell: ({ row }) => Number(row.original.totalAmount).toFixed(2),
+    cell: ({ row }) => formatInr(row.original.totalAmount),
+  },
+  {
+    id: "balance",
+    header: "Balance",
+    cell: ({ row }) => formatInr(row.original.balanceAmount ?? 0),
+  },
+  {
+    id: "status",
+    header: "Status",
+    cell: ({ row }) => (
+      <PaymentStatusBadge status={row.original.paymentStatus ?? "PENDING"} />
+    ),
   },
 ];
 

@@ -1,7 +1,12 @@
 import { Router } from "express";
 import { asyncHandler } from "../../middleware/asyncHandler.js";
 import { requireAuth } from "../../middleware/auth.js";
-import { getProfitAndLoss, getStockReport } from "./reports.service.js";
+import {
+  getBalanceSheet,
+  getProfitAndLoss,
+  getStockReport,
+  getTrialBalance,
+} from "./reports.service.js";
 
 export const reportsRouter = Router();
 
@@ -22,5 +27,21 @@ reportsRouter.get(
   asyncHandler(async (_req, res) => {
     const report = await getStockReport();
     res.json(report);
+  })
+);
+
+reportsRouter.get(
+  "/balance-sheet",
+  asyncHandler(async (req, res) => {
+    const asOn = typeof req.query.asOn === "string" ? new Date(req.query.asOn) : undefined;
+    res.json(await getBalanceSheet(asOn));
+  })
+);
+
+reportsRouter.get(
+  "/trial-balance",
+  asyncHandler(async (req, res) => {
+    const asOn = typeof req.query.asOn === "string" ? new Date(req.query.asOn) : undefined;
+    res.json(await getTrialBalance(asOn));
   })
 );

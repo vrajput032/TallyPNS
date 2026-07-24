@@ -36,6 +36,7 @@ model Customer {
   updatedAt      DateTime @updatedAt
 
   salesInvoices  SalesInvoice[]
+  receipts       PaymentReceipt[]
 }
 
 model Vendor {
@@ -50,6 +51,7 @@ model Vendor {
   updatedAt      DateTime @updatedAt
 
   purchaseBills  PurchaseBill[]
+  payments       VendorPayment[]
 }
 
 model Product {
@@ -82,6 +84,7 @@ model SalesInvoice {
   updatedAt    DateTime @updatedAt
 
   items        SalesInvoiceItem[]
+  receipts     PaymentReceipt[]
 }
 
 model SalesInvoiceItem {
@@ -90,6 +93,8 @@ model SalesInvoiceItem {
   salesInvoice   SalesInvoice @relation(fields: [salesInvoiceId], references: [id], onDelete: Cascade)
   productId      String
   product        Product      @relation(fields: [productId], references: [id])
+  /** Optional pipe/material size in mm (e.g. 95) — sales only */
+  sizeMm         Decimal?     @db.Decimal(10, 2)
   quantity       Decimal      @db.Decimal(14, 2)
   rate           Decimal      @db.Decimal(14, 2)
   gstRate        Decimal      @db.Decimal(5, 2)
@@ -102,11 +107,14 @@ model PurchaseBill {
   vendorId    String
   vendor      Vendor   @relation(fields: [vendorId], references: [id])
   billDate    DateTime @default(now())
+  transport   String?
+  vehicleNo   String?
   totalAmount Decimal  @default(0) @db.Decimal(14, 2)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   items       PurchaseBillItem[]
+  payments    VendorPayment[]
 }
 
 model PurchaseBillItem {
@@ -115,8 +123,9 @@ model PurchaseBillItem {
   purchaseBill   PurchaseBill @relation(fields: [purchaseBillId], references: [id], onDelete: Cascade)
   productId      String
   product        Product      @relation(fields: [productId], references: [id])
-  quantity       Decimal      @db.Decimal(14, 2)
-  rate           Decimal      @db.Decimal(14, 2)
+  quantity       Decimal      @db.Decimal(14, 3) // Tons (or product unit qty)
+  pricePerKg     Decimal?     @db.Decimal(14, 4)
+  rate           Decimal      @db.Decimal(14, 2) // ₹ per Ton (or per unit)
   gstRate        Decimal      @db.Decimal(5, 2)
   amount         Decimal      @db.Decimal(14, 2)
 }
@@ -140,6 +149,55 @@ model StockMovement {
 enum LedgerEntryType {
   DEBIT
   CREDIT
+}
+
+enum PaymentMode {
+  CASH
+  BANK
+}
+
+/** Money received from customer against a sales invoice */
+model PaymentReceipt {
+  id             String        @id @default(cuid())
+  receiptNo      String        @unique
+  customerId     String
+  customer       Customer      @relation(fields: [customerId], references: [id])
+  salesInvoiceId String
+  salesInvoice   SalesInvoice  @relation(fields: [salesInvoiceId], references: [id])
+  amount         Decimal       @db.Decimal(14, 2)
+  mode           PaymentMode
+  reference      String?
+  receiptDate    DateTime      @default(now())
+  narration      String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([salesInvoiceId])
+  @@index([customerId])
+  @@index([receiptDate])
+  @@index([mode])
+}
+
+/** Money paid to vendor against a purchase bill */
+model VendorPayment {
+  id             String       @id @default(cuid())
+  paymentNo      String       @unique
+  vendorId       String
+  vendor         Vendor       @relation(fields: [vendorId], references: [id])
+  purchaseBillId String
+  purchaseBill   PurchaseBill @relation(fields: [purchaseBillId], references: [id])
+  amount         Decimal      @db.Decimal(14, 2)
+  mode           PaymentMode
+  reference      String?
+  paymentDate    DateTime     @default(now())
+  narration      String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([purchaseBillId])
+  @@index([vendorId])
+  @@index([paymentDate])
+  @@index([mode])
 }
 
 model LedgerEntry {

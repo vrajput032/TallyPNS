@@ -1,17 +1,11 @@
 import { COMPANY } from "@/config/company";
 import { amountToIndianWords } from "@/lib/numberToWords";
+import { formatInr } from "@/lib/formatInr";
 import type { SalesInvoice } from "./types";
 
 function formatDate(iso: string) {
   const date = new Date(iso);
   return date.toLocaleDateString("en-GB").split("/").join("-");
-}
-
-function formatInr(value: number) {
-  return value.toLocaleString("en-IN", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
 }
 
 const GST_STATE_NAMES: Record<string, string> = {
@@ -223,6 +217,9 @@ export function SalesInvoicePrint({ invoice }: { invoice: SalesInvoice }) {
                   <td className="border-r border-black px-1.5 py-1">{index + 1}.</td>
                   <td className="border-r border-black px-1.5 py-1 font-medium">
                     {item.product.name}
+                    {item.sizeMm != null && Number(item.sizeMm) > 0
+                      ? ` ${Number(item.sizeMm)}mm`
+                      : ""}
                   </td>
                   <td className="border-r border-black px-1.5 py-1">{item.product.hsn ?? "-"}</td>
                   <td className="border-r border-black px-1.5 py-1 text-right">

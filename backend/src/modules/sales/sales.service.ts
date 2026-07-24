@@ -1,24 +1,30 @@
 import { prisma } from "../../lib/prisma.js";
 import { ApiError } from "../../middleware/errorHandler.js";
+import { withPaymentSummary } from "../payments/payment.utils.js";
 import type { createSalesInvoiceSchema } from "./sales.schema.js";
 import type { z } from "zod";
 
-export function listSalesInvoices() {
-  return prisma.salesInvoice.findMany({
-    include: { customer: true, items: true },
+export async function listSalesInvoices() {
+  const invoices = await prisma.salesInvoice.findMany({
+    include: { customer: true, items: true, receipts: true },
     orderBy: { invoiceDate: "desc" },
   });
+  return invoices.map(withPaymentSummary);
 }
 
 export async function getSalesInvoice(id: string) {
   const invoice = await prisma.salesInvoice.findUnique({
     where: { id },
-    include: { customer: true, items: { include: { product: true } } },
+    include: {
+      customer: true,
+      items: { include: { product: true } },
+      receipts: { orderBy: { receiptDate: "desc" } },
+    },
   });
   if (!invoice) {
     throw new ApiError(404, "Sales invoice not found");
   }
-  return invoice;
+  return withPaymentSummary(invoice);
 }
 
 const INVOICE_NO_START = 11001;
@@ -73,6 +79,7 @@ export async function createSalesInvoice(data: z.infer<typeof createSalesInvoice
         items: {
           create: data.items.map((item) => ({
             productId: item.productId,
+            sizeMm: item.sizeMm != null && item.sizeMm > 0 ? item.sizeMm : null,
             quantity: item.quantity,
             rate: item.rate,
             gstRate: item.gstRate,
@@ -117,6 +124,10 @@ export async function updateInvoiceNo(id: string, invoiceNo: string) {
 
 export async function deleteSalesInvoice(id: string) {
   const invoice = await getSalesInvoice(id);
+
+  if ((invoice.receipts?.length ?? 0) > 0) {
+    throw new ApiError(400, "Cannot delete invoice with receipts. Delete receipts first.");
+  }
 
   await prisma.$transaction(async (tx) => {
     for (const item of invoice.items) {

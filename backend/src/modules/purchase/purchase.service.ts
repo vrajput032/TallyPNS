@@ -1,24 +1,30 @@
 import { prisma } from "../../lib/prisma.js";
 import { ApiError } from "../../middleware/errorHandler.js";
+import { withBillPaymentSummary } from "../payments/payment.utils.js";
 import type { createPurchaseBillSchema } from "./purchase.schema.js";
 import type { z } from "zod";
 
-export function listPurchaseBills() {
-  return prisma.purchaseBill.findMany({
-    include: { vendor: true, items: true },
+export async function listPurchaseBills() {
+  const bills = await prisma.purchaseBill.findMany({
+    include: { vendor: true, items: true, payments: true },
     orderBy: { billDate: "desc" },
   });
+  return bills.map(withBillPaymentSummary);
 }
 
 export async function getPurchaseBill(id: string) {
   const bill = await prisma.purchaseBill.findUnique({
     where: { id },
-    include: { vendor: true, items: { include: { product: true } } },
+    include: {
+      vendor: true,
+      items: { include: { product: true } },
+      payments: { orderBy: { paymentDate: "desc" } },
+    },
   });
   if (!bill) {
     throw new ApiError(404, "Purchase bill not found");
   }
-  return bill;
+  return withBillPaymentSummary(bill);
 }
 
 async function generateBillNo() {
@@ -40,7 +46,11 @@ export async function createPurchaseBill(data: z.infer<typeof createPurchaseBill
   }
 
   const totalAmount = data.items.reduce((sum, item) => {
-    const base = item.quantity * item.rate;
+    const rate =
+      item.pricePerKg != null && item.pricePerKg > 0
+        ? Math.round(item.pricePerKg * 1000 * 100) / 100
+        : item.rate;
+    const base = item.quantity * rate;
     return sum + base + (base * item.gstRate) / 100;
   }, 0);
 
@@ -52,18 +62,30 @@ export async function createPurchaseBill(data: z.infer<typeof createPurchaseBill
         billNo,
         vendorId: data.vendorId,
         billDate: data.billDate ?? new Date(),
+        transport: data.transport?.trim() || null,
+        vehicleNo: data.vehicleNo?.trim() || null,
         totalAmount,
         items: {
-          create: data.items.map((item) => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            rate: item.rate,
-            gstRate: item.gstRate,
-            amount: item.quantity * item.rate + (item.quantity * item.rate * item.gstRate) / 100,
-          })),
+          create: data.items.map((item) => {
+            const pricePerKg =
+              item.pricePerKg != null && item.pricePerKg > 0
+                ? item.pricePerKg
+                : null;
+            const rate =
+              pricePerKg != null ? Math.round(pricePerKg * 1000 * 100) / 100 : item.rate;
+            const base = item.quantity * rate;
+            return {
+              productId: item.productId,
+              quantity: item.quantity,
+              pricePerKg,
+              rate,
+              gstRate: item.gstRate,
+              amount: base + (base * item.gstRate) / 100,
+            };
+          }),
         },
       },
-      include: { vendor: true, items: { include: { product: true } } },
+      include: { vendor: true, items: { include: { product: true } }, payments: true },
     });
 
     for (const item of data.items) {
@@ -81,12 +103,16 @@ export async function createPurchaseBill(data: z.infer<typeof createPurchaseBill
       });
     }
 
-    return bill;
+    return withBillPaymentSummary(bill);
   });
 }
 
 export async function deletePurchaseBill(id: string) {
   const bill = await getPurchaseBill(id);
+
+  if ((bill.payments?.length ?? 0) > 0) {
+    throw new ApiError(400, "Cannot delete bill with payments. Delete payments first.");
+  }
 
   for (const item of bill.items) {
     if (Number(item.product.currentStock) < Number(item.quantity)) {

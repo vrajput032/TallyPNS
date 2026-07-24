@@ -24,6 +24,22 @@ export interface StockReport {
   totalStockValue: number;
 }
 
+export interface BalanceSheet {
+  asOn: string;
+  assets: { name: string; amount: number }[];
+  liabilities: { name: string; amount: number }[];
+  totalAssets: number;
+  totalLiabilities: number;
+  notes: { totalSales: number; totalPurchases: number; grossProfit: number };
+}
+
+export interface TrialBalance {
+  asOn: string;
+  rows: { account: string; debit: number; credit: number }[];
+  totalDebit: number;
+  totalCredit: number;
+}
+
 export function useProfitAndLoss() {
   return useQuery({
     queryKey: ["reports", "profit-loss"],
@@ -39,6 +55,26 @@ export function useStockReport() {
     queryKey: ["reports", "stock"],
     queryFn: async () => {
       const { data } = await api.get<StockReport>("/reports/stock");
+      return data;
+    },
+  });
+}
+
+export function useBalanceSheet() {
+  return useQuery({
+    queryKey: ["reports", "balance-sheet"],
+    queryFn: async () => {
+      const { data } = await api.get<BalanceSheet>("/reports/balance-sheet");
+      return data;
+    },
+  });
+}
+
+export function useTrialBalance() {
+  return useQuery({
+    queryKey: ["reports", "trial-balance"],
+    queryFn: async () => {
+      const { data } = await api.get<TrialBalance>("/reports/trial-balance");
       return data;
     },
   });

@@ -1,5 +1,5 @@
 import { Plus, Trash2 } from "lucide-react";
-import type { FieldValues, Path, UseFormRegister } from "react-hook-form";
+import type { FieldValues, Path, UseFormRegister, UseFormSetValue } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,49 +19,62 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-export interface LineItemOption {
+export const KG_PER_TON = 1000;
+
+export interface PurchaseLineItemOption {
   id: string;
   name: string;
+  unit?: string;
 }
 
-export interface LineItemValue {
+export interface PurchaseLineItemValue {
   productId: string;
-  sizeMm?: number | null;
   quantity: number;
+  pricePerKg: number;
   rate: number;
   gstRate: number;
 }
 
-interface LineItemsFieldProps<TFieldValues extends FieldValues> {
+interface PurchaseLineItemsFieldProps<TFieldValues extends FieldValues> {
   fields: { id: string }[];
-  items: LineItemValue[];
-  products: LineItemOption[] | undefined;
+  items: PurchaseLineItemValue[];
+  products: PurchaseLineItemOption[] | undefined;
   register: UseFormRegister<TFieldValues>;
+  setValue: UseFormSetValue<TFieldValues>;
   onProductChange: (index: number, productId: string) => void;
   onAdd: () => void;
   onRemove: (index: number) => void;
   errorMessage?: string;
-  /** Show optional Size (mm) column — for sales pipes */
-  showSizeMm?: boolean;
 }
 
-export function LineItemsField<TFieldValues extends FieldValues>({
+export function PurchaseLineItemsField<TFieldValues extends FieldValues>({
   fields,
   items,
   products,
   register,
+  setValue,
   onProductChange,
   onAdd,
   onRemove,
   errorMessage,
-  showSizeMm = false,
-}: LineItemsFieldProps<TFieldValues>) {
-  function fieldPath(index: number, key: keyof LineItemValue) {
+}: PurchaseLineItemsFieldProps<TFieldValues>) {
+  function fieldPath(index: number, key: keyof PurchaseLineItemValue) {
     return `items.${index}.${key}` as Path<TFieldValues>;
+  }
+
+  function handlePricePerKgChange(index: number, raw: string) {
+    const pricePerKg = Number(raw) || 0;
+    const rate = Math.round(pricePerKg * KG_PER_TON * 100) / 100;
+    setValue(fieldPath(index, "pricePerKg"), pricePerKg as never, { shouldDirty: true });
+    setValue(fieldPath(index, "rate"), rate as never, { shouldDirty: true });
   }
 
   return (
     <div className="grid gap-4">
+      <p className="text-sm text-muted-foreground">
+        MS raw material: enter qty in <strong>Tons</strong> and <strong>₹/Kg</strong>. Rate/Ton is
+        calculated as Price/Kg × 1,000.
+      </p>
       <div className="flex justify-end">
         <Button type="button" variant="outline" size="sm" onClick={onAdd}>
           <Plus className="size-4" />
@@ -77,10 +90,11 @@ export function LineItemsField<TFieldValues extends FieldValues>({
           const gst = Number(item?.gstRate) || 0;
           const base = qty * rate;
           const amount = base + (base * gst) / 100;
+          const kg = qty * KG_PER_TON;
           return (
             <div key={field.id} className="grid gap-3 rounded-md border bg-card p-3">
               <div className="grid gap-1.5">
-                <Label>Product</Label>
+                <Label>Material</Label>
                 <Select
                   value={item?.productId ?? ""}
                   onValueChange={(value) => {
@@ -88,10 +102,10 @@ export function LineItemsField<TFieldValues extends FieldValues>({
                   }}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select a product">
+                    <SelectValue placeholder="Select material">
                       {(value: string | null) =>
                         products?.find((product) => product.id === value)?.name ??
-                        "Select a product"
+                        "Select material"
                       }
                     </SelectValue>
                   </SelectTrigger>
@@ -99,38 +113,34 @@ export function LineItemsField<TFieldValues extends FieldValues>({
                     {products?.map((product) => (
                       <SelectItem key={product.id} value={product.id}>
                         {product.name}
+                        {product.unit ? ` (${product.unit})` : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className={`grid gap-3 ${showSizeMm ? "grid-cols-2" : "grid-cols-3"}`}>
-                {showSizeMm && (
-                  <div className="grid gap-1.5">
-                    <Label>Size (mm)</Label>
-                    <Input
-                      type="number"
-                      step="1"
-                      placeholder="e.g. 95"
-                      {...register(fieldPath(index, "sizeMm"), { valueAsNumber: true })}
-                    />
-                  </div>
-                )}
+              <div className="grid grid-cols-2 gap-3">
                 <div className="grid gap-1.5">
-                  <Label>Qty</Label>
+                  <Label>Qty (Tons)</Label>
+                  <Input
+                    type="number"
+                    step="0.001"
+                    {...register(fieldPath(index, "quantity"), { valueAsNumber: true })}
+                  />
+                  <p className="text-xs text-muted-foreground">= {kg.toFixed(0)} Kg</p>
+                </div>
+                <div className="grid gap-1.5">
+                  <Label>Price / Kg (₹)</Label>
                   <Input
                     type="number"
                     step="0.01"
-                    {...register(fieldPath(index, "quantity"), { valueAsNumber: true })}
+                    value={item?.pricePerKg ?? 0}
+                    onChange={(e) => handlePricePerKgChange(index, e.target.value)}
                   />
                 </div>
                 <div className="grid gap-1.5">
-                  <Label>Rate</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    {...register(fieldPath(index, "rate"), { valueAsNumber: true })}
-                  />
+                  <Label>Rate / Ton (₹)</Label>
+                  <Input type="number" step="0.01" readOnly value={item?.rate ?? 0} />
                 </div>
                 <div className="grid gap-1.5">
                   <Label>GST %</Label>
@@ -162,10 +172,10 @@ export function LineItemsField<TFieldValues extends FieldValues>({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Product</TableHead>
-              {showSizeMm && <TableHead className="w-24">Size (mm)</TableHead>}
-              <TableHead className="w-24">Qty</TableHead>
-              <TableHead className="w-28">Rate</TableHead>
+              <TableHead>Material</TableHead>
+              <TableHead className="w-28">Qty (Tons)</TableHead>
+              <TableHead className="w-28">Price/Kg (₹)</TableHead>
+              <TableHead className="w-28">Rate/Ton (₹)</TableHead>
               <TableHead className="w-24">GST %</TableHead>
               <TableHead className="w-32 text-right">Amount</TableHead>
               <TableHead className="w-10" />
@@ -179,6 +189,7 @@ export function LineItemsField<TFieldValues extends FieldValues>({
               const gst = Number(item?.gstRate) || 0;
               const base = qty * rate;
               const amount = base + (base * gst) / 100;
+              const kg = qty * KG_PER_TON;
               return (
                 <TableRow key={field.id}>
                   <TableCell>
@@ -189,10 +200,10 @@ export function LineItemsField<TFieldValues extends FieldValues>({
                       }}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a product">
+                        <SelectValue placeholder="Select material">
                           {(value: string | null) =>
                             products?.find((product) => product.id === value)?.name ??
-                            "Select a product"
+                            "Select material"
                           }
                         </SelectValue>
                       </SelectTrigger>
@@ -200,34 +211,30 @@ export function LineItemsField<TFieldValues extends FieldValues>({
                         {products?.map((product) => (
                           <SelectItem key={product.id} value={product.id}>
                             {product.name}
+                            {product.unit ? ` (${product.unit})` : ""}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </TableCell>
-                  {showSizeMm && (
-                    <TableCell>
-                      <Input
-                        type="number"
-                        step="1"
-                        placeholder="95"
-                        {...register(fieldPath(index, "sizeMm"), { valueAsNumber: true })}
-                      />
-                    </TableCell>
-                  )}
                   <TableCell>
                     <Input
                       type="number"
-                      step="0.01"
+                      step="0.001"
                       {...register(fieldPath(index, "quantity"), { valueAsNumber: true })}
                     />
+                    <p className="mt-0.5 text-[10px] text-muted-foreground">{kg.toFixed(0)} Kg</p>
                   </TableCell>
                   <TableCell>
                     <Input
                       type="number"
                       step="0.01"
-                      {...register(fieldPath(index, "rate"), { valueAsNumber: true })}
+                      value={item?.pricePerKg ?? 0}
+                      onChange={(e) => handlePricePerKgChange(index, e.target.value)}
                     />
+                  </TableCell>
+                  <TableCell>
+                    <Input type="number" step="0.01" readOnly value={item?.rate ?? 0} />
                   </TableCell>
                   <TableCell>
                     <Input

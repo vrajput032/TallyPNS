@@ -10,7 +10,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useProfitAndLoss, useStockReport } from "./useReports";
+import { usePartyOutstanding } from "@/features/payments/usePayments";
+import { formatInr } from "@/lib/formatInr";
+import {
+  useBalanceSheet,
+  useProfitAndLoss,
+  useStockReport,
+  useTrialBalance,
+} from "./useReports";
 
 function ProfitAndLossTab() {
   const { data, isLoading } = useProfitAndLoss();
@@ -28,7 +35,7 @@ function ProfitAndLossTab() {
             {isLoading ? (
               <Skeleton className="h-8 w-24" />
             ) : (
-              <div className="text-2xl font-semibold">{(data?.totalSales ?? 0).toFixed(2)}</div>
+              <div className="text-2xl font-semibold">{formatInr(data?.totalSales ?? 0)}</div>
             )}
           </CardContent>
         </Card>
@@ -43,7 +50,7 @@ function ProfitAndLossTab() {
               <Skeleton className="h-8 w-24" />
             ) : (
               <div className="text-2xl font-semibold">
-                {(data?.totalPurchases ?? 0).toFixed(2)}
+                {formatInr(data?.totalPurchases ?? 0)}
               </div>
             )}
           </CardContent>
@@ -58,7 +65,7 @@ function ProfitAndLossTab() {
             {isLoading ? (
               <Skeleton className="h-8 w-24" />
             ) : (
-              <div className="text-2xl font-semibold">{(data?.grossProfit ?? 0).toFixed(2)}</div>
+              <div className="text-2xl font-semibold">{formatInr(data?.grossProfit ?? 0)}</div>
             )}
           </CardContent>
         </Card>
@@ -107,11 +114,11 @@ function StockReportTab() {
                   <TableCell>{row.name}</TableCell>
                   <TableCell>{row.hsn}</TableCell>
                   <TableCell>{row.unit}</TableCell>
-                  <TableCell className="text-right">{Number(row.price).toFixed(2)}</TableCell>
+                  <TableCell className="text-right">{formatInr(row.price)}</TableCell>
                   <TableCell className="text-right">
                     {Number(row.currentStock).toFixed(2)}
                   </TableCell>
-                  <TableCell className="text-right">{row.stockValue.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">{formatInr(row.stockValue)}</TableCell>
                 </TableRow>
               ))
             )}
@@ -120,10 +127,210 @@ function StockReportTab() {
             <tfoot>
               <TableRow className="font-semibold">
                 <TableCell colSpan={5}>Total Stock Value</TableCell>
-                <TableCell className="text-right">{data.totalStockValue.toFixed(2)}</TableCell>
+                <TableCell className="text-right">{formatInr(data.totalStockValue)}</TableCell>
               </TableRow>
             </tfoot>
           )}
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+function BalanceSheetTab() {
+  const { data, isLoading } = useBalanceSheet();
+
+  return (
+    <div className="grid gap-4">
+      <p className="text-sm text-muted-foreground">
+        As on {data ? new Date(data.asOn).toLocaleDateString("en-GB") : "—"}
+      </p>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="min-w-0 rounded-md border bg-card">
+          <div className="border-b px-4 py-2 font-medium">Liabilities</div>
+          <Table>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={2}>
+                    <Skeleton className="h-6 w-full" />
+                  </TableCell>
+                </TableRow>
+              ) : (
+                data?.liabilities.map((row) => (
+                  <TableRow key={row.name}>
+                    <TableCell>{row.name}</TableCell>
+                    <TableCell className="text-right">{formatInr(row.amount)}</TableCell>
+                  </TableRow>
+                ))
+              )}
+              <TableRow className="font-semibold">
+                <TableCell>Total</TableCell>
+                <TableCell className="text-right">
+                  {formatInr(data?.totalLiabilities ?? 0)}
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+        <div className="min-w-0 rounded-md border bg-card">
+          <div className="border-b px-4 py-2 font-medium">Assets</div>
+          <Table>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={2}>
+                    <Skeleton className="h-6 w-full" />
+                  </TableCell>
+                </TableRow>
+              ) : (
+                data?.assets.map((row) => (
+                  <TableRow key={row.name}>
+                    <TableCell>{row.name}</TableCell>
+                    <TableCell className="text-right">{formatInr(row.amount)}</TableCell>
+                  </TableRow>
+                ))
+              )}
+              <TableRow className="font-semibold">
+                <TableCell>Total</TableCell>
+                <TableCell className="text-right">{formatInr(data?.totalAssets ?? 0)}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TrialBalanceTab() {
+  const { data, isLoading } = useTrialBalance();
+
+  return (
+    <div className="grid gap-4">
+      <p className="text-sm text-muted-foreground">
+        As on {data ? new Date(data.asOn).toLocaleDateString("en-GB") : "—"}
+      </p>
+      <div className="min-w-0 rounded-md border bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Particulars</TableHead>
+              <TableHead className="text-right">Debit (₹)</TableHead>
+              <TableHead className="text-right">Credit (₹)</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={3} className="text-center text-muted-foreground">
+                  Loading...
+                </TableCell>
+              </TableRow>
+            ) : (
+              data?.rows.map((row) => (
+                <TableRow key={row.account}>
+                  <TableCell>{row.account}</TableCell>
+                  <TableCell className="text-right">
+                    {row.debit ? formatInr(row.debit) : ""}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {row.credit ? formatInr(row.credit) : ""}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+            <TableRow className="font-semibold">
+              <TableCell>Total</TableCell>
+              <TableCell className="text-right">{formatInr(data?.totalDebit ?? 0)}</TableCell>
+              <TableCell className="text-right">{formatInr(data?.totalCredit ?? 0)}</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+function OutstandingTab() {
+  const { data, isLoading } = usePartyOutstanding();
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      <div className="min-w-0 rounded-md border bg-card">
+        <div className="border-b px-4 py-2 font-medium">Sundry Debtors (Receivable)</div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Customer</TableHead>
+              <TableHead className="text-right">Balance</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={2} className="text-center text-muted-foreground">
+                  Loading...
+                </TableCell>
+              </TableRow>
+            ) : (data?.debtors.length ?? 0) === 0 ? (
+              <TableRow>
+                <TableCell colSpan={2} className="text-center text-muted-foreground">
+                  No receivables
+                </TableCell>
+              </TableRow>
+            ) : (
+              data?.debtors.map((row) => (
+                <TableRow key={row.id}>
+                  <TableCell>{row.name}</TableCell>
+                  <TableCell className="text-right">{formatInr(row.balance)}</TableCell>
+                </TableRow>
+              ))
+            )}
+            <TableRow className="font-semibold">
+              <TableCell>Total</TableCell>
+              <TableCell className="text-right">{formatInr(data?.totalDebtors ?? 0)}</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+      <div className="min-w-0 rounded-md border bg-card">
+        <div className="border-b px-4 py-2 font-medium">Sundry Creditors (Payable)</div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Vendor</TableHead>
+              <TableHead className="text-right">Balance</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={2} className="text-center text-muted-foreground">
+                  Loading...
+                </TableCell>
+              </TableRow>
+            ) : (data?.creditors.length ?? 0) === 0 ? (
+              <TableRow>
+                <TableCell colSpan={2} className="text-center text-muted-foreground">
+                  No payables
+                </TableCell>
+              </TableRow>
+            ) : (
+              data?.creditors.map((row) => (
+                <TableRow key={row.id}>
+                  <TableCell>{row.name}</TableCell>
+                  <TableCell className="text-right">{formatInr(row.balance)}</TableCell>
+                </TableRow>
+              ))
+            )}
+            <TableRow className="font-semibold">
+              <TableCell>Total</TableCell>
+              <TableCell className="text-right">
+                {formatInr(data?.totalCreditors ?? 0)}
+              </TableCell>
+            </TableRow>
+          </TableBody>
         </Table>
       </div>
     </div>
@@ -136,12 +343,24 @@ export function ReportsPage() {
       <PageHeader title="Reports" backTo="/" backLabel="Back to Dashboard" />
 
       <Tabs defaultValue="pnl">
-        <TabsList>
+        <TabsList className="flex h-auto flex-wrap">
           <TabsTrigger value="pnl">Profit &amp; Loss</TabsTrigger>
+          <TabsTrigger value="balance-sheet">Balance Sheet</TabsTrigger>
+          <TabsTrigger value="trial-balance">Trial Balance</TabsTrigger>
+          <TabsTrigger value="outstanding">Outstanding</TabsTrigger>
           <TabsTrigger value="stock">Stock Report</TabsTrigger>
         </TabsList>
         <TabsContent value="pnl">
           <ProfitAndLossTab />
+        </TabsContent>
+        <TabsContent value="balance-sheet">
+          <BalanceSheetTab />
+        </TabsContent>
+        <TabsContent value="trial-balance">
+          <TrialBalanceTab />
+        </TabsContent>
+        <TabsContent value="outstanding">
+          <OutstandingTab />
         </TabsContent>
         <TabsContent value="stock">
           <StockReportTab />

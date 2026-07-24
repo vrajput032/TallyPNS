@@ -5,6 +5,7 @@ export interface SalesInvoiceItem {
   id: string;
   productId: string;
   product: Product;
+  sizeMm: string | null;
   quantity: string;
   rate: string;
   gstRate: string;
@@ -20,6 +21,18 @@ export interface SalesInvoice {
   transport: string | null;
   vehicleNo: string | null;
   totalAmount: string;
+  paidAmount: number;
+  balanceAmount: number;
+  paymentStatus: "PENDING" | "PARTIAL" | "PAID";
+  receipts?: {
+    id: string;
+    receiptNo: string;
+    amount: string;
+    mode: "CASH" | "BANK";
+    reference: string | null;
+    receiptDate: string;
+    narration: string | null;
+  }[];
   items: SalesInvoiceItem[];
   createdAt: string;
   updatedAt: string;
@@ -27,6 +40,7 @@ export interface SalesInvoice {
 
 export interface SalesInvoiceItemInput {
   productId: string;
+  sizeMm?: number | null;
   quantity: number;
   rate: number;
   gstRate: number;

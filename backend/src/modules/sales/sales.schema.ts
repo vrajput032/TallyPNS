@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const salesInvoiceItemSchema = z.object({
   productId: z.string().min(1),
+  sizeMm: z.number().positive().optional().nullable(),
   quantity: z.number().positive(),
   rate: z.number().min(0),
   gstRate: z.number().min(0).max(100),

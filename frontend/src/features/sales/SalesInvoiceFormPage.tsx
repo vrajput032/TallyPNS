@@ -26,9 +26,11 @@ import {
 import { useCustomers } from "@/features/customers/useCustomers";
 import { useProducts } from "@/features/products/useProducts";
 import { useCreateSalesInvoice } from "./useSales";
+import { formatInr } from "@/lib/formatInr";
 
 const lineItemSchema = z.object({
   productId: z.string().min(1, "Select a product"),
+  sizeMm: z.coerce.number().positive().optional().nullable(),
   quantity: z.coerce.number().positive("Qty must be greater than 0"),
   rate: z.coerce.number().min(0),
   gstRate: z.coerce.number().min(0).max(100),
@@ -55,7 +57,7 @@ export function SalesInvoiceFormPage() {
       customerId: "",
       transport: "REGULAR",
       vehicleNo: "",
-      items: [{ productId: "", quantity: 1, rate: 0, gstRate: 18 }],
+      items: [{ productId: "", sizeMm: undefined, quantity: 1, rate: 0, gstRate: 18 }],
     },
   });
 
@@ -80,7 +82,17 @@ export function SalesInvoiceFormPage() {
   }
 
   function onSubmit(values: InvoiceFormValues) {
-    createInvoice.mutate(values, {
+    const payload = {
+      ...values,
+      items: values.items.map((item) => ({
+        ...item,
+        sizeMm:
+          item.sizeMm != null && !Number.isNaN(item.sizeMm) && item.sizeMm > 0
+            ? item.sizeMm
+            : null,
+      })),
+    };
+    createInvoice.mutate(payload, {
       onSuccess: (invoice) => {
         toast.success(`Invoice ${invoice.invoiceNo} created`);
         navigate(`/sales/${invoice.id}`);
@@ -177,12 +189,15 @@ export function SalesInvoiceFormPage() {
                 products={products}
                 register={form.register}
                 onProductChange={handleProductChange}
-                onAdd={() => append({ productId: "", quantity: 1, rate: 0, gstRate: 18 })}
+                onAdd={() =>
+                  append({ productId: "", sizeMm: undefined, quantity: 1, rate: 0, gstRate: 18 })
+                }
                 onRemove={remove}
                 errorMessage={form.formState.errors.items?.message}
+                showSizeMm
               />
               <div className="mt-4 flex justify-end text-lg font-semibold">
-                Grand Total: {grandTotal.toFixed(2)}
+                Grand Total: ₹{formatInr(grandTotal)}
               </div>
             </CardContent>
           </Card>
