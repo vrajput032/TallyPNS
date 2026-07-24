@@ -75,6 +75,8 @@ model SalesInvoice {
   customerId   String
   customer     Customer @relation(fields: [customerId], references: [id])
   invoiceDate  DateTime @default(now())
+  transport    String?
+  vehicleNo    String?
   totalAmount  Decimal  @default(0) @db.Decimal(14, 2)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

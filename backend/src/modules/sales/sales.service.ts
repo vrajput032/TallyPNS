@@ -22,22 +22,20 @@ export async function getSalesInvoice(id: string) {
 }
 
 const INVOICE_NO_START = 11001;
+const INVOICE_NO_PREFIX = "INV-";
 
 async function generateInvoiceNo() {
-  const year = new Date().getFullYear();
-  const prefix = `INV-${year}-`;
-
   const invoices = await prisma.salesInvoice.findMany({
-    where: { invoiceNo: { startsWith: prefix } },
+    where: { invoiceNo: { startsWith: INVOICE_NO_PREFIX } },
     select: { invoiceNo: true },
   });
 
   const maxSeq = invoices.reduce((max, { invoiceNo }) => {
-    const seq = Number(invoiceNo.slice(prefix.length));
+    const seq = Number(invoiceNo.slice(INVOICE_NO_PREFIX.length));
     return Number.isFinite(seq) && seq > max ? seq : max;
   }, INVOICE_NO_START - 1);
 
-  return `${prefix}${maxSeq + 1}`;
+  return `${INVOICE_NO_PREFIX}${maxSeq + 1}`;
 }
 
 export async function createSalesInvoice(data: z.infer<typeof createSalesInvoiceSchema>) {
@@ -69,6 +67,8 @@ export async function createSalesInvoice(data: z.infer<typeof createSalesInvoice
         invoiceNo,
         customerId: data.customerId,
         invoiceDate: data.invoiceDate ?? new Date(),
+        transport: data.transport?.trim() || null,
+        vehicleNo: data.vehicleNo?.trim() || null,
         totalAmount,
         items: {
           create: data.items.map((item) => ({

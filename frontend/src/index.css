@@ -131,6 +131,50 @@
 
 @media print {
   @page {
-    margin: 0.4in;
+    size: A4;
+    /* Zero margins so Chrome/Safari omit date, title, URL, page number */
+    margin: 0;
+  }
+
+  html,
+  body {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* Hide app chrome / toasts — bill only */
+  [data-sonner-toaster],
+  .toaster {
+    display: none !important;
+  }
+
+  .invoice-print-scroll {
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .invoice-sheet {
+    width: auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 10mm 8mm !important;
+    box-shadow: none !important;
+  }
+
+  .invoice-items-wrap {
+    flex: none !important;
+    min-height: 0 !important;
+  }
+
+  .invoice-items-table {
+    height: auto !important;
+  }
+
+  .invoice-items-spacer {
+    height: 1.75rem !important;
   }
 }

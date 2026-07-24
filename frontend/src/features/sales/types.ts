@@ -17,6 +17,8 @@ export interface SalesInvoice {
   customerId: string;
   customer: Customer;
   invoiceDate: string;
+  transport: string | null;
+  vehicleNo: string | null;
   totalAmount: string;
   items: SalesInvoiceItem[];
   createdAt: string;
@@ -32,5 +34,7 @@ export interface SalesInvoiceItemInput {
 
 export interface SalesInvoiceInput {
   customerId: string;
+  transport?: string | null;
+  vehicleNo?: string | null;
   items: SalesInvoiceItemInput[];
 }

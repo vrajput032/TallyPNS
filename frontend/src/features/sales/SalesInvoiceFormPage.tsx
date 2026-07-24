@@ -15,6 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -35,6 +36,8 @@ const lineItemSchema = z.object({
 
 const invoiceFormSchema = z.object({
   customerId: z.string().min(1, "Select a customer"),
+  transport: z.string().trim().max(100).optional(),
+  vehicleNo: z.string().trim().max(40).optional(),
   items: z.array(lineItemSchema).min(1, "Add at least one item"),
 });
 
@@ -50,6 +53,8 @@ export function SalesInvoiceFormPage() {
     resolver: zodResolver(invoiceFormSchema),
     defaultValues: {
       customerId: "",
+      transport: "REGULAR",
+      vehicleNo: "",
       items: [{ productId: "", quantity: 1, rate: 0, gstRate: 18 }],
     },
   });
@@ -96,14 +101,14 @@ export function SalesInvoiceFormPage() {
         <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
           <Card>
             <CardHeader>
-              <CardTitle>Customer</CardTitle>
+              <CardTitle>Customer &amp; Transport</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="customerId"
                 render={({ field }) => (
-                  <FormItem className="max-w-sm">
+                  <FormItem className="sm:col-span-2 sm:max-w-sm">
                     <FormLabel>Bill To</FormLabel>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
@@ -124,6 +129,36 @@ export function SalesInvoiceFormPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="transport"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Transport</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. REGULAR" {...field} value={field.value ?? ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="vehicleNo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Vehicle No.</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g. DL05EC5993"
+                        {...field}
+                        value={field.value ?? ""}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

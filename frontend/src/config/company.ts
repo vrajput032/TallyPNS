@@ -6,8 +6,15 @@ export const COMPANY = {
     "Sonipat, Haryana - 131028",
   ],
   gstin: "06ABJFP8733H1ZW",
+  stateCode: "06",
+  stateName: "Haryana",
   contacts: [
     { name: "Akshay Sharma", phone: "8395054056" },
     { name: "Vinay Rajput", phone: "8826816791" },
   ],
+  bank: {
+    accountName: "PNS ENTERPRISES",
+    accountNo: "",
+    ifsc: "",
+  },
 } as const;
