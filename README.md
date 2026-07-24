@@ -59,10 +59,12 @@ backend/    Express + TypeScript + Prisma API
 frontend/   React + Vite + TypeScript SPA
 ```
 
-Full CRUD is implemented for **Customers** and **Products**. Other MVP modules (Sales, Purchase,
-Inventory, Cash, Bank, GST, Reports) are routed with placeholder pages/stub endpoints, ready to be
-built out following the same pattern (see `backend/src/modules/customers` and
-`frontend/src/features/customers`).
+Full CRUD is implemented for **Customers**, **Products**, and **Vendors**. **Sales** and
+**Purchase** support creating invoices/bills with line items, automatic stock adjustment, and a
+print view matching a GST tax invoice format (CGST/SGST split, company header, amount in words).
+Remaining MVP modules (Inventory, Cash, Bank, GST, Reports) are routed with placeholder
+pages/stub endpoints, ready to be built out following the same pattern (see
+`backend/src/modules/customers` and `frontend/src/features/customers`).
 
 ## Useful commands
 
@@ -71,16 +73,32 @@ built out following the same pattern (see `backend/src/modules/customers` and
 - `npm run build -w frontend` — production build of the frontend
 - `npm run build -w backend` — compile the backend to `backend/dist`
 
-## Deploy frontend (Netlify)
+## Deploy frontend (Cloudflare Pages)
 
-The Vite SPA deploys to Netlify. The Express API does **not** run on Netlify; host it separately (Render, Railway, Fly, etc.) or keep it local.
+The Vite SPA deploys to Cloudflare Pages. The Express API does **not** run on Pages; host it
+separately (Render, Railway, Fly, etc.) or keep it local.
 
-1. Push this repo to GitHub (already linked as `vrajput032/TallyPNS`).
-2. In Netlify: **Add new site → Import an existing project → GitHub → TallyPNS**.
-3. Build settings are in [`netlify.toml`](netlify.toml) (build `frontend`, publish `frontend/dist`, SPA redirects).
-4. Set a site environment variable before or after the first deploy:
-   - `VITE_API_URL` — public API base including `/api`, e.g. `https://your-api.onrender.com/api`
-   - Redeploy after changing env vars (Vite bakes them in at build time).
-5. Do **not** add `backend/.env` secrets to Netlify.
+### Option A — Git integration (recommended)
+
+1. Push this repo to GitHub (`vrajput032/TallyPNS`).
+2. Cloudflare dashboard: **Workers & Pages → Create → Pages → Connect to Git → TallyPNS**.
+3. Build settings:
+   - **Build command**: `npm run build -w frontend`
+   - **Build output directory**: `frontend/dist`
+   - **Root directory**: `/` (repo root so workspaces resolve)
+4. SPA routing uses [`frontend/public/_redirects`](frontend/public/_redirects) (copied into `dist` by Vite).
+5. Set Pages env var `VITE_API_URL` to your public API base ending in `/api`, then redeploy
+   (Vite bakes env vars in at build time).
+
+### Option B — Wrangler CLI
+
+```bash
+npm run build -w frontend
+npx wrangler pages deploy frontend/dist --project-name=tallypns
+```
+
+Settings are also in [`wrangler.toml`](wrangler.toml).
+
+Do **not** add `backend/.env` secrets to Cloudflare Pages.
 
 Until a public API URL is set, the site will load but login/CRUD will fail in the browser.

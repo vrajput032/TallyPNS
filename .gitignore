@@ -13,3 +13,6 @@ backend/prisma/generated/
 # Editor
 .vscode/*
 !.vscode/extensions.json
+.netlify/
+.wrangler/
+.dev.vars
