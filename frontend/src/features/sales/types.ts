@@ -48,6 +48,7 @@ export interface SalesInvoiceItemInput {
 
 export interface SalesInvoiceInput {
   customerId: string;
+  invoiceNo?: string;
   transport?: string | null;
   vehicleNo?: string | null;
   items: SalesInvoiceItemInput[];

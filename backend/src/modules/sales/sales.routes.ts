@@ -17,6 +17,14 @@ salesRouter.get(
 );
 
 salesRouter.get(
+  "/next-invoice-no",
+  asyncHandler(async (_req, res) => {
+    const invoiceNo = await salesService.previewNextInvoiceNo();
+    res.json({ invoiceNo });
+  })
+);
+
+salesRouter.get(
   "/:id",
   asyncHandler(async (req, res) => {
     const invoice = await salesService.getSalesInvoice(req.params.id);

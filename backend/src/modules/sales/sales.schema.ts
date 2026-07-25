@@ -10,6 +10,7 @@ export const salesInvoiceItemSchema = z.object({
 
 export const createSalesInvoiceSchema = z.object({
   customerId: z.string().min(1),
+  invoiceNo: z.string().trim().max(60).optional(),
   invoiceDate: z.coerce.date().optional(),
   transport: z.string().trim().max(100).optional().nullable(),
   vehicleNo: z.string().trim().max(40).optional().nullable(),

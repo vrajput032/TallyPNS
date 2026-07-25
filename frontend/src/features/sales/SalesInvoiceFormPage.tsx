@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -25,7 +26,7 @@ import {
 } from "@/components/ui/select";
 import { useCustomers } from "@/features/customers/useCustomers";
 import { useProducts } from "@/features/products/useProducts";
-import { useCreateSalesInvoice } from "./useSales";
+import { useCreateSalesInvoice, useNextInvoiceNo } from "./useSales";
 import { formatInr } from "@/lib/formatInr";
 
 const lineItemSchema = z.object({
@@ -38,6 +39,7 @@ const lineItemSchema = z.object({
 
 const invoiceFormSchema = z.object({
   customerId: z.string().min(1, "Select a customer"),
+  invoiceNo: z.string().trim().max(60).optional(),
   transport: z.string().trim().max(100).optional(),
   vehicleNo: z.string().trim().max(40).optional(),
   items: z.array(lineItemSchema).min(1, "Add at least one item"),
@@ -49,17 +51,25 @@ export function SalesInvoiceFormPage() {
   const navigate = useNavigate();
   const { data: customers } = useCustomers();
   const { data: products } = useProducts();
+  const { data: nextInvoiceNo } = useNextInvoiceNo();
   const createInvoice = useCreateSalesInvoice();
 
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceFormSchema),
     defaultValues: {
       customerId: "",
+      invoiceNo: "",
       transport: "REGULAR",
       vehicleNo: "",
       items: [{ productId: "", sizeMm: undefined, quantity: 1, rate: 0, gstRate: 18 }],
     },
   });
+
+  useEffect(() => {
+    if (nextInvoiceNo && !form.formState.dirtyFields.invoiceNo) {
+      form.setValue("invoiceNo", nextInvoiceNo);
+    }
+  }, [nextInvoiceNo, form]);
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -141,6 +151,19 @@ export function SalesInvoiceFormPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="invoiceNo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Invoice No.</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Auto-generated" {...field} value={field.value ?? ""} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

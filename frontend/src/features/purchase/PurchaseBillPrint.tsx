@@ -84,7 +84,7 @@ export function PurchaseBillPrint({ bill }: { bill: PurchaseBill }) {
 
         <table className="w-full border-b-2 border-black text-xs">
           <thead>
-            <tr className="border-b-2 border-black bg-[#e5e5e5]">
+            <tr className="border-b-2 border-black">
               <th className="border-r border-black p-1.5 text-center">S.N</th>
               <th className="border-r border-black p-1.5 text-center">Description</th>
               <th className="border-r border-black p-1.5 text-center">HSN</th>

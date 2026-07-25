@@ -25,6 +25,17 @@ export function useSalesInvoice(id: string | undefined) {
   });
 }
 
+export function useNextInvoiceNo() {
+  return useQuery({
+    queryKey: [...SALES_KEY, "next-invoice-no"],
+    queryFn: async () => {
+      const { data } = await api.get<{ invoiceNo: string }>("/sales/next-invoice-no");
+      return data.invoiceNo;
+    },
+    staleTime: 0,
+  });
+}
+
 export function useCreateSalesInvoice() {
   const queryClient = useQueryClient();
   return useMutation({

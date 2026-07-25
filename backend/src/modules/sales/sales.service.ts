@@ -27,21 +27,41 @@ export async function getSalesInvoice(id: string) {
   return withPaymentSummary(invoice);
 }
 
-const INVOICE_NO_START = 11001;
-const INVOICE_NO_PREFIX = "INV-";
+const INVOICE_NO_START = 1;
+const COMPANY_CODE = "PNS";
+
+/** Indian financial year runs Apr 1 -> Mar 31, e.g. July 2026 falls in FY 26-27. */
+function currentFinancialYearLabel(date = new Date()) {
+  const year = date.getFullYear();
+  const isBeforeApril = date.getMonth() < 3; // Jan-Mar belongs to the FY that started the previous April
+  const startYear = isBeforeApril ? year - 1 : year;
+  const startYY = String(startYear % 100).padStart(2, "0");
+  const endYY = String((startYear + 1) % 100).padStart(2, "0");
+  return `${startYY}-${endYY}`;
+}
+
+function invoiceNoPrefix(date = new Date()) {
+  return `${COMPANY_CODE}/${currentFinancialYearLabel(date)}/`;
+}
+
+export async function previewNextInvoiceNo() {
+  return generateInvoiceNo();
+}
 
 async function generateInvoiceNo() {
+  const prefix = invoiceNoPrefix();
+
   const invoices = await prisma.salesInvoice.findMany({
-    where: { invoiceNo: { startsWith: INVOICE_NO_PREFIX } },
+    where: { invoiceNo: { startsWith: prefix } },
     select: { invoiceNo: true },
   });
 
   const maxSeq = invoices.reduce((max, { invoiceNo }) => {
-    const seq = Number(invoiceNo.slice(INVOICE_NO_PREFIX.length));
+    const seq = Number(invoiceNo.slice(prefix.length));
     return Number.isFinite(seq) && seq > max ? seq : max;
   }, INVOICE_NO_START - 1);
 
-  return `${INVOICE_NO_PREFIX}${maxSeq + 1}`;
+  return `${prefix}${String(maxSeq + 1).padStart(2, "0")}`;
 }
 
 export async function createSalesInvoice(data: z.infer<typeof createSalesInvoiceSchema>) {
@@ -65,7 +85,12 @@ export async function createSalesInvoice(data: z.infer<typeof createSalesInvoice
     return sum + base + (base * item.gstRate) / 100;
   }, 0);
 
-  const invoiceNo = await generateInvoiceNo();
+  const invoiceNo = data.invoiceNo?.trim() || (await generateInvoiceNo());
+
+  const existing = await prisma.salesInvoice.findUnique({ where: { invoiceNo } });
+  if (existing) {
+    throw new ApiError(409, `Invoice number ${invoiceNo} is already in use`);
+  }
 
   return prisma.$transaction(async (tx) => {
     const invoice = await tx.salesInvoice.create({
