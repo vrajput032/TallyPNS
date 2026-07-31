@@ -3,8 +3,11 @@ import type { Product } from "@/features/products/types";
 
 export interface SalesInvoiceItem {
   id: string;
-  productId: string;
-  product: Product;
+  productId: string | null;
+  product: Product | null;
+  description: string | null;
+  hsn: string | null;
+  unit: string | null;
   sizeMm: string | null;
   quantity: string;
   rate: string;
@@ -39,7 +42,10 @@ export interface SalesInvoice {
 }
 
 export interface SalesInvoiceItemInput {
-  productId: string;
+  productId?: string | null;
+  description?: string | null;
+  hsn?: string | null;
+  unit?: string | null;
   sizeMm?: number | null;
   quantity: number;
   rate: number;
@@ -52,4 +58,21 @@ export interface SalesInvoiceInput {
   transport?: string | null;
   vehicleNo?: string | null;
   items: SalesInvoiceItemInput[];
+}
+
+export function salesItemDescription(item: SalesInvoiceItem) {
+  if (item.product?.name) {
+    const size =
+      item.sizeMm != null && Number(item.sizeMm) > 0 ? ` ${Number(item.sizeMm)}mm` : "";
+    return `${item.product.name}${size}`;
+  }
+  return item.description?.trim() || "Item";
+}
+
+export function salesItemHsn(item: SalesInvoiceItem) {
+  return item.product?.hsn ?? item.hsn ?? "-";
+}
+
+export function salesItemUnit(item: SalesInvoiceItem) {
+  return item.product?.unit ?? item.unit ?? "NOS";
 }

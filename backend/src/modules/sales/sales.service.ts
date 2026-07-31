@@ -4,6 +4,17 @@ import { withPaymentSummary } from "../payments/payment.utils.js";
 import type { createSalesInvoiceSchema } from "./sales.schema.js";
 import type { z } from "zod";
 
+type CreateItem = z.infer<typeof createSalesInvoiceSchema>["items"][number];
+
+function isManualItem(item: CreateItem) {
+  return !item.productId?.trim();
+}
+
+function lineAmount(quantity: number, rate: number, gstRate: number) {
+  const base = quantity * rate;
+  return base + (base * gstRate) / 100;
+}
+
 export async function listSalesInvoices() {
   const invoices = await prisma.salesInvoice.findMany({
     include: { customer: true, items: true, receipts: true },
@@ -65,25 +76,30 @@ async function generateInvoiceNo() {
 }
 
 export async function createSalesInvoice(data: z.infer<typeof createSalesInvoiceSchema>) {
-  const products = await prisma.product.findMany({
-    where: { id: { in: data.items.map((item) => item.productId) } },
-  });
+  const catalogItems = data.items.filter((item) => !isManualItem(item));
+  const productIds = [...new Set(catalogItems.map((item) => item.productId!.trim()))];
+
+  const products =
+    productIds.length > 0
+      ? await prisma.product.findMany({ where: { id: { in: productIds } } })
+      : [];
 
   const productMap = new Map(products.map((product) => [product.id, product]));
-  for (const item of data.items) {
-    const product = productMap.get(item.productId);
+  for (const item of catalogItems) {
+    const productId = item.productId!.trim();
+    const product = productMap.get(productId);
     if (!product) {
-      throw new ApiError(400, `Product ${item.productId} not found`);
+      throw new ApiError(400, `Product ${productId} not found`);
     }
     if (Number(product.currentStock) < item.quantity) {
       throw new ApiError(400, `Insufficient stock for ${product.name}`);
     }
   }
 
-  const totalAmount = data.items.reduce((sum, item) => {
-    const base = item.quantity * item.rate;
-    return sum + base + (base * item.gstRate) / 100;
-  }, 0);
+  const totalAmount = data.items.reduce(
+    (sum, item) => sum + lineAmount(item.quantity, item.rate, item.gstRate),
+    0
+  );
 
   const invoiceNo = data.invoiceNo?.trim() || (await generateInvoiceNo());
 
@@ -102,27 +118,46 @@ export async function createSalesInvoice(data: z.infer<typeof createSalesInvoice
         vehicleNo: data.vehicleNo?.trim() || null,
         totalAmount,
         items: {
-          create: data.items.map((item) => ({
-            productId: item.productId,
-            sizeMm: item.sizeMm != null && item.sizeMm > 0 ? item.sizeMm : null,
-            quantity: item.quantity,
-            rate: item.rate,
-            gstRate: item.gstRate,
-            amount: item.quantity * item.rate + (item.quantity * item.rate * item.gstRate) / 100,
-          })),
+          create: data.items.map((item) => {
+            if (isManualItem(item)) {
+              return {
+                productId: null,
+                description: item.description!.trim(),
+                hsn: item.hsn?.trim() || null,
+                unit: item.unit?.trim() || "NOS",
+                sizeMm: null,
+                quantity: item.quantity,
+                rate: item.rate,
+                gstRate: item.gstRate,
+                amount: lineAmount(item.quantity, item.rate, item.gstRate),
+              };
+            }
+            return {
+              productId: item.productId!.trim(),
+              description: null,
+              hsn: null,
+              unit: null,
+              sizeMm: item.sizeMm != null && item.sizeMm > 0 ? item.sizeMm : null,
+              quantity: item.quantity,
+              rate: item.rate,
+              gstRate: item.gstRate,
+              amount: lineAmount(item.quantity, item.rate, item.gstRate),
+            };
+          }),
         },
       },
       include: { customer: true, items: { include: { product: true } } },
     });
 
-    for (const item of data.items) {
+    for (const item of catalogItems) {
+      const productId = item.productId!.trim();
       await tx.product.update({
-        where: { id: item.productId },
+        where: { id: productId },
         data: { currentStock: { decrement: item.quantity } },
       });
       await tx.stockMovement.create({
         data: {
-          productId: item.productId,
+          productId,
           type: "OUT",
           quantity: item.quantity,
           reason: `Sales invoice ${invoiceNo}`,
@@ -156,6 +191,7 @@ export async function deleteSalesInvoice(id: string) {
 
   await prisma.$transaction(async (tx) => {
     for (const item of invoice.items) {
+      if (!item.productId) continue;
       await tx.product.update({
         where: { id: item.productId },
         data: { currentStock: { increment: Number(item.quantity) } },

@@ -2,6 +2,7 @@ import { COMPANY } from "@/config/company";
 import { amountToIndianWords } from "@/lib/numberToWords";
 import { formatInr } from "@/lib/formatInr";
 import type { SalesInvoice } from "./types";
+import { salesItemDescription, salesItemHsn, salesItemUnit } from "./types";
 
 function formatDate(iso: string) {
   const date = new Date(iso);
@@ -92,7 +93,7 @@ export function SalesInvoicePrint({ invoice }: { invoice: SalesInvoice }) {
     const existing = gstGroups.get(rate) ?? {
       taxable: 0,
       tax: 0,
-      hsn: item.product.hsn ?? "-",
+      hsn: salesItemHsn(item),
     };
     gstGroups.set(rate, {
       taxable: existing.taxable + taxable,
@@ -104,7 +105,7 @@ export function SalesInvoicePrint({ invoice }: { invoice: SalesInvoice }) {
   const totalTax = [...gstGroups.values()].reduce((sum, g) => sum + g.tax, 0);
   const grandTotal = taxableTotal + totalTax;
   const totalQty = invoice.items.reduce((sum, item) => sum + Number(item.quantity), 0);
-  const primaryUnit = invoice.items[0]?.product.unit ?? "Pcs.";
+  const primaryUnit = invoice.items[0] ? salesItemUnit(invoice.items[0]) : "Pcs.";
   const supplyCode = invoice.customer.gstin?.slice(0, 2) || COMPANY.stateCode;
   const isIntraState = supplyCode === COMPANY.stateCode;
 
@@ -241,14 +242,11 @@ export function SalesInvoicePrint({ invoice }: { invoice: SalesInvoice }) {
                 <tr key={item.id} className="align-top">
                   <td className={`${cellBorder} px-1.5 py-1`}>{index + 1}.</td>
                   <td className={`${midBorder} px-1.5 py-1 font-medium`}>
-                    {item.product.name}
-                    {item.sizeMm != null && Number(item.sizeMm) > 0
-                      ? ` ${Number(item.sizeMm)}mm`
-                      : ""}
+                    {salesItemDescription(item)}
                   </td>
-                  <td className={`${cellBorder} px-1.5 py-1`}>{item.product.hsn ?? "-"}</td>
+                  <td className={`${cellBorder} px-1.5 py-1`}>{salesItemHsn(item)}</td>
                   <td className={`${cellBorder} px-1.5 py-1 text-right`}>
-                    {formatInr(Number(item.quantity))} {item.product.unit}
+                    {formatInr(Number(item.quantity))} {salesItemUnit(item)}
                   </td>
                   <td className={`${cellBorder} px-1.5 py-1 text-right`}>
                     {formatInr(Number(item.rate))}

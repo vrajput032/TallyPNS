@@ -91,9 +91,16 @@ model SalesInvoiceItem {
   id             String       @id @default(cuid())
   salesInvoiceId String
   salesInvoice   SalesInvoice @relation(fields: [salesInvoiceId], references: [id], onDelete: Cascade)
-  productId      String
-  product        Product      @relation(fields: [productId], references: [id])
-  /** Optional pipe/material size in mm (e.g. 95) — sales only */
+  /** Null for manual/non-stock lines (scraps, construction, electricity, etc.) */
+  productId      String?
+  product        Product?     @relation(fields: [productId], references: [id])
+  /** Free-text description for manual lines; unused when productId is set */
+  description    String?
+  /** Optional HSN/SAC for manual lines (print + GSTR-1) */
+  hsn            String?
+  /** Unit for manual lines (e.g. NOS, LOT, KWH); unused when productId is set */
+  unit           String?
+  /** Optional pipe/material size in mm (e.g. 95) — catalog sales only */
   sizeMm         Decimal?     @db.Decimal(10, 2)
   quantity       Decimal      @db.Decimal(14, 2)
   rate           Decimal      @db.Decimal(14, 2)

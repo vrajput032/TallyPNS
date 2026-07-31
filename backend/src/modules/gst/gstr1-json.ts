@@ -6,8 +6,23 @@ type LineItem = {
   gstRate: unknown;
   quantity: unknown;
   rate: unknown;
-  product: { hsn: string | null; unit: string; name: string };
+  description: string | null;
+  hsn: string | null;
+  unit: string | null;
+  product: { hsn: string | null; unit: string; name: string } | null;
 };
+
+function lineDescription(item: LineItem) {
+  return (item.product?.name ?? item.description ?? "Item").trim() || "Item";
+}
+
+function lineHsn(item: LineItem) {
+  return (item.product?.hsn ?? item.hsn ?? "").trim() || "00000000";
+}
+
+function lineUnit(item: LineItem) {
+  return (item.product?.unit ?? item.unit ?? "NOS").trim() || "NOS";
+}
 
 /** Tax line matching Tally itm_det key order */
 function makeItmDet(txval: number, rt: number, interState: boolean) {
@@ -87,11 +102,11 @@ type HsnAgg = {
 };
 
 function addHsn(map: Map<string, HsnAgg>, item: LineItem, interState: boolean) {
-  const hsn_sc = (item.product.hsn ?? "").trim() || "00000000";
+  const hsn_sc = lineHsn(item);
   const rt = Number(item.gstRate);
   const qty = Number(item.quantity);
   const txval = Number(item.quantity) * Number(item.rate);
-  const uqc = mapUqc(item.product.unit);
+  const uqc = mapUqc(lineUnit(item));
   const det = makeItmDet(txval, rt, interState);
   const key = `${hsn_sc}|${uqc}|${rt}`;
   const existing = map.get(key);
@@ -104,7 +119,7 @@ function addHsn(map: Map<string, HsnAgg>, item: LineItem, interState: boolean) {
   } else {
     map.set(key, {
       hsn_sc,
-      user_desc: item.product.name.slice(0, 30),
+      user_desc: lineDescription(item).slice(0, 30),
       uqc,
       qty,
       rt,
@@ -152,6 +167,9 @@ export async function buildGstr1Json(month?: number, year?: number) {
           gstRate: true,
           quantity: true,
           rate: true,
+          description: true,
+          hsn: true,
+          unit: true,
           product: { select: { hsn: true, unit: true, name: true } },
         },
       },

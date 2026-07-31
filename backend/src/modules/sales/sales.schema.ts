@@ -1,12 +1,27 @@
 import { z } from "zod";
 
-export const salesInvoiceItemSchema = z.object({
-  productId: z.string().min(1),
-  sizeMm: z.number().positive().optional().nullable(),
-  quantity: z.number().positive(),
-  rate: z.number().min(0),
-  gstRate: z.number().min(0).max(100),
-});
+export const salesInvoiceItemSchema = z
+  .object({
+    productId: z.string().min(1).optional().nullable(),
+    description: z.string().trim().max(200).optional().nullable(),
+    hsn: z.string().trim().max(20).optional().nullable(),
+    unit: z.string().trim().max(20).optional().nullable(),
+    sizeMm: z.number().positive().optional().nullable(),
+    quantity: z.number().positive(),
+    rate: z.number().min(0),
+    gstRate: z.number().min(0).max(100),
+  })
+  .superRefine((item, ctx) => {
+    const hasProduct = Boolean(item.productId?.trim());
+    const hasDescription = Boolean(item.description?.trim());
+    if (!hasProduct && !hasDescription) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Select a product or enter a manual description",
+        path: ["description"],
+      });
+    }
+  });
 
 export const createSalesInvoiceSchema = z.object({
   customerId: z.string().min(1),
