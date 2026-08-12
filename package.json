@@ -14,9 +14,11 @@
     "deploy:backend": "bash scripts/deploy.sh backend",
     "db:backup": "bash scripts/db-backup.sh",
     "db:restore": "bash scripts/db-restore.sh",
-    "db:export:sheets": "npm run export:sheets -w backend"
+    "db:export:sheets": "npm run export:sheets -w backend",
+    "demo:purchase-sales-gst": "node scripts/demo-purchase-sales-gst.mjs"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "concurrently": "^9.1.0",
+    "playwright": "^1.52.0"
   }
 }

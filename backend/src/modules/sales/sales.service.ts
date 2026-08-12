@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma.js";
+import { activeOnly, deletedOnly } from "../../lib/activeRecords.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import { withPaymentSummary } from "../payments/payment.utils.js";
 import type { createSalesInvoiceSchema } from "./sales.schema.js";
@@ -15,24 +16,39 @@ function lineAmount(quantity: number, rate: number, gstRate: number) {
   return base + (base * gstRate) / 100;
 }
 
+const invoiceInclude = {
+  customer: true,
+  items: { include: { product: true } },
+  receipts: { orderBy: { receiptDate: "desc" as const } },
+};
+
 export async function listSalesInvoices() {
   const invoices = await prisma.salesInvoice.findMany({
+    where: activeOnly,
     include: { customer: true, items: true, receipts: true },
     orderBy: { invoiceDate: "desc" },
   });
   return invoices.map(withPaymentSummary);
 }
 
-export async function getSalesInvoice(id: string) {
+export async function listDeletedSalesInvoices() {
+  const invoices = await prisma.salesInvoice.findMany({
+    where: deletedOnly,
+    include: { customer: true, items: true, receipts: true },
+    orderBy: { deletedAt: "desc" },
+  });
+  return invoices.map(withPaymentSummary);
+}
+
+export async function getSalesInvoice(id: string, options?: { includeDeleted?: boolean }) {
   const invoice = await prisma.salesInvoice.findUnique({
     where: { id },
-    include: {
-      customer: true,
-      items: { include: { product: true } },
-      receipts: { orderBy: { receiptDate: "desc" } },
-    },
+    include: invoiceInclude,
   });
   if (!invoice) {
+    throw new ApiError(404, "Sales invoice not found");
+  }
+  if (!options?.includeDeleted && invoice.deletedAt) {
     throw new ApiError(404, "Sales invoice not found");
   }
   return withPaymentSummary(invoice);
@@ -44,7 +60,7 @@ const COMPANY_CODE = "PNS";
 /** Indian financial year runs Apr 1 -> Mar 31, e.g. July 2026 falls in FY 26-27. */
 function currentFinancialYearLabel(date = new Date()) {
   const year = date.getFullYear();
-  const isBeforeApril = date.getMonth() < 3; // Jan-Mar belongs to the FY that started the previous April
+  const isBeforeApril = date.getMonth() < 3;
   const startYear = isBeforeApril ? year - 1 : year;
   const startYY = String(startYear % 100).padStart(2, "0");
   const endYY = String((startYear + 1) % 100).padStart(2, "0");
@@ -182,6 +198,7 @@ export async function updateInvoiceNo(id: string, invoiceNo: string) {
   });
 }
 
+/** Move invoice to recycle bin (soft delete) and reverse stock. */
 export async function deleteSalesInvoice(id: string) {
   const invoice = await getSalesInvoice(id);
 
@@ -201,11 +218,74 @@ export async function deleteSalesInvoice(id: string) {
           productId: item.productId,
           type: "IN",
           quantity: item.quantity,
-          reason: `Reversal of deleted sales invoice ${invoice.invoiceNo}`,
+          reason: `Moved sales invoice ${invoice.invoiceNo} to recycle bin`,
         },
       });
     }
 
-    await tx.salesInvoice.delete({ where: { id } });
+    await tx.salesInvoice.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
   });
+}
+
+/** Restore invoice from recycle bin and re-apply stock. */
+export async function restoreSalesInvoice(id: string) {
+  const invoice = await prisma.salesInvoice.findUnique({
+    where: { id },
+    include: invoiceInclude,
+  });
+  if (!invoice?.deletedAt) {
+    throw new ApiError(404, "Invoice not found in recycle bin");
+  }
+
+  for (const item of invoice.items) {
+    if (!item.productId || !item.product) continue;
+    if (Number(item.product.currentStock) < Number(item.quantity)) {
+      throw new ApiError(
+        400,
+        `Cannot restore: insufficient stock for ${item.product.name}`
+      );
+    }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    for (const item of invoice.items) {
+      if (!item.productId) continue;
+      await tx.product.update({
+        where: { id: item.productId },
+        data: { currentStock: { decrement: Number(item.quantity) } },
+      });
+      await tx.stockMovement.create({
+        data: {
+          productId: item.productId,
+          type: "OUT",
+          quantity: item.quantity,
+          reason: `Restored sales invoice ${invoice.invoiceNo}`,
+        },
+      });
+    }
+
+    await tx.salesInvoice.update({
+      where: { id },
+      data: { deletedAt: null },
+    });
+  });
+}
+
+/** Permanently delete an invoice already in the recycle bin. */
+export async function permanentlyDeleteSalesInvoice(id: string) {
+  const invoice = await prisma.salesInvoice.findUnique({
+    where: { id },
+    include: { receipts: true },
+  });
+  if (!invoice?.deletedAt) {
+    throw new ApiError(404, "Invoice not found in recycle bin");
+  }
+  if ((invoice.receipts?.length ?? 0) > 0) {
+    throw new ApiError(400, "Cannot permanently delete invoice with receipts");
+  }
+
+  await prisma.salesInvoice.delete({ where: { id } });
 }

@@ -34,6 +34,7 @@ export interface PurchaseBill {
     narration: string | null;
   }[];
   items: PurchaseBillItem[];
+  deletedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }

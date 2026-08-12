@@ -19,6 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatInr } from "@/lib/formatInr";
 import { CustomerFormDialog } from "./CustomerFormDialog";
 import { useCustomers, useDeleteCustomer } from "./useCustomers";
 import type { Customer } from "./types";
@@ -26,12 +27,25 @@ import type { Customer } from "./types";
 const columns: ColumnDef<Customer>[] = [
   { accessorKey: "name", header: "Name" },
   { accessorKey: "phone", header: "Phone" },
-  { accessorKey: "email", header: "Email" },
   { accessorKey: "gstin", header: "GSTIN" },
   {
-    accessorKey: "openingBalance",
-    header: "Opening Balance",
-    cell: ({ row }) => Number(row.original.openingBalance).toFixed(2),
+    accessorKey: "totalBilled",
+    header: "Total Amount",
+    cell: ({ row }) => formatInr(row.original.totalBilled),
+  },
+  {
+    accessorKey: "totalPaid",
+    header: "Paid",
+    cell: ({ row }) => formatInr(row.original.totalPaid),
+  },
+  {
+    accessorKey: "balanceAmount",
+    header: "Balance",
+    cell: ({ row }) => (
+      <span className={row.original.balanceAmount > 0 ? "font-medium text-destructive" : ""}>
+        {formatInr(row.original.balanceAmount)}
+      </span>
+    ),
   },
 ];
 

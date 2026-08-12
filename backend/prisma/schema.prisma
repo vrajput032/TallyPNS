@@ -79,12 +79,15 @@ model SalesInvoice {
   invoiceDate  DateTime @default(now())
   transport    String?
   vehicleNo    String?
-  totalAmount  Decimal  @default(0) @db.Decimal(14, 2)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  totalAmount  Decimal   @default(0) @db.Decimal(14, 2)
+  deletedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   items        SalesInvoiceItem[]
   receipts     PaymentReceipt[]
+
+  @@index([deletedAt])
 }
 
 model SalesInvoiceItem {
@@ -116,12 +119,15 @@ model PurchaseBill {
   billDate    DateTime @default(now())
   transport   String?
   vehicleNo   String?
-  totalAmount Decimal  @default(0) @db.Decimal(14, 2)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  totalAmount Decimal   @default(0) @db.Decimal(14, 2)
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   items       PurchaseBillItem[]
   payments    VendorPayment[]
+
+  @@index([deletedAt])
 }
 
 model PurchaseBillItem {

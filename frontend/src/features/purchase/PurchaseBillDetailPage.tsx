@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { ConfirmDeletePinDialog } from "@/components/ConfirmDeletePinDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -27,30 +28,30 @@ export function PurchaseBillDetailPage() {
   const deleteBill = useDeletePurchaseBill();
   const deletePayment = useDeleteVendorPayment();
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   if (isLoading || !bill) {
     return <p className="text-sm text-muted-foreground">Loading...</p>;
   }
 
-  function handleDelete() {
+  function handleDelete(pin: string) {
     if (!bill) return;
-    if (
-      !confirm(`Delete bill ${bill.billNo}? This will reverse the stock added by this bill.`)
-    ) {
-      return;
-    }
-    deleteBill.mutate(bill.id, {
-      onSuccess: () => {
-        toast.success(`Bill ${bill.billNo} deleted`);
-        navigate("/purchase");
-      },
-      onError: (error: unknown) => {
-        const message =
-          (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-          "Failed to delete bill";
-        toast.error(message);
-      },
-    });
+    deleteBill.mutate(
+      { id: bill.id, pin },
+      {
+        onSuccess: () => {
+          toast.success(`Bill ${bill.billNo} moved to recycle bin`);
+          setDeleteOpen(false);
+          navigate("/purchase");
+        },
+        onError: (error: unknown) => {
+          const message =
+            (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+            "Failed to delete bill";
+          toast.error(message);
+        },
+      }
+    );
   }
 
   return (
@@ -72,7 +73,7 @@ export function PurchaseBillDetailPage() {
               <Printer className="size-4" />
               Print
             </Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleteBill.isPending}>
+            <Button variant="destructive" onClick={() => setDeleteOpen(true)} disabled={deleteBill.isPending}>
               <Trash2 className="size-4" />
               Delete
             </Button>
@@ -167,6 +168,15 @@ export function PurchaseBillDetailPage() {
         purchaseBillId={bill.id}
         billNo={bill.billNo}
         balanceAmount={bill.balanceAmount}
+      />
+
+      <ConfirmDeletePinDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title={`Move bill ${bill.billNo} to recycle bin?`}
+        description="The bill will be removed from Purchase and can be restored from Recycle Bin. Enter the deletion PIN to confirm."
+        isPending={deleteBill.isPending}
+        onConfirm={handleDelete}
       />
     </div>
   );

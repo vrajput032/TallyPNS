@@ -3,6 +3,8 @@ import type { FieldValues, Path, UseFormRegister } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useIsMobile } from "@/hooks/useIsMobile";
+import { registerFormNumber } from "@/lib/formNumberInput";
 import {
   Select,
   SelectContent,
@@ -65,8 +67,14 @@ export function LineItemsField<TFieldValues extends FieldValues>({
   showSizeMm = false,
   allowManual = false,
 }: LineItemsFieldProps<TFieldValues>) {
+  const isMobile = useIsMobile();
+
   function fieldPath(index: number, key: keyof LineItemValue) {
     return `items.${index}.${key}` as Path<TFieldValues>;
+  }
+
+  function registerNumber(index: number, key: keyof LineItemValue) {
+    return registerFormNumber(register, fieldPath(index, key));
   }
 
   return (
@@ -84,7 +92,8 @@ export function LineItemsField<TFieldValues extends FieldValues>({
         )}
       </div>
 
-      <div className="grid gap-3 sm:hidden">
+      {isMobile ? (
+      <div className="grid gap-3">
         {fields.map((field, index) => {
           const item = items[index];
           const isManual = Boolean(item?.isManual);
@@ -151,35 +160,35 @@ export function LineItemsField<TFieldValues extends FieldValues>({
                   <div className="grid gap-1.5">
                     <Label>Size (mm)</Label>
                     <Input
-                      type="number"
-                      step="1"
+                      type="text"
+                      inputMode="decimal"
                       placeholder="e.g. 95"
-                      {...register(fieldPath(index, "sizeMm"), { valueAsNumber: true })}
+                      {...registerNumber(index, "sizeMm")}
                     />
                   </div>
                 )}
                 <div className="grid gap-1.5">
                   <Label>Qty</Label>
                   <Input
-                    type="number"
-                    step="0.01"
-                    {...register(fieldPath(index, "quantity"), { valueAsNumber: true })}
+                    type="text"
+                    inputMode="decimal"
+                    {...registerNumber(index, "quantity")}
                   />
                 </div>
                 <div className="grid gap-1.5">
                   <Label>Rate</Label>
                   <Input
-                    type="number"
-                    step="0.01"
-                    {...register(fieldPath(index, "rate"), { valueAsNumber: true })}
+                    type="text"
+                    inputMode="decimal"
+                    {...registerNumber(index, "rate")}
                   />
                 </div>
                 <div className="grid gap-1.5">
                   <Label>GST %</Label>
                   <Input
-                    type="number"
-                    step="0.01"
-                    {...register(fieldPath(index, "gstRate"), { valueAsNumber: true })}
+                    type="text"
+                    inputMode="decimal"
+                    {...registerNumber(index, "gstRate")}
                   />
                 </div>
               </div>
@@ -205,8 +214,8 @@ export function LineItemsField<TFieldValues extends FieldValues>({
           );
         })}
       </div>
-
-      <div className="hidden sm:block">
+      ) : (
+      <div>
         <Table>
           <TableHeader>
             <TableRow>
@@ -272,7 +281,7 @@ export function LineItemsField<TFieldValues extends FieldValues>({
                           type="number"
                           step="1"
                           placeholder="95"
-                          {...register(fieldPath(index, "sizeMm"), { valueAsNumber: true })}
+                          {...registerNumber(index, "sizeMm")}
                         />
                       )}
                     </TableCell>
@@ -299,21 +308,21 @@ export function LineItemsField<TFieldValues extends FieldValues>({
                     <Input
                       type="number"
                       step="0.01"
-                      {...register(fieldPath(index, "quantity"), { valueAsNumber: true })}
+                      {...registerNumber(index, "quantity")}
                     />
                   </TableCell>
                   <TableCell>
                     <Input
                       type="number"
                       step="0.01"
-                      {...register(fieldPath(index, "rate"), { valueAsNumber: true })}
+                      {...registerNumber(index, "rate")}
                     />
                   </TableCell>
                   <TableCell>
                     <Input
                       type="number"
                       step="0.01"
-                      {...register(fieldPath(index, "gstRate"), { valueAsNumber: true })}
+                      {...registerNumber(index, "gstRate")}
                     />
                   </TableCell>
                   <TableCell className="text-right">
@@ -339,6 +348,7 @@ export function LineItemsField<TFieldValues extends FieldValues>({
           </TableBody>
         </Table>
       </div>
+      )}
 
       {errorMessage && <p className="text-sm text-destructive">{errorMessage}</p>}
     </div>

@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma.js";
+import { activeOnly } from "../../lib/activeRecords.js";
 import { getPartyOutstanding } from "../payments/payment.service.js";
 
 export async function getProfitAndLoss(from?: Date, to?: Date) {
@@ -6,11 +7,11 @@ export async function getProfitAndLoss(from?: Date, to?: Date) {
 
   const [salesInvoices, purchaseBills] = await Promise.all([
     prisma.salesInvoice.findMany({
-      where: dateFilter ? { invoiceDate: dateFilter } : undefined,
+      where: dateFilter ? { ...activeOnly, invoiceDate: dateFilter } : activeOnly,
       select: { totalAmount: true },
     }),
     prisma.purchaseBill.findMany({
-      where: dateFilter ? { billDate: dateFilter } : undefined,
+      where: dateFilter ? { ...activeOnly, billDate: dateFilter } : activeOnly,
       select: { totalAmount: true },
     }),
   ]);
@@ -55,11 +56,11 @@ export async function getBalanceSheet(asOn?: Date) {
 
   const [sales, purchases, receipts, payments, products, outstanding] = await Promise.all([
     prisma.salesInvoice.findMany({
-      where: { invoiceDate: { lte: on } },
+      where: { ...activeOnly, invoiceDate: { lte: on } },
       select: { totalAmount: true },
     }),
     prisma.purchaseBill.findMany({
-      where: { billDate: { lte: on } },
+      where: { ...activeOnly, billDate: { lte: on } },
       select: { totalAmount: true },
     }),
     prisma.paymentReceipt.findMany({
@@ -134,11 +135,11 @@ export async function getTrialBalance(asOn?: Date) {
   const [bs, sales, purchases] = await Promise.all([
     getBalanceSheet(on),
     prisma.salesInvoice.findMany({
-      where: { invoiceDate: { lte: on } },
+      where: { ...activeOnly, invoiceDate: { lte: on } },
       select: { totalAmount: true },
     }),
     prisma.purchaseBill.findMany({
-      where: { billDate: { lte: on } },
+      where: { ...activeOnly, billDate: { lte: on } },
       select: { totalAmount: true },
     }),
   ]);

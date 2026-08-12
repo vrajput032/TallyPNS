@@ -1,4 +1,5 @@
 import { COMPANY } from "../../config/company.js";
+import { activeOnly } from "../../lib/activeRecords.js";
 import { prisma } from "../../lib/prisma.js";
 import { resolveTaxPeriod } from "./gst.service.js";
 
@@ -159,7 +160,7 @@ export async function buildGstr1Json(month?: number, year?: number) {
   const supplierState = COMPANY.stateCode;
 
   const salesInvoices = await prisma.salesInvoice.findMany({
-    where: { invoiceDate: dateFilter },
+    where: { ...activeOnly, invoiceDate: dateFilter },
     include: {
       customer: { select: { name: true, gstin: true } },
       items: {

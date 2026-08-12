@@ -110,7 +110,6 @@ export function SalesInvoicePrint({ invoice }: { invoice: SalesInvoice }) {
   const isIntraState = supplyCode === COMPANY.stateCode;
 
   const bankConfigured = Boolean(COMPANY.bank.accountNo || COMPANY.bank.ifsc);
-  const contactLine = COMPANY.contacts.map((c) => `${c.name}: ${c.phone}`).join("  |  ");
 
   return (
     <div className="invoice-print-scroll -mx-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:overflow-visible sm:px-0 sm:pb-0 print:mx-0 print:overflow-visible print:px-0 print:pb-0">
@@ -132,7 +131,6 @@ export function SalesInvoicePrint({ invoice }: { invoice: SalesInvoice }) {
                 </span>
               ))}
             </p>
-            <p className="mt-1.5 text-[10px]">{contactLine}</p>
           </div>
         </div>
 
@@ -399,7 +397,7 @@ export function SalesInvoicePrint({ invoice }: { invoice: SalesInvoice }) {
                   <div className="mb-3">
                     <p className="font-semibold">Bank Details:</p>
                     <p>A/C NAME: {COMPANY.bank.accountName}</p>
-                    {COMPANY.bank.accountNo && <p>BANK A/C: {COMPANY.bank.accountNo}</p>}
+                    {COMPANY.bank.accountNo && <p>A/c no- {COMPANY.bank.accountNo}</p>}
                     {COMPANY.bank.ifsc && <p>IFSC: {COMPANY.bank.ifsc}</p>}
                   </div>
                 )}

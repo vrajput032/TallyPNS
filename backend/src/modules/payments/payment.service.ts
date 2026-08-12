@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma.js";
+import { activeOnly } from "../../lib/activeRecords.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import type { createReceiptSchema, createVendorPaymentSchema } from "./payment.schema.js";
 import { withBillPaymentSummary, withPaymentSummary } from "./payment.utils.js";
@@ -40,6 +41,7 @@ export async function createReceipt(data: z.infer<typeof createReceiptSchema>) {
     include: { receipts: true, customer: true },
   });
   if (!invoice) throw new ApiError(404, "Sales invoice not found");
+  if (invoice.deletedAt) throw new ApiError(400, "Cannot record receipt for a deleted invoice");
 
   const summary = withPaymentSummary(invoice);
   if (summary.paymentStatus === "PAID") {
@@ -84,6 +86,7 @@ export async function createVendorPayment(data: z.infer<typeof createVendorPayme
     include: { payments: true, vendor: true },
   });
   if (!bill) throw new ApiError(404, "Purchase bill not found");
+  if (bill.deletedAt) throw new ApiError(400, "Cannot record payment for a deleted bill");
 
   const summary = withBillPaymentSummary(bill);
   if (summary.paymentStatus === "PAID") {
@@ -185,13 +188,13 @@ export async function getPartyOutstanding() {
   const [customers, vendors] = await Promise.all([
     prisma.customer.findMany({
       include: {
-        salesInvoices: { include: { receipts: true } },
+        salesInvoices: { where: activeOnly, include: { receipts: true } },
       },
       orderBy: { name: "asc" },
     }),
     prisma.vendor.findMany({
       include: {
-        purchaseBills: { include: { payments: true } },
+        purchaseBills: { where: activeOnly, include: { payments: true } },
       },
       orderBy: { name: "asc" },
     }),

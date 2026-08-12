@@ -37,6 +37,7 @@ export interface SalesInvoice {
     narration: string | null;
   }[];
   items: SalesInvoiceItem[];
+  deletedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }

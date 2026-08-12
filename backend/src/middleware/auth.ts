@@ -32,3 +32,15 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction) {
     throw new ApiError(401, "Invalid or expired access token");
   }
 }
+
+export function requireAdmin(req: Request, _res: Response, next: NextFunction) {
+  if (!req.user) {
+    throw new ApiError(401, "Missing access token");
+  }
+
+  if (req.user.role !== "ADMIN") {
+    throw new ApiError(403, "Admin access required");
+  }
+
+  next();
+}

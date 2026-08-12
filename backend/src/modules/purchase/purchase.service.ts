@@ -1,27 +1,43 @@
 import { prisma } from "../../lib/prisma.js";
+import { activeOnly, deletedOnly } from "../../lib/activeRecords.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import { withBillPaymentSummary } from "../payments/payment.utils.js";
 import type { createPurchaseBillSchema } from "./purchase.schema.js";
 import type { z } from "zod";
 
+const billInclude = {
+  vendor: true,
+  items: { include: { product: true } },
+  payments: { orderBy: { paymentDate: "desc" as const } },
+};
+
 export async function listPurchaseBills() {
   const bills = await prisma.purchaseBill.findMany({
+    where: activeOnly,
     include: { vendor: true, items: true, payments: true },
     orderBy: { billDate: "desc" },
   });
   return bills.map(withBillPaymentSummary);
 }
 
-export async function getPurchaseBill(id: string) {
+export async function listDeletedPurchaseBills() {
+  const bills = await prisma.purchaseBill.findMany({
+    where: deletedOnly,
+    include: { vendor: true, items: true, payments: true },
+    orderBy: { deletedAt: "desc" },
+  });
+  return bills.map(withBillPaymentSummary);
+}
+
+export async function getPurchaseBill(id: string, options?: { includeDeleted?: boolean }) {
   const bill = await prisma.purchaseBill.findUnique({
     where: { id },
-    include: {
-      vendor: true,
-      items: { include: { product: true } },
-      payments: { orderBy: { paymentDate: "desc" } },
-    },
+    include: billInclude,
   });
   if (!bill) {
+    throw new ApiError(404, "Purchase bill not found");
+  }
+  if (!options?.includeDeleted && bill.deletedAt) {
     throw new ApiError(404, "Purchase bill not found");
   }
   return withBillPaymentSummary(bill);
@@ -68,9 +84,7 @@ export async function createPurchaseBill(data: z.infer<typeof createPurchaseBill
         items: {
           create: data.items.map((item) => {
             const pricePerKg =
-              item.pricePerKg != null && item.pricePerKg > 0
-                ? item.pricePerKg
-                : null;
+              item.pricePerKg != null && item.pricePerKg > 0 ? item.pricePerKg : null;
             const rate =
               pricePerKg != null ? Math.round(pricePerKg * 1000 * 100) / 100 : item.rate;
             const base = item.quantity * rate;
@@ -107,6 +121,7 @@ export async function createPurchaseBill(data: z.infer<typeof createPurchaseBill
   });
 }
 
+/** Move bill to recycle bin (soft delete) and reverse stock. */
 export async function deletePurchaseBill(id: string) {
   const bill = await getPurchaseBill(id);
 
@@ -134,11 +149,63 @@ export async function deletePurchaseBill(id: string) {
           productId: item.productId,
           type: "OUT",
           quantity: item.quantity,
-          reason: `Reversal of deleted purchase bill ${bill.billNo}`,
+          reason: `Moved purchase bill ${bill.billNo} to recycle bin`,
         },
       });
     }
 
-    await tx.purchaseBill.delete({ where: { id } });
+    await tx.purchaseBill.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
   });
+}
+
+/** Restore bill from recycle bin and re-apply stock. */
+export async function restorePurchaseBill(id: string) {
+  const bill = await prisma.purchaseBill.findUnique({
+    where: { id },
+    include: billInclude,
+  });
+  if (!bill?.deletedAt) {
+    throw new ApiError(404, "Bill not found in recycle bin");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    for (const item of bill.items) {
+      await tx.product.update({
+        where: { id: item.productId },
+        data: { currentStock: { increment: Number(item.quantity) } },
+      });
+      await tx.stockMovement.create({
+        data: {
+          productId: item.productId,
+          type: "IN",
+          quantity: item.quantity,
+          reason: `Restored purchase bill ${bill.billNo}`,
+        },
+      });
+    }
+
+    await tx.purchaseBill.update({
+      where: { id },
+      data: { deletedAt: null },
+    });
+  });
+}
+
+/** Permanently delete a bill already in the recycle bin. */
+export async function permanentlyDeletePurchaseBill(id: string) {
+  const bill = await prisma.purchaseBill.findUnique({
+    where: { id },
+    include: { payments: true },
+  });
+  if (!bill?.deletedAt) {
+    throw new ApiError(404, "Bill not found in recycle bin");
+  }
+  if ((bill.payments?.length ?? 0) > 0) {
+    throw new ApiError(400, "Cannot permanently delete bill with payments");
+  }
+
+  await prisma.purchaseBill.delete({ where: { id } });
 }

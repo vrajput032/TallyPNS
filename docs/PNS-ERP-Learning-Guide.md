@@ -82,7 +82,7 @@ Think of it as a lightweight Tally-like web app for one company.
 | Field | Value |
 |-------|-------|
 | Email | `admin@pnsenterprises.com` |
-| Password | `admin123` |
+| Password | Set via `ADMIN_SEED_PASSWORD` in `backend/.env` when running seed |
 | Name | Admin |
 | Role | ADMIN |
 

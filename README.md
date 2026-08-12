@@ -37,11 +37,13 @@ Phase 1 MVP scaffold: React + Vite frontend, Express + Prisma backend, PostgreSQ
    npm run prisma:migrate -w backend
    ```
 
-5. Seed an admin user (`admin@pnsenterprises.com` / `admin123`):
+5. Seed an admin user (set `ADMIN_SEED_PASSWORD` in `backend/.env` first — min 12 characters):
 
    ```bash
    npm run seed -w backend
    ```
+
+   Default admin email: `admin@pnsenterprises.com`. The password is only in your local `.env`, not in this repo.
 
 6. Start both servers:
 
@@ -72,6 +74,7 @@ pages/stub endpoints, ready to be built out following the same pattern (see
 - `npm run prisma:studio -w backend` — browse the database in Prisma Studio
 - `npm run build -w frontend` — production build of the frontend
 - `npm run build -w backend` — compile the backend to `backend/dist`
+- `npm run set-admin-password -w backend` — rotate admin password (`ADMIN_PASSWORD` env, min 12 chars)
 
 ## Deploy
 
@@ -87,6 +90,8 @@ npm run deploy:backend   # backend only (rare)
 
 `deploy:backend` pushes to GitHub if needed, then triggers the Render deploy hook.
 Get the hook URL from Render → **tallypns-api** → **Settings** → **Deploy Hook** → add to `backend/.env` as `RENDER_DEPLOY_HOOK_URL`.
+
+On Render, set `NODE_ENV=production` and `CORS_ORIGINS=https://tallypns.pages.dev` (see `render.yaml`).
 
 Do **not** add `backend/.env` secrets to Cloudflare Pages.
 

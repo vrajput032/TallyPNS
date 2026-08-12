@@ -6,6 +6,9 @@ export interface Customer {
   gstin: string | null;
   address: string | null;
   openingBalance: string;
+  totalBilled: number;
+  totalPaid: number;
+  balanceAmount: number;
   createdAt: string;
   updatedAt: string;
 }

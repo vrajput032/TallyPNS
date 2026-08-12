@@ -54,8 +54,8 @@ export function useCreateSalesInvoice() {
 export function useDeleteSalesInvoice() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
-      await api.delete(`/sales/${id}`);
+    mutationFn: async ({ id, pin }: { id: string; pin: string }) => {
+      await api.delete(`/sales/${id}`, { headers: { "X-Delete-Pin": pin } });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: SALES_KEY });
@@ -64,6 +64,7 @@ export function useDeleteSalesInvoice() {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["gst"] });
       queryClient.invalidateQueries({ queryKey: ["reports"] });
+      queryClient.invalidateQueries({ queryKey: ["recycle-bin"] });
     },
   });
 }

@@ -43,8 +43,8 @@ export function useCreatePurchaseBill() {
 export function useDeletePurchaseBill() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
-      await api.delete(`/purchase/${id}`);
+    mutationFn: async ({ id, pin }: { id: string; pin: string }) => {
+      await api.delete(`/purchase/${id}`, { headers: { "X-Delete-Pin": pin } });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: PURCHASE_KEY });
@@ -53,6 +53,7 @@ export function useDeletePurchaseBill() {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["gst"] });
       queryClient.invalidateQueries({ queryKey: ["reports"] });
+      queryClient.invalidateQueries({ queryKey: ["recycle-bin"] });
     },
   });
 }

@@ -21,3 +21,7 @@ services:
         sync: false
       - key: SUPABASE_KEY
         sync: false
+      - key: NODE_ENV
+        value: production
+      - key: CORS_ORIGINS
+        value: https://tallypns.pages.dev

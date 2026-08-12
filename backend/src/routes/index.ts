@@ -14,6 +14,7 @@ import { purchaseRouter } from "../modules/purchase/purchase.routes.js";
 import { reportsRouter } from "../modules/reports/reports.routes.js";
 import { salesRouter } from "../modules/sales/sales.routes.js";
 import { vendorRouter } from "../modules/vendors/vendor.routes.js";
+import { recycleBinRouter } from "../modules/recycle-bin/recycle-bin.routes.js";
 
 export const apiRouter = Router();
 
@@ -30,3 +31,4 @@ apiRouter.use("/reports", reportsRouter);
 apiRouter.use("/payments", paymentRouter);
 apiRouter.use("/cash", cashRouter);
 apiRouter.use("/bank", bankRouter);
+apiRouter.use("/recycle-bin", recycleBinRouter);

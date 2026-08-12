@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { ConfirmDeletePinDialog } from "@/components/ConfirmDeletePinDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -27,6 +28,7 @@ export function SalesInvoiceDetailPage() {
   const deleteInvoice = useDeleteSalesInvoice();
   const deleteReceipt = useDeleteReceipt();
   const [receiptOpen, setReceiptOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => {
     if (!invoice) return;
@@ -53,27 +55,24 @@ export function SalesInvoiceDetailPage() {
     return <p className="text-sm text-muted-foreground">Loading...</p>;
   }
 
-  function handleDelete() {
+  function handleDelete(pin: string) {
     if (!invoice) return;
-    if (
-      !confirm(
-        `Delete invoice ${invoice.invoiceNo}? This will restore the sold quantities back to stock.`
-      )
-    ) {
-      return;
-    }
-    deleteInvoice.mutate(invoice.id, {
-      onSuccess: () => {
-        toast.success(`Invoice ${invoice.invoiceNo} deleted`);
-        navigate("/sales");
-      },
-      onError: (error: unknown) => {
-        const message =
-          (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-          "Failed to delete invoice";
-        toast.error(message);
-      },
-    });
+    deleteInvoice.mutate(
+      { id: invoice.id, pin },
+      {
+        onSuccess: () => {
+          toast.success(`Invoice ${invoice.invoiceNo} moved to recycle bin`);
+          setDeleteOpen(false);
+          navigate("/sales");
+        },
+        onError: (error: unknown) => {
+          const message =
+            (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+            "Failed to delete invoice";
+          toast.error(message);
+        },
+      }
+    );
   }
 
   function handlePrint() {
@@ -104,7 +103,7 @@ export function SalesInvoiceDetailPage() {
             </Button>
             <Button
               variant="destructive"
-              onClick={handleDelete}
+              onClick={() => setDeleteOpen(true)}
               disabled={deleteInvoice.isPending}
             >
               <Trash2 className="size-4" />
@@ -203,6 +202,15 @@ export function SalesInvoiceDetailPage() {
         salesInvoiceId={invoice.id}
         invoiceNo={invoice.invoiceNo}
         balanceAmount={invoice.balanceAmount}
+      />
+
+      <ConfirmDeletePinDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title={`Move invoice ${invoice.invoiceNo} to recycle bin?`}
+        description="The invoice will be removed from Sales and can be restored from Recycle Bin. Enter the deletion PIN to confirm."
+        isPending={deleteInvoice.isPending}
+        onConfirm={handleDelete}
       />
     </div>
   );

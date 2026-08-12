@@ -3,6 +3,8 @@ import type { FieldValues, Path, UseFormRegister, UseFormSetValue } from "react-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useIsMobile } from "@/hooks/useIsMobile";
+import { numberInputValue, registerFormNumber } from "@/lib/formNumberInput";
 import {
   Select,
   SelectContent,
@@ -58,12 +60,24 @@ export function PurchaseLineItemsField<TFieldValues extends FieldValues>({
   onRemove,
   errorMessage,
 }: PurchaseLineItemsFieldProps<TFieldValues>) {
+  const isMobile = useIsMobile();
+
   function fieldPath(index: number, key: keyof PurchaseLineItemValue) {
     return `items.${index}.${key}` as Path<TFieldValues>;
   }
 
+  function registerNumber(index: number, key: keyof PurchaseLineItemValue) {
+    return registerFormNumber(register, fieldPath(index, key));
+  }
+
   function handlePricePerKgChange(index: number, raw: string) {
-    const pricePerKg = Number(raw) || 0;
+    if (raw === "" || raw === "-") {
+      setValue(fieldPath(index, "pricePerKg"), undefined as never, { shouldDirty: true });
+      setValue(fieldPath(index, "rate"), undefined as never, { shouldDirty: true });
+      return;
+    }
+    const pricePerKg = Number(raw);
+    if (Number.isNaN(pricePerKg)) return;
     const rate = Math.round(pricePerKg * KG_PER_TON * 100) / 100;
     setValue(fieldPath(index, "pricePerKg"), pricePerKg as never, { shouldDirty: true });
     setValue(fieldPath(index, "rate"), rate as never, { shouldDirty: true });
@@ -82,7 +96,8 @@ export function PurchaseLineItemsField<TFieldValues extends FieldValues>({
         </Button>
       </div>
 
-      <div className="grid gap-3 sm:hidden">
+      {isMobile ? (
+      <div className="grid gap-3">
         {fields.map((field, index) => {
           const item = items[index];
           const qty = Number(item?.quantity) || 0;
@@ -123,31 +138,36 @@ export function PurchaseLineItemsField<TFieldValues extends FieldValues>({
                 <div className="grid gap-1.5">
                   <Label>Qty (Tons)</Label>
                   <Input
-                    type="number"
-                    step="0.001"
-                    {...register(fieldPath(index, "quantity"), { valueAsNumber: true })}
+                    type="text"
+                    inputMode="decimal"
+                    {...registerNumber(index, "quantity")}
                   />
                   <p className="text-xs text-muted-foreground">= {kg.toFixed(0)} Kg</p>
                 </div>
                 <div className="grid gap-1.5">
                   <Label>Price / Kg (₹)</Label>
                   <Input
-                    type="number"
-                    step="0.01"
-                    value={item?.pricePerKg ?? 0}
+                    type="text"
+                    inputMode="decimal"
+                    value={numberInputValue(item?.pricePerKg)}
                     onChange={(e) => handlePricePerKgChange(index, e.target.value)}
                   />
                 </div>
                 <div className="grid gap-1.5">
                   <Label>Rate / Ton (₹)</Label>
-                  <Input type="number" step="0.01" readOnly value={item?.rate ?? 0} />
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    readOnly
+                    value={numberInputValue(item?.rate)}
+                  />
                 </div>
                 <div className="grid gap-1.5">
                   <Label>GST %</Label>
                   <Input
-                    type="number"
-                    step="0.01"
-                    {...register(fieldPath(index, "gstRate"), { valueAsNumber: true })}
+                    type="text"
+                    inputMode="decimal"
+                    {...registerNumber(index, "gstRate")}
                   />
                 </div>
               </div>
@@ -167,8 +187,8 @@ export function PurchaseLineItemsField<TFieldValues extends FieldValues>({
           );
         })}
       </div>
-
-      <div className="hidden sm:block">
+      ) : (
+      <div>
         <Table>
           <TableHeader>
             <TableRow>
@@ -221,7 +241,7 @@ export function PurchaseLineItemsField<TFieldValues extends FieldValues>({
                     <Input
                       type="number"
                       step="0.001"
-                      {...register(fieldPath(index, "quantity"), { valueAsNumber: true })}
+                      {...registerNumber(index, "quantity")}
                     />
                     <p className="mt-0.5 text-[10px] text-muted-foreground">{kg.toFixed(0)} Kg</p>
                   </TableCell>
@@ -229,7 +249,7 @@ export function PurchaseLineItemsField<TFieldValues extends FieldValues>({
                     <Input
                       type="number"
                       step="0.01"
-                      value={item?.pricePerKg ?? 0}
+                      value={numberInputValue(item?.pricePerKg) || "0"}
                       onChange={(e) => handlePricePerKgChange(index, e.target.value)}
                     />
                   </TableCell>
@@ -240,7 +260,7 @@ export function PurchaseLineItemsField<TFieldValues extends FieldValues>({
                     <Input
                       type="number"
                       step="0.01"
-                      {...register(fieldPath(index, "gstRate"), { valueAsNumber: true })}
+                      {...registerNumber(index, "gstRate")}
                     />
                   </TableCell>
                   <TableCell className="text-right">
@@ -266,6 +286,7 @@ export function PurchaseLineItemsField<TFieldValues extends FieldValues>({
           </TableBody>
         </Table>
       </div>
+      )}
 
       {errorMessage && <p className="text-sm text-destructive">{errorMessage}</p>}
     </div>

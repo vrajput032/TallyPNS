@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma.js";
+import { activeOnly } from "../../lib/activeRecords.js";
 
 interface GstRateBreakdown {
   gstRate: number;
@@ -101,7 +102,7 @@ export async function getGstSummary(month?: number, year?: number) {
 
   const [salesInvoices, purchaseBills] = await Promise.all([
     prisma.salesInvoice.findMany({
-      where: { invoiceDate: dateFilter },
+      where: { ...activeOnly, invoiceDate: dateFilter },
       include: {
         customer: { select: { name: true } },
         items: { select: { gstRate: true, quantity: true, rate: true } },
@@ -109,7 +110,7 @@ export async function getGstSummary(month?: number, year?: number) {
       orderBy: [{ invoiceDate: "asc" }, { invoiceNo: "asc" }],
     }),
     prisma.purchaseBill.findMany({
-      where: { billDate: dateFilter },
+      where: { ...activeOnly, billDate: dateFilter },
       include: {
         vendor: { select: { name: true } },
         items: { select: { gstRate: true, quantity: true, rate: true } },

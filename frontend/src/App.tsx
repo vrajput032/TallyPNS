@@ -19,6 +19,7 @@ import { CashPage } from "@/features/cash/CashPage";
 import { BankPage } from "@/features/bank/BankPage";
 import { GstPage } from "@/features/gst/GstPage";
 import { ReportsPage } from "@/features/reports/ReportsPage";
+import { RecycleBinPage } from "@/features/recycle-bin/RecycleBinPage";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ export default function App() {
               <Route path="/products" element={<ProductsPage />} />
               <Route path="/vendors" element={<VendorsPage />} />
               <Route path="/reports" element={<ReportsPage />} />
+              <Route path="/recycle-bin" element={<RecycleBinPage />} />
             </Route>
           </Route>
         </Routes>

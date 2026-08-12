@@ -5,9 +5,11 @@ import {
   type ColumnDef,
 } from "@tanstack/react-table";
 import { Eye, Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { ConfirmDeletePinDialog } from "@/components/ConfirmDeletePinDialog";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -57,6 +59,7 @@ export function SalesInvoicesPage() {
   const { data: invoices, isLoading } = useSalesInvoices();
   const navigate = useNavigate();
   const deleteInvoice = useDeleteSalesInvoice();
+  const [deleteTarget, setDeleteTarget] = useState<SalesInvoice | null>(null);
 
   const table = useReactTable({
     data: invoices ?? [],
@@ -65,17 +68,26 @@ export function SalesInvoicesPage() {
   });
 
   function handleDelete(invoice: SalesInvoice) {
-    if (
-      !confirm(
-        `Delete invoice ${invoice.invoiceNo}? This will restore the sold quantities back to stock.`
-      )
-    ) {
-      return;
-    }
-    deleteInvoice.mutate(invoice.id, {
-      onSuccess: () => toast.success(`Invoice ${invoice.invoiceNo} deleted`),
-      onError: () => toast.error("Failed to delete invoice"),
-    });
+    setDeleteTarget(invoice);
+  }
+
+  function confirmDelete(pin: string) {
+    if (!deleteTarget) return;
+    deleteInvoice.mutate(
+      { id: deleteTarget.id, pin },
+      {
+        onSuccess: () => {
+          toast.success(`Invoice ${deleteTarget.invoiceNo} moved to recycle bin`);
+          setDeleteTarget(null);
+        },
+        onError: (error: unknown) => {
+          const message =
+            (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+            "Failed to delete invoice";
+          toast.error(message);
+        },
+      }
+    );
   }
 
   return (
@@ -151,6 +163,15 @@ export function SalesInvoicesPage() {
           </TableBody>
         </Table>
       </div>
+
+      <ConfirmDeletePinDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title={deleteTarget ? `Move invoice ${deleteTarget.invoiceNo} to recycle bin?` : "Move to recycle bin?"}
+        description="The invoice will be removed from Sales and can be restored from Recycle Bin. Enter the deletion PIN to confirm."
+        isPending={deleteInvoice.isPending}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }
