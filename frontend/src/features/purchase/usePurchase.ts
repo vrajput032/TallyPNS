@@ -40,6 +40,34 @@ export function useCreatePurchaseBill() {
   });
 }
 
+export function useUpdatePurchaseBill() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      pin,
+      input,
+    }: {
+      id: string;
+      pin: string;
+      input: PurchaseBillInput;
+    }) => {
+      const { data } = await api.put<PurchaseBill>(`/purchase/${id}`, input, {
+        headers: { "X-Delete-Pin": pin },
+      });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: PURCHASE_KEY });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["gst"] });
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+    },
+  });
+}
+
 export function useDeletePurchaseBill() {
   const queryClient = useQueryClient();
   return useMutation({

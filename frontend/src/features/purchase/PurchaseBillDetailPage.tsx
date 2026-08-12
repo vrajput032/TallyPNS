@@ -1,4 +1,4 @@
-import { Banknote, Printer, Trash2 } from "lucide-react";
+import { Banknote, Pencil, Printer, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -73,6 +73,12 @@ export function PurchaseBillDetailPage() {
               <Printer className="size-4" />
               Print
             </Button>
+            {(bill.payments?.length ?? 0) === 0 && (
+              <Button variant="outline" onClick={() => navigate(`/purchase/${bill.id}/edit`)}>
+                <Pencil className="size-4" />
+                Edit
+              </Button>
+            )}
             <Button variant="destructive" onClick={() => setDeleteOpen(true)} disabled={deleteBill.isPending}>
               <Trash2 className="size-4" />
               Delete

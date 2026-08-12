@@ -1,8 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { z } from "zod";
+import { ConfirmDeletePinDialog } from "@/components/ConfirmDeletePinDialog";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,7 +27,7 @@ import {
 import { useProducts } from "@/features/products/useProducts";
 import { useVendors } from "@/features/vendors/useVendors";
 import { KG_PER_TON, PurchaseLineItemsField } from "./PurchaseLineItemsField";
-import { useCreatePurchaseBill } from "./usePurchase";
+import { useCreatePurchaseBill, usePurchaseBill, useUpdatePurchaseBill } from "./usePurchase";
 import { formatInr } from "@/lib/formatInr";
 
 const lineItemSchema = z.object({
@@ -49,9 +51,17 @@ const emptyItem = { productId: "", quantity: 1, pricePerKg: 0, rate: 0, gstRate:
 
 export function PurchaseBillFormPage() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const isEditing = !!id;
   const { data: vendors } = useVendors();
   const { data: products } = useProducts();
+  const { data: existingBill, isLoading: isLoadingBill } = usePurchaseBill(
+    isEditing ? id : undefined
+  );
   const createBill = useCreatePurchaseBill();
+  const updateBill = useUpdatePurchaseBill();
+  const [pinDialogOpen, setPinDialogOpen] = useState(false);
+  const [pendingValues, setPendingValues] = useState<BillFormValues | null>(null);
 
   const form = useForm<BillFormValues>({
     resolver: zodResolver(billFormSchema),
@@ -62,6 +72,22 @@ export function PurchaseBillFormPage() {
       items: [{ ...emptyItem }],
     },
   });
+
+  useEffect(() => {
+    if (!existingBill) return;
+    form.reset({
+      vendorId: existingBill.vendorId,
+      transport: existingBill.transport ?? "",
+      vehicleNo: existingBill.vehicleNo ?? "",
+      items: existingBill.items.map((item) => ({
+        productId: item.productId,
+        quantity: Number(item.quantity),
+        pricePerKg: item.pricePerKg != null ? Number(item.pricePerKg) : 0,
+        rate: Number(item.rate),
+        gstRate: Number(item.gstRate),
+      })),
+    });
+  }, [existingBill, form]);
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -96,8 +122,8 @@ export function PurchaseBillFormPage() {
     }
   }
 
-  function onSubmit(values: BillFormValues) {
-    const payload = {
+  function buildPayload(values: BillFormValues) {
+    return {
       vendorId: values.vendorId,
       transport: values.transport?.trim() || null,
       vehicleNo: values.vehicleNo?.trim() || null,
@@ -115,7 +141,16 @@ export function PurchaseBillFormPage() {
         };
       }),
     };
-    createBill.mutate(payload, {
+  }
+
+  function onSubmit(values: BillFormValues) {
+    if (isEditing) {
+      setPendingValues(values);
+      setPinDialogOpen(true);
+      return;
+    }
+
+    createBill.mutate(buildPayload(values), {
       onSuccess: (bill) => {
         toast.success(`Bill ${bill.billNo} created`);
         navigate(`/purchase/${bill.id}`);
@@ -129,9 +164,38 @@ export function PurchaseBillFormPage() {
     });
   }
 
+  function confirmEdit(pin: string) {
+    if (!id || !pendingValues) return;
+    updateBill.mutate(
+      { id, pin, input: buildPayload(pendingValues) },
+      {
+        onSuccess: (bill) => {
+          toast.success(`Bill ${bill.billNo} updated`);
+          setPinDialogOpen(false);
+          setPendingValues(null);
+          navigate(`/purchase/${bill.id}`);
+        },
+        onError: (error: unknown) => {
+          const message =
+            (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+            "Failed to update bill";
+          toast.error(message);
+        },
+      }
+    );
+  }
+
+  if (isEditing && isLoadingBill) {
+    return <p className="text-sm text-muted-foreground">Loading...</p>;
+  }
+
   return (
     <div className="grid gap-4">
-      <PageHeader title="New Purchase Bill" backTo="/purchase" backLabel="Back to Purchase" />
+      <PageHeader
+        title={isEditing ? `Edit Bill ${existingBill?.billNo ?? ""}` : "New Purchase Bill"}
+        backTo={isEditing && id ? `/purchase/${id}` : "/purchase"}
+        backLabel={isEditing ? "Back to Bill" : "Back to Purchase"}
+      />
       <Form {...form}>
         <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
           <Card>
@@ -227,15 +291,38 @@ export function PurchaseBillFormPage() {
           </Card>
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button type="button" variant="outline" onClick={() => navigate("/purchase")}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate(isEditing && id ? `/purchase/${id}` : "/purchase")}
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={createBill.isPending}>
-              {createBill.isPending ? "Saving..." : "Save Bill"}
+            <Button type="submit" disabled={createBill.isPending || updateBill.isPending}>
+              {createBill.isPending || updateBill.isPending
+                ? "Saving..."
+                : isEditing
+                  ? "Save Changes"
+                  : "Save Bill"}
             </Button>
           </div>
         </form>
       </Form>
+
+      <ConfirmDeletePinDialog
+        open={pinDialogOpen}
+        onOpenChange={(open) => {
+          setPinDialogOpen(open);
+          if (!open) setPendingValues(null);
+        }}
+        title="Confirm bill edit"
+        description="Editing this bill will recalculate stock and totals. Enter the PIN to confirm."
+        confirmLabel="Save Changes"
+        confirmVariant="default"
+        pinLabel="Edit PIN"
+        isPending={updateBill.isPending}
+        onConfirm={confirmEdit}
+      />
     </div>
   );
 }

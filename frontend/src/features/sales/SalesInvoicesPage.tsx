@@ -1,10 +1,12 @@
 import {
   flexRender,
   getCoreRowModel,
-  useReactTable,
+  getSortedRowModel,
   type ColumnDef,
+  type SortingState,
+  useReactTable,
 } from "@tanstack/react-table";
-import { Eye, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -24,17 +26,42 @@ import type { SalesInvoice } from "./types";
 import { PaymentStatusBadge } from "@/features/payments/PaymentStatusBadge";
 import { formatInr } from "@/lib/formatInr";
 
+function invoicePieces(invoice: SalesInvoice) {
+  return invoice.items.reduce((sum, item) => sum + Number(item.quantity), 0);
+}
+
+function SortableHeader({ label, sorted }: { label: string; sorted: false | "asc" | "desc" }) {
+  const Icon = sorted === "asc" ? ArrowUp : sorted === "desc" ? ArrowDown : ArrowUpDown;
+  return (
+    <span className="inline-flex cursor-pointer select-none items-center gap-1">
+      {label}
+      <Icon className="size-3.5 text-muted-foreground" />
+    </span>
+  );
+}
+
 const columns: ColumnDef<SalesInvoice>[] = [
-  { accessorKey: "invoiceNo", header: "Invoice No." },
+  {
+    accessorKey: "invoiceNo",
+    header: ({ column }) => (
+      <SortableHeader label="Invoice No." sorted={column.getIsSorted()} />
+    ),
+  },
   {
     accessorKey: "invoiceDate",
-    header: "Date",
+    header: ({ column }) => <SortableHeader label="Date" sorted={column.getIsSorted()} />,
     cell: ({ row }) => new Date(row.original.invoiceDate).toLocaleDateString("en-GB"),
   },
   {
     id: "customer",
     header: "Customer",
     cell: ({ row }) => row.original.customer.name,
+  },
+  {
+    id: "pieces",
+    accessorFn: (invoice) => invoicePieces(invoice),
+    header: ({ column }) => <SortableHeader label="Pieces" sorted={column.getIsSorted()} />,
+    cell: ({ row }) => invoicePieces(row.original).toLocaleString("en-IN"),
   },
   {
     accessorKey: "totalAmount",
@@ -60,12 +87,23 @@ export function SalesInvoicesPage() {
   const navigate = useNavigate();
   const deleteInvoice = useDeleteSalesInvoice();
   const [deleteTarget, setDeleteTarget] = useState<SalesInvoice | null>(null);
+  const [sorting, setSorting] = useState<SortingState>([{ id: "invoiceDate", desc: true }]);
 
   const table = useReactTable({
     data: invoices ?? [],
     columns,
+    state: { sorting },
+    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
   });
+
+  const visibleRows = table.getRowModel().rows;
+  const totalPieces = visibleRows.reduce((sum, row) => sum + invoicePieces(row.original), 0);
+  const totalAmount = visibleRows.reduce(
+    (sum, row) => sum + Number(row.original.totalAmount),
+    0
+  );
 
   function handleDelete(invoice: SalesInvoice) {
     setDeleteTarget(invoice);
@@ -110,13 +148,20 @@ export function SalesInvoicesPage() {
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
+                  <TableHead
+                    key={header.id}
+                    onClick={
+                      header.column.getCanSort()
+                        ? header.column.getToggleSortingHandler()
+                        : undefined
+                    }
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
-                <TableHead className="w-24 text-right">Actions</TableHead>
+                <TableHead className="w-32 text-right">Actions</TableHead>
               </TableRow>
             ))}
           </TableHeader>
@@ -149,6 +194,15 @@ export function SalesInvoicesPage() {
                     >
                       <Eye className="size-4" />
                     </Button>
+                    {(row.original.receipts?.length ?? 0) === 0 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => navigate(`/sales/${row.original.id}/edit`)}
+                      >
+                        <Pencil className="size-4" />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -161,6 +215,16 @@ export function SalesInvoicesPage() {
               ))
             )}
           </TableBody>
+          {visibleRows.length > 0 && (
+            <tfoot>
+              <TableRow className="font-semibold">
+                <TableCell colSpan={3}>Total</TableCell>
+                <TableCell>{totalPieces.toLocaleString("en-IN")}</TableCell>
+                <TableCell>{formatInr(totalAmount)}</TableCell>
+                <TableCell colSpan={3} />
+              </TableRow>
+            </tfoot>
+          )}
         </Table>
       </div>
 

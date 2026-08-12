@@ -1,10 +1,12 @@
 import {
   flexRender,
   getCoreRowModel,
-  useReactTable,
+  getSortedRowModel,
   type ColumnDef,
+  type SortingState,
+  useReactTable,
 } from "@tanstack/react-table";
-import { Eye, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -24,17 +26,40 @@ import type { PurchaseBill } from "./types";
 import { PaymentStatusBadge } from "@/features/payments/PaymentStatusBadge";
 import { formatInr } from "@/lib/formatInr";
 
+function billPieces(bill: PurchaseBill) {
+  return bill.items.reduce((sum, item) => sum + Number(item.quantity), 0);
+}
+
+function SortableHeader({ label, sorted }: { label: string; sorted: false | "asc" | "desc" }) {
+  const Icon = sorted === "asc" ? ArrowUp : sorted === "desc" ? ArrowDown : ArrowUpDown;
+  return (
+    <span className="inline-flex cursor-pointer select-none items-center gap-1">
+      {label}
+      <Icon className="size-3.5 text-muted-foreground" />
+    </span>
+  );
+}
+
 const columns: ColumnDef<PurchaseBill>[] = [
-  { accessorKey: "billNo", header: "Bill No." },
+  {
+    accessorKey: "billNo",
+    header: ({ column }) => <SortableHeader label="Bill No." sorted={column.getIsSorted()} />,
+  },
   {
     accessorKey: "billDate",
-    header: "Date",
+    header: ({ column }) => <SortableHeader label="Date" sorted={column.getIsSorted()} />,
     cell: ({ row }) => new Date(row.original.billDate).toLocaleDateString("en-GB"),
   },
   {
     id: "vendor",
     header: "Vendor",
     cell: ({ row }) => row.original.vendor.name,
+  },
+  {
+    id: "pieces",
+    accessorFn: (bill) => billPieces(bill),
+    header: ({ column }) => <SortableHeader label="Qty" sorted={column.getIsSorted()} />,
+    cell: ({ row }) => billPieces(row.original).toLocaleString("en-IN"),
   },
   {
     accessorKey: "totalAmount",
@@ -60,11 +85,15 @@ export function PurchaseBillsPage() {
   const navigate = useNavigate();
   const deleteBill = useDeletePurchaseBill();
   const [deleteTarget, setDeleteTarget] = useState<PurchaseBill | null>(null);
+  const [sorting, setSorting] = useState<SortingState>([{ id: "billDate", desc: true }]);
 
   const table = useReactTable({
     data: bills ?? [],
     columns,
+    state: { sorting },
+    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
   });
 
   function handleDelete(bill: PurchaseBill) {
@@ -110,13 +139,20 @@ export function PurchaseBillsPage() {
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
+                  <TableHead
+                    key={header.id}
+                    onClick={
+                      header.column.getCanSort()
+                        ? header.column.getToggleSortingHandler()
+                        : undefined
+                    }
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
-                <TableHead className="w-24 text-right">Actions</TableHead>
+                <TableHead className="w-32 text-right">Actions</TableHead>
               </TableRow>
             ))}
           </TableHeader>
@@ -149,6 +185,15 @@ export function PurchaseBillsPage() {
                     >
                       <Eye className="size-4" />
                     </Button>
+                    {(row.original.payments?.length ?? 0) === 0 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => navigate(`/purchase/${row.original.id}/edit`)}
+                      >
+                        <Pencil className="size-4" />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"

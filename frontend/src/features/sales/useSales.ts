@@ -51,6 +51,34 @@ export function useCreateSalesInvoice() {
   });
 }
 
+export function useUpdateSalesInvoice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      pin,
+      input,
+    }: {
+      id: string;
+      pin: string;
+      input: SalesInvoiceInput;
+    }) => {
+      const { data } = await api.put<SalesInvoice>(`/sales/${id}`, input, {
+        headers: { "X-Delete-Pin": pin },
+      });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: SALES_KEY });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["gst"] });
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+    },
+  });
+}
+
 export function useDeleteSalesInvoice() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -34,9 +34,11 @@ export default function App() {
               <Route path="/" element={<DashboardPage />} />
               <Route path="/sales" element={<SalesInvoicesPage />} />
               <Route path="/sales/new" element={<SalesInvoiceFormPage />} />
+              <Route path="/sales/:id/edit" element={<SalesInvoiceFormPage />} />
               <Route path="/sales/:id" element={<SalesInvoiceDetailPage />} />
               <Route path="/purchase" element={<PurchaseBillsPage />} />
               <Route path="/purchase/new" element={<PurchaseBillFormPage />} />
+              <Route path="/purchase/:id/edit" element={<PurchaseBillFormPage />} />
               <Route path="/purchase/:id" element={<PurchaseBillDetailPage />} />
               <Route path="/inventory" element={<InventoryPage />} />
               <Route path="/cash" element={<CashPage />} />

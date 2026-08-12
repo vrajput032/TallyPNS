@@ -185,6 +185,146 @@ export async function createSalesInvoice(data: z.infer<typeof createSalesInvoice
   });
 }
 
+/** Full edit of an existing invoice: reverses old stock effects, validates and applies new ones. */
+export async function updateSalesInvoice(
+  id: string,
+  data: z.infer<typeof createSalesInvoiceSchema>
+) {
+  const existingInvoice = await prisma.salesInvoice.findUnique({
+    where: { id },
+    include: { items: true, receipts: true },
+  });
+  if (!existingInvoice || existingInvoice.deletedAt) {
+    throw new ApiError(404, "Sales invoice not found");
+  }
+  if ((existingInvoice.receipts?.length ?? 0) > 0) {
+    throw new ApiError(400, "Cannot edit invoice with receipts. Delete receipts first.");
+  }
+
+  const invoiceNo = data.invoiceNo?.trim() || existingInvoice.invoiceNo;
+  if (invoiceNo !== existingInvoice.invoiceNo) {
+    const clash = await prisma.salesInvoice.findUnique({ where: { invoiceNo } });
+    if (clash && clash.id !== id) {
+      throw new ApiError(409, `Invoice number ${invoiceNo} is already in use`);
+    }
+  }
+
+  const catalogItems = data.items.filter((item) => !isManualItem(item));
+  const productIds = [
+    ...new Set([
+      ...catalogItems.map((item) => item.productId!.trim()),
+      ...existingInvoice.items.flatMap((item) => (item.productId ? [item.productId] : [])),
+    ]),
+  ];
+
+  const products =
+    productIds.length > 0
+      ? await prisma.product.findMany({ where: { id: { in: productIds } } })
+      : [];
+  const productMap = new Map(products.map((product) => [product.id, product]));
+
+  // Net stock delta per product: old quantities restore first, then new quantities are validated against that.
+  const availableStock = new Map<string, number>();
+  for (const product of products) {
+    availableStock.set(product.id, Number(product.currentStock));
+  }
+  for (const item of existingInvoice.items) {
+    if (!item.productId) continue;
+    availableStock.set(
+      item.productId,
+      (availableStock.get(item.productId) ?? 0) + Number(item.quantity)
+    );
+  }
+  for (const item of catalogItems) {
+    const productId = item.productId!.trim();
+    const product = productMap.get(productId);
+    if (!product) {
+      throw new ApiError(400, `Product ${productId} not found`);
+    }
+    const available = availableStock.get(productId) ?? 0;
+    if (available < item.quantity) {
+      throw new ApiError(400, `Insufficient stock for ${product.name}`);
+    }
+    availableStock.set(productId, available - item.quantity);
+  }
+
+  const totalAmount = data.items.reduce(
+    (sum, item) => sum + lineAmount(item.quantity, item.rate, item.gstRate),
+    0
+  );
+
+  return prisma.$transaction(async (tx) => {
+    for (const item of existingInvoice.items) {
+      if (!item.productId) continue;
+      await tx.product.update({
+        where: { id: item.productId },
+        data: { currentStock: { increment: Number(item.quantity) } },
+      });
+    }
+
+    await tx.salesInvoiceItem.deleteMany({ where: { salesInvoiceId: id } });
+
+    const invoice = await tx.salesInvoice.update({
+      where: { id },
+      data: {
+        invoiceNo,
+        customerId: data.customerId,
+        invoiceDate: data.invoiceDate ?? existingInvoice.invoiceDate,
+        transport: data.transport?.trim() || null,
+        vehicleNo: data.vehicleNo?.trim() || null,
+        totalAmount,
+        items: {
+          create: data.items.map((item) => {
+            if (isManualItem(item)) {
+              return {
+                productId: null,
+                description: item.description!.trim(),
+                hsn: item.hsn?.trim() || null,
+                unit: item.unit?.trim() || "NOS",
+                sizeMm: null,
+                quantity: item.quantity,
+                rate: item.rate,
+                gstRate: item.gstRate,
+                amount: lineAmount(item.quantity, item.rate, item.gstRate),
+              };
+            }
+            return {
+              productId: item.productId!.trim(),
+              description: null,
+              hsn: null,
+              unit: null,
+              sizeMm: item.sizeMm != null && item.sizeMm > 0 ? item.sizeMm : null,
+              quantity: item.quantity,
+              rate: item.rate,
+              gstRate: item.gstRate,
+              amount: lineAmount(item.quantity, item.rate, item.gstRate),
+            };
+          }),
+        },
+      },
+      include: { customer: true, items: { include: { product: true } } },
+    });
+
+    for (const item of catalogItems) {
+      const productId = item.productId!.trim();
+      await tx.product.update({
+        where: { id: productId },
+        data: { currentStock: { decrement: item.quantity } },
+      });
+      await tx.stockMovement.create({
+        data: {
+          productId,
+          type: "OUT",
+          quantity: item.quantity,
+          reason: `Edited sales invoice ${invoiceNo}`,
+        },
+      });
+    }
+
+    return invoice;
+  });
+}
+
 export async function updateInvoiceNo(id: string, invoiceNo: string) {
   await getSalesInvoice(id);
   const existing = await prisma.salesInvoice.findUnique({ where: { invoiceNo } });

@@ -42,6 +42,16 @@ salesRouter.post(
   })
 );
 
+salesRouter.put(
+  "/:id",
+  requireDeletePin,
+  asyncHandler(async (req, res) => {
+    const data = createSalesInvoiceSchema.parse(req.body);
+    const invoice = await salesService.updateSalesInvoice(req.params.id, data);
+    res.json(invoice);
+  })
+);
+
 salesRouter.delete(
   "/:id/permanent",
   requireDeletePin,

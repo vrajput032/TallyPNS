@@ -34,6 +34,16 @@ purchaseRouter.post(
   })
 );
 
+purchaseRouter.put(
+  "/:id",
+  requireDeletePin,
+  asyncHandler(async (req, res) => {
+    const data = createPurchaseBillSchema.parse(req.body);
+    const bill = await purchaseService.updatePurchaseBill(req.params.id, data);
+    res.json(bill);
+  })
+);
+
 purchaseRouter.delete(
   "/:id/permanent",
   requireDeletePin,

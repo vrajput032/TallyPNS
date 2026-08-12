@@ -2,7 +2,7 @@ import { prisma } from "../../lib/prisma.js";
 import { activeOnly, deletedOnly } from "../../lib/activeRecords.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import { withBillPaymentSummary } from "../payments/payment.utils.js";
-import type { createPurchaseBillSchema } from "./purchase.schema.js";
+import { rateFromPricePerKg, type createPurchaseBillSchema } from "./purchase.schema.js";
 import type { z } from "zod";
 
 const billInclude = {
@@ -113,6 +113,127 @@ export async function createPurchaseBill(data: z.infer<typeof createPurchaseBill
           type: "IN",
           quantity: item.quantity,
           reason: `Purchase bill ${billNo}`,
+        },
+      });
+    }
+
+    return withBillPaymentSummary(bill);
+  });
+}
+
+/** Full edit of an existing bill: reverses old stock effects, validates and applies new ones. */
+export async function updatePurchaseBill(
+  id: string,
+  data: z.infer<typeof createPurchaseBillSchema>
+) {
+  const existingBill = await prisma.purchaseBill.findUnique({
+    where: { id },
+    include: { items: true, payments: true },
+  });
+  if (!existingBill || existingBill.deletedAt) {
+    throw new ApiError(404, "Purchase bill not found");
+  }
+  if ((existingBill.payments?.length ?? 0) > 0) {
+    throw new ApiError(400, "Cannot edit bill with payments. Delete payments first.");
+  }
+
+  const productIds = [
+    ...new Set([
+      ...data.items.map((item) => item.productId),
+      ...existingBill.items.map((item) => item.productId),
+    ]),
+  ];
+  const products = await prisma.product.findMany({ where: { id: { in: productIds } } });
+  const productMap = new Map(products.map((product) => [product.id, product]));
+
+  for (const item of data.items) {
+    if (!productMap.has(item.productId)) {
+      throw new ApiError(400, `Product ${item.productId} not found`);
+    }
+  }
+
+  // Reversing old quantities first can leave stock negative if items were also consumed by
+  // later sales, so check against stock as it would be after the old quantities are restored.
+  const availableStock = new Map<string, number>();
+  for (const product of products) {
+    availableStock.set(product.id, Number(product.currentStock));
+  }
+  for (const item of existingBill.items) {
+    availableStock.set(
+      item.productId,
+      (availableStock.get(item.productId) ?? 0) - Number(item.quantity)
+    );
+  }
+  for (const item of data.items) {
+    const nextAvailable = (availableStock.get(item.productId) ?? 0) + item.quantity;
+    availableStock.set(item.productId, nextAvailable);
+  }
+  for (const [productId, projected] of availableStock) {
+    if (projected < 0) {
+      const name = productMap.get(productId)?.name ?? productId;
+      throw new ApiError(
+        400,
+        `Cannot save: insufficient current stock of ${name} to reverse this bill's old quantities`
+      );
+    }
+  }
+
+  const totalAmount = data.items.reduce((sum, item) => {
+    const rate =
+      item.pricePerKg != null && item.pricePerKg > 0 ? rateFromPricePerKg(item.pricePerKg) : item.rate;
+    const base = item.quantity * rate;
+    return sum + base + (base * item.gstRate) / 100;
+  }, 0);
+
+  return prisma.$transaction(async (tx) => {
+    for (const item of existingBill.items) {
+      await tx.product.update({
+        where: { id: item.productId },
+        data: { currentStock: { decrement: Number(item.quantity) } },
+      });
+    }
+
+    await tx.purchaseBillItem.deleteMany({ where: { purchaseBillId: id } });
+
+    const bill = await tx.purchaseBill.update({
+      where: { id },
+      data: {
+        vendorId: data.vendorId,
+        billDate: data.billDate ?? existingBill.billDate,
+        transport: data.transport?.trim() || null,
+        vehicleNo: data.vehicleNo?.trim() || null,
+        totalAmount,
+        items: {
+          create: data.items.map((item) => {
+            const pricePerKg =
+              item.pricePerKg != null && item.pricePerKg > 0 ? item.pricePerKg : null;
+            const rate = pricePerKg != null ? rateFromPricePerKg(pricePerKg) : item.rate;
+            const base = item.quantity * rate;
+            return {
+              productId: item.productId,
+              quantity: item.quantity,
+              pricePerKg,
+              rate,
+              gstRate: item.gstRate,
+              amount: base + (base * item.gstRate) / 100,
+            };
+          }),
+        },
+      },
+      include: { vendor: true, items: { include: { product: true } }, payments: true },
+    });
+
+    for (const item of data.items) {
+      await tx.product.update({
+        where: { id: item.productId },
+        data: { currentStock: { increment: item.quantity } },
+      });
+      await tx.stockMovement.create({
+        data: {
+          productId: item.productId,
+          type: "IN",
+          quantity: item.quantity,
+          reason: `Edited purchase bill ${existingBill.billNo}`,
         },
       });
     }

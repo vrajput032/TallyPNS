@@ -17,6 +17,10 @@ interface ConfirmDeletePinDialogProps {
   title: string;
   description: string;
   confirmLabel?: string;
+  /** Button style for the confirm action. Defaults to "destructive" since this dialog is most
+   *  often used for deletes; pass "default" for non-destructive confirmations like edits. */
+  confirmVariant?: "destructive" | "default";
+  pinLabel?: string;
   isPending?: boolean;
   onConfirm: (pin: string) => void;
 }
@@ -27,6 +31,8 @@ export function ConfirmDeletePinDialog({
   title,
   description,
   confirmLabel = "Delete",
+  confirmVariant = "destructive",
+  pinLabel = "Deletion PIN",
   isPending = false,
   onConfirm,
 }: ConfirmDeletePinDialogProps) {
@@ -42,7 +48,7 @@ export function ConfirmDeletePinDialog({
 
   function handleConfirm() {
     if (!pin.trim()) {
-      setError("Enter the deletion PIN");
+      setError(`Enter the ${pinLabel.toLowerCase()}`);
       return;
     }
     setError("");
@@ -57,7 +63,7 @@ export function ConfirmDeletePinDialog({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-2 py-2">
-          <Label htmlFor="delete-pin">Deletion PIN</Label>
+          <Label htmlFor="delete-pin">{pinLabel}</Label>
           <Input
             id="delete-pin"
             type="password"
@@ -79,7 +85,7 @@ export function ConfirmDeletePinDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
             Cancel
           </Button>
-          <Button variant="destructive" onClick={handleConfirm} disabled={isPending}>
+          <Button variant={confirmVariant} onClick={handleConfirm} disabled={isPending}>
             {confirmLabel}
           </Button>
         </DialogFooter>

@@ -1,9 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { z } from "zod";
+import { ConfirmDeletePinDialog } from "@/components/ConfirmDeletePinDialog";
 import { LineItemsField } from "@/components/layout/LineItemsField";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,12 @@ import {
 } from "@/components/ui/select";
 import { useCustomers } from "@/features/customers/useCustomers";
 import { useProducts } from "@/features/products/useProducts";
-import { useCreateSalesInvoice, useNextInvoiceNo } from "./useSales";
+import {
+  useCreateSalesInvoice,
+  useNextInvoiceNo,
+  useSalesInvoice,
+  useUpdateSalesInvoice,
+} from "./useSales";
 import { formatInr } from "@/lib/formatInr";
 
 const lineItemSchema = z
@@ -97,10 +103,18 @@ const emptyManualItem = {
 
 export function SalesInvoiceFormPage() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const isEditing = !!id;
   const { data: customers } = useCustomers();
   const { data: products } = useProducts();
   const { data: nextInvoiceNo } = useNextInvoiceNo();
+  const { data: existingInvoice, isLoading: isLoadingInvoice } = useSalesInvoice(
+    isEditing ? id : undefined
+  );
   const createInvoice = useCreateSalesInvoice();
+  const updateInvoice = useUpdateSalesInvoice();
+  const [pinDialogOpen, setPinDialogOpen] = useState(false);
+  const [pendingValues, setPendingValues] = useState<InvoiceFormValues | null>(null);
 
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceFormSchema),
@@ -114,10 +128,31 @@ export function SalesInvoiceFormPage() {
   });
 
   useEffect(() => {
-    if (nextInvoiceNo && !form.formState.dirtyFields.invoiceNo) {
+    if (!isEditing && nextInvoiceNo && !form.formState.dirtyFields.invoiceNo) {
       form.setValue("invoiceNo", nextInvoiceNo);
     }
-  }, [nextInvoiceNo, form]);
+  }, [isEditing, nextInvoiceNo, form]);
+
+  useEffect(() => {
+    if (!existingInvoice) return;
+    form.reset({
+      customerId: existingInvoice.customerId,
+      invoiceNo: existingInvoice.invoiceNo,
+      transport: existingInvoice.transport ?? "",
+      vehicleNo: existingInvoice.vehicleNo ?? "",
+      items: existingInvoice.items.map((item) => ({
+        isManual: !item.productId,
+        productId: item.productId ?? "",
+        description: item.description ?? "",
+        hsn: item.hsn ?? "",
+        unit: item.unit ?? "NOS",
+        sizeMm: item.sizeMm != null ? Number(item.sizeMm) : undefined,
+        quantity: Number(item.quantity),
+        rate: Number(item.rate),
+        gstRate: Number(item.gstRate),
+      })),
+    });
+  }, [existingInvoice, form]);
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -141,8 +176,8 @@ export function SalesInvoiceFormPage() {
     }
   }
 
-  function onSubmit(values: InvoiceFormValues) {
-    const payload = {
+  function buildPayload(values: InvoiceFormValues) {
+    return {
       customerId: values.customerId,
       invoiceNo: values.invoiceNo,
       transport: values.transport,
@@ -175,7 +210,16 @@ export function SalesInvoiceFormPage() {
         };
       }),
     };
-    createInvoice.mutate(payload, {
+  }
+
+  function onSubmit(values: InvoiceFormValues) {
+    if (isEditing) {
+      setPendingValues(values);
+      setPinDialogOpen(true);
+      return;
+    }
+
+    createInvoice.mutate(buildPayload(values), {
       onSuccess: (invoice) => {
         toast.success(`Invoice ${invoice.invoiceNo} created`);
         navigate(`/sales/${invoice.id}`);
@@ -189,9 +233,38 @@ export function SalesInvoiceFormPage() {
     });
   }
 
+  function confirmEdit(pin: string) {
+    if (!id || !pendingValues) return;
+    updateInvoice.mutate(
+      { id, pin, input: buildPayload(pendingValues) },
+      {
+        onSuccess: (invoice) => {
+          toast.success(`Invoice ${invoice.invoiceNo} updated`);
+          setPinDialogOpen(false);
+          setPendingValues(null);
+          navigate(`/sales/${invoice.id}`);
+        },
+        onError: (error: unknown) => {
+          const message =
+            (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+            "Failed to update invoice";
+          toast.error(message);
+        },
+      }
+    );
+  }
+
+  if (isEditing && isLoadingInvoice) {
+    return <p className="text-sm text-muted-foreground">Loading...</p>;
+  }
+
   return (
     <div className="grid gap-4">
-      <PageHeader title="New Sales Invoice" backTo="/sales" backLabel="Back to Sales" />
+      <PageHeader
+        title={isEditing ? `Edit Invoice ${existingInvoice?.invoiceNo ?? ""}` : "New Sales Invoice"}
+        backTo={isEditing && id ? `/sales/${id}` : "/sales"}
+        backLabel={isEditing ? "Back to Invoice" : "Back to Sales"}
+      />
       <Form {...form}>
         <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
           <Card>
@@ -304,15 +377,38 @@ export function SalesInvoiceFormPage() {
           </Card>
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button type="button" variant="outline" onClick={() => navigate("/sales")}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate(isEditing && id ? `/sales/${id}` : "/sales")}
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={createInvoice.isPending}>
-              {createInvoice.isPending ? "Saving..." : "Save Invoice"}
+            <Button type="submit" disabled={createInvoice.isPending || updateInvoice.isPending}>
+              {createInvoice.isPending || updateInvoice.isPending
+                ? "Saving..."
+                : isEditing
+                  ? "Save Changes"
+                  : "Save Invoice"}
             </Button>
           </div>
         </form>
       </Form>
+
+      <ConfirmDeletePinDialog
+        open={pinDialogOpen}
+        onOpenChange={(open) => {
+          setPinDialogOpen(open);
+          if (!open) setPendingValues(null);
+        }}
+        title="Confirm invoice edit"
+        description="Editing this invoice will recalculate stock and totals. Enter the PIN to confirm."
+        confirmLabel="Save Changes"
+        confirmVariant="default"
+        pinLabel="Edit PIN"
+        isPending={updateInvoice.isPending}
+        onConfirm={confirmEdit}
+      />
     </div>
   );
 }
