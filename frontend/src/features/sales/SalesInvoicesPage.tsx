@@ -171,11 +171,7 @@ function MobileInvoiceCards({
         const balance = invoice.balanceAmount ?? 0;
         const status = invoice.paymentStatus ?? "PENDING";
         const accent =
-          status === "PAID"
-            ? "bg-emerald-500"
-            : status === "PARTIAL"
-              ? "bg-amber-500"
-              : "bg-muted-foreground/30";
+          status === "PAID" ? "bg-emerald-500" : status === "PARTIAL" ? "bg-amber-500" : "bg-red-400";
         const initial = invoice.customer.name.trim().charAt(0).toUpperCase() || "?";
 
         return (
