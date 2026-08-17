@@ -2,8 +2,7 @@ import { Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { GlobalBackground } from "@/components/effects/GlobalBackground";
-
-const ENABLE_3D = import.meta.env.VITE_ENABLE_3D === "true";
+import { ENABLE_3D } from "@/lib/featureFlags";
 
 export function AppShell() {
   return (

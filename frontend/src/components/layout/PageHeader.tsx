@@ -4,8 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { TiltCard } from "@/lib/useTilt.tsx";
-
-const ENABLE_3D = import.meta.env.VITE_ENABLE_3D === "true";
+import { ENABLE_3D } from "@/lib/featureFlags";
 
 type PageHeaderProps = {
   title: string;

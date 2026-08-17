@@ -48,7 +48,7 @@ export function MoneyTree({ maxHeight = "50vh" }: { maxHeight?: string } = {}) {
   return (
     <div
       ref={containerRef}
-      className="pointer-events-none relative z-0 flex items-end justify-center overflow-hidden"
+      className="flex items-end justify-center overflow-hidden"
       style={{ maxHeight, height: maxHeight }}
     >
       {/* Realistic SVG Tree */}

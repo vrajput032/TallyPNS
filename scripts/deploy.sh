@@ -63,7 +63,7 @@ ensure_pushed() {
 deploy_frontend() {
   echo
   echo "==> Deploying frontend to Cloudflare Pages (${PAGES_PROJECT})..."
-  VITE_API_URL="${API_URL}" npm run build -w frontend
+  VITE_API_URL="${API_URL}" VITE_ENABLE_3D=true npm run build -w frontend
   npx wrangler pages deploy frontend/dist --project-name="${PAGES_PROJECT}" --commit-dirty=true
   echo "Frontend deployed: https://tallypns.pages.dev"
 }

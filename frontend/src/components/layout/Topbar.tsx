@@ -11,8 +11,7 @@ import {
 import { useAuthStore } from "@/store/authStore";
 import { SidebarNav } from "./SidebarNav";
 import { TiltCard } from "@/lib/useTilt.tsx";
-
-const ENABLE_3D = import.meta.env.VITE_ENABLE_3D === "true";
+import { ENABLE_3D } from "@/lib/featureFlags";
 
 export function Topbar() {
   const navigate = useNavigate();
