@@ -2,11 +2,39 @@ import { prisma } from "../../lib/prisma.js";
 
 const LOW_STOCK_THRESHOLD = 10;
 
+function startOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function monthStart(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+
+/** Business started July 2026 — clamp range so we never show months before then. */
+const BUSINESS_START = new Date(2026, 6, 1); // July 2026
+
+/** Returns month-start dates from BUSINESS_START up to the current month. */
+function businessMonthStarts(): Date[] {
+  const now = monthStart(new Date());
+  const start = monthStart(BUSINESS_START);
+  const result: Date[] = [];
+  const cursor = new Date(start);
+  while (cursor <= now) {
+    result.push(new Date(cursor));
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+  return result;
+}
+
 export async function getDashboardSummary() {
-  const [customerCount, productCount, products] = await Promise.all([
+  const [customerCount, productCount, products, salesAgg] = await Promise.all([
     prisma.customer.count(),
     prisma.product.count(),
     prisma.product.findMany({ select: { price: true, currentStock: true } }),
+    prisma.salesInvoice.aggregate({
+      where: { deletedAt: null },
+      _sum: { totalAmount: true },
+    }),
   ]);
 
   const stockValue = products.reduce(
@@ -23,5 +51,69 @@ export async function getDashboardSummary() {
     productCount,
     stockValue,
     lowStockCount,
+    totalSales: Number(salesAgg._sum.totalAmount ?? 0),
   };
+}
+
+/** Aggregate sales totalAmount grouped by month from business start (Jul 2026). */
+export async function getMonthlySales() {
+  const monthStarts = businessMonthStarts();
+  if (monthStarts.length === 0) return [];
+
+  const endOfRange = monthStarts[monthStarts.length - 1];
+  const nextMonth = new Date(endOfRange);
+  nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+  // Pull all invoices whose date falls within the range
+  const invoices = await prisma.salesInvoice.findMany({
+    where: {
+      deletedAt: null,
+      invoiceDate: {
+        gte: startOfDay(monthStarts[0]),
+        lt: startOfDay(nextMonth),
+      },
+    },
+    select: {
+      invoiceDate: true,
+      totalAmount: true,
+    },
+  });
+
+  // Bucket by YYYY-MM
+  const totals = new Map<string, number>();
+  for (const inv of invoices) {
+    const d = new Date(inv.invoiceDate);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    totals.set(key, (totals.get(key) ?? 0) + Number(inv.totalAmount));
+  }
+
+  return monthStarts.map((ms) => {
+    const key = `${ms.getFullYear()}-${String(ms.getMonth() + 1).padStart(2, "0")}`;
+    const total = totals.get(key) ?? 0;
+    return {
+      month: ms.toLocaleDateString("en-GB", { month: "short", year: "2-digit" }),
+      total: Math.round(total),
+    };
+  });
+}
+
+/** Top customers by total sales from business start (Jul 2026) onwards. */
+export async function getCustomerWiseSales() {
+  const invoices = await prisma.salesInvoice.findMany({
+    where: { deletedAt: null },
+    select: {
+      customer: { select: { name: true } },
+      totalAmount: true,
+    },
+  });
+
+  const byCustomer = new Map<string, number>();
+  for (const inv of invoices) {
+    const name = inv.customer.name;
+    byCustomer.set(name, (byCustomer.get(name) ?? 0) + Number(inv.totalAmount));
+  }
+
+  return Array.from(byCustomer.entries())
+    .map(([customer, total]) => ({ customer, total: Math.round(total) }))
+    .sort((a, b) => b.total - a.total);
 }

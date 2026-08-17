@@ -6,6 +6,7 @@ export interface DashboardSummary {
   productCount: number;
   stockValue: number;
   lowStockCount: number;
+  totalSales: number;
 }
 
 export function useDashboardSummary() {

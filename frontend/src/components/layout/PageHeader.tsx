@@ -3,6 +3,9 @@ import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { TiltCard } from "@/lib/useTilt.tsx";
+
+const ENABLE_3D = import.meta.env.VITE_ENABLE_3D === "true";
 
 type PageHeaderProps = {
   title: string;
@@ -20,6 +23,10 @@ export function PageHeader({
   className,
 }: PageHeaderProps) {
   const navigate = useNavigate();
+
+  const right = actions ? (
+    <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
+  ) : null;
 
   return (
     <div
@@ -43,9 +50,13 @@ export function PageHeader({
         ) : null}
         <h1 className="truncate text-xl font-semibold sm:text-2xl">{title}</h1>
       </div>
-      {actions ? (
-        <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
-      ) : null}
+      {ENABLE_3D && right ? (
+        <TiltCard maxTilt={6} scale={1.02} speed={300}>
+          {right}
+        </TiltCard>
+      ) : (
+        right
+      )}
     </div>
   );
 }

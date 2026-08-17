@@ -21,6 +21,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { GlobalBackground } from "@/components/effects/GlobalBackground";
+import { MoneyTree } from "@/components/effects/MoneyTree";
+import { TiltCard } from "@/lib/useTilt.tsx";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 
@@ -61,51 +64,59 @@ export function LoginPage() {
   });
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>PNS ERP</CardTitle>
-          <CardDescription>Sign in to your account</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form
-              className="grid gap-4"
-              onSubmit={form.handleSubmit((values) => loginMutation.mutate(values))}
-            >
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="admin@pnsenterprises.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" disabled={loginMutation.isPending}>
-                {loginMutation.isPending ? "Signing in..." : "Sign in"}
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+    <div className="relative min-h-screen w-full bg-muted/40">
+      <GlobalBackground />
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center gap-6 px-4">
+        <div className="relative h-[40vh] w-full max-w-3xl flex-shrink-0">
+          <MoneyTree maxHeight="100%" />
+        </div>
+        <TiltCard maxTilt={8} scale={1.01} speed={350}>
+          <Card className="relative w-full max-w-md border-border/60 shadow-xl shadow-primary/5 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle>PNS ERP</CardTitle>
+              <CardDescription>Sign in to your account</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...form}>
+                <form
+                  className="grid gap-4"
+                  onSubmit={form.handleSubmit((values) => loginMutation.mutate(values))}
+                >
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="admin@pnsenterprises.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit" disabled={loginMutation.isPending}>
+                    {loginMutation.isPending ? "Signing in..." : "Sign in"}
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        </TiltCard>
+      </div>
     </div>
   );
 }

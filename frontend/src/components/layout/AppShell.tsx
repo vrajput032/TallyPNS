@@ -1,10 +1,14 @@
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
+import { GlobalBackground } from "@/components/effects/GlobalBackground";
+
+const ENABLE_3D = import.meta.env.VITE_ENABLE_3D === "true";
 
 export function AppShell() {
   return (
-    <div className="flex min-h-screen">
+    <div className="relative flex min-h-screen">
+      {ENABLE_3D && <GlobalBackground />}
       <div className="print:hidden">
         <Sidebar />
       </div>

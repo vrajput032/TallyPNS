@@ -161,7 +161,8 @@
     width: auto !important;
     min-height: 0 !important;
     height: auto !important;
-    margin: 10mm 8mm !important;
+    max-height: 285mm !important;
+    margin: 6mm 6mm !important;
     box-shadow: none !important;
   }
 
@@ -175,6 +176,6 @@
   }
 
   .invoice-items-spacer {
-    height: 1.75rem !important;
+    height: 0.4rem !important;
   }
 }
