@@ -1,6 +1,7 @@
 import { prisma } from "../../lib/prisma.js";
 import { activeOnly, deletedOnly } from "../../lib/activeRecords.js";
 import { ApiError } from "../../middleware/errorHandler.js";
+import { applySizeStockDelta } from "../../lib/sizeStock.js";
 import { withPaymentSummary } from "../payments/payment.utils.js";
 import type { createSalesInvoiceSchema } from "./sales.schema.js";
 import type { z } from "zod";
@@ -167,6 +168,14 @@ export async function createSalesInvoice(data: z.infer<typeof createSalesInvoice
 
     for (const item of catalogItems) {
       const productId = item.productId!.trim();
+      const sizeMm = item.sizeMm != null && item.sizeMm > 0 ? item.sizeMm : null;
+      if (sizeMm != null) {
+        await applySizeStockDelta(tx, {
+          productId,
+          sizeMm,
+          delta: -item.quantity,
+        });
+      }
       await tx.product.update({
         where: { id: productId },
         data: { currentStock: { decrement: item.quantity } },
@@ -176,6 +185,7 @@ export async function createSalesInvoice(data: z.infer<typeof createSalesInvoice
           productId,
           type: "OUT",
           quantity: item.quantity,
+          sizeMm,
           reason: `Sales invoice ${invoiceNo}`,
         },
       });
@@ -256,6 +266,14 @@ export async function updateSalesInvoice(
   return prisma.$transaction(async (tx) => {
     for (const item of existingInvoice.items) {
       if (!item.productId) continue;
+      const sizeMm = item.sizeMm != null && Number(item.sizeMm) > 0 ? Number(item.sizeMm) : null;
+      if (sizeMm != null) {
+        await applySizeStockDelta(tx, {
+          productId: item.productId,
+          sizeMm,
+          delta: Number(item.quantity),
+        });
+      }
       await tx.product.update({
         where: { id: item.productId },
         data: { currentStock: { increment: Number(item.quantity) } },
@@ -307,6 +325,14 @@ export async function updateSalesInvoice(
 
     for (const item of catalogItems) {
       const productId = item.productId!.trim();
+      const sizeMm = item.sizeMm != null && item.sizeMm > 0 ? item.sizeMm : null;
+      if (sizeMm != null) {
+        await applySizeStockDelta(tx, {
+          productId,
+          sizeMm,
+          delta: -item.quantity,
+        });
+      }
       await tx.product.update({
         where: { id: productId },
         data: { currentStock: { decrement: item.quantity } },
@@ -316,6 +342,7 @@ export async function updateSalesInvoice(
           productId,
           type: "OUT",
           quantity: item.quantity,
+          sizeMm,
           reason: `Edited sales invoice ${invoiceNo}`,
         },
       });
@@ -349,6 +376,14 @@ export async function deleteSalesInvoice(id: string) {
   await prisma.$transaction(async (tx) => {
     for (const item of invoice.items) {
       if (!item.productId) continue;
+      const sizeMm = item.sizeMm != null && Number(item.sizeMm) > 0 ? Number(item.sizeMm) : null;
+      if (sizeMm != null) {
+        await applySizeStockDelta(tx, {
+          productId: item.productId,
+          sizeMm,
+          delta: Number(item.quantity),
+        });
+      }
       await tx.product.update({
         where: { id: item.productId },
         data: { currentStock: { increment: Number(item.quantity) } },
@@ -358,6 +393,7 @@ export async function deleteSalesInvoice(id: string) {
           productId: item.productId,
           type: "IN",
           quantity: item.quantity,
+          sizeMm,
           reason: `Moved sales invoice ${invoice.invoiceNo} to recycle bin`,
         },
       });
@@ -393,6 +429,14 @@ export async function restoreSalesInvoice(id: string) {
   await prisma.$transaction(async (tx) => {
     for (const item of invoice.items) {
       if (!item.productId) continue;
+      const sizeMm = item.sizeMm != null && Number(item.sizeMm) > 0 ? Number(item.sizeMm) : null;
+      if (sizeMm != null) {
+        await applySizeStockDelta(tx, {
+          productId: item.productId,
+          sizeMm,
+          delta: -Number(item.quantity),
+        });
+      }
       await tx.product.update({
         where: { id: item.productId },
         data: { currentStock: { decrement: Number(item.quantity) } },
@@ -402,6 +446,7 @@ export async function restoreSalesInvoice(id: string) {
           productId: item.productId,
           type: "OUT",
           quantity: item.quantity,
+          sizeMm,
           reason: `Restored sales invoice ${invoice.invoiceNo}`,
         },
       });

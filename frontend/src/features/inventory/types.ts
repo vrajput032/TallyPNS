@@ -1,3 +1,8 @@
+export interface SizeStock {
+  sizeMm: string;
+  quantity: string;
+}
+
 export interface StockRow {
   id: string;
   name: string;
@@ -6,6 +11,7 @@ export interface StockRow {
   price: string;
   openingStock: string;
   currentStock: string;
+  sizeStocks?: SizeStock[];
 }
 
 export interface StockMovement {
@@ -14,6 +20,7 @@ export interface StockMovement {
   product: { id: string; name: string; unit: string };
   type: "IN" | "OUT" | "ADJUSTMENT";
   quantity: string;
+  sizeMm?: string | null;
   reason: string | null;
   createdAt: string;
 }
@@ -21,5 +28,6 @@ export interface StockMovement {
 export interface AdjustmentInput {
   productId: string;
   quantity: number;
+  sizeMm: number;
   reason?: string;
 }

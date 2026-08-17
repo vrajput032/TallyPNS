@@ -1,5 +1,6 @@
 import { prisma } from "../../lib/prisma.js";
 import { ApiError } from "../../middleware/errorHandler.js";
+import { applySizeStockDelta } from "../../lib/sizeStock.js";
 import type { createAdjustmentSchema } from "./inventory.schema.js";
 import type { z } from "zod";
 
@@ -14,6 +15,10 @@ export function listStock() {
       price: true,
       openingStock: true,
       currentStock: true,
+      sizeStocks: {
+        select: { sizeMm: true, quantity: true },
+        orderBy: { sizeMm: "desc" },
+      },
     },
   });
 }
@@ -38,6 +43,12 @@ export async function createAdjustment(data: z.infer<typeof createAdjustmentSche
   }
 
   return prisma.$transaction(async (tx) => {
+    await applySizeStockDelta(tx, {
+      productId: data.productId,
+      sizeMm: data.sizeMm,
+      delta: data.quantity,
+    });
+
     await tx.product.update({
       where: { id: data.productId },
       data: { currentStock: newStock },
@@ -48,6 +59,7 @@ export async function createAdjustment(data: z.infer<typeof createAdjustmentSche
         productId: data.productId,
         type: "ADJUSTMENT",
         quantity: data.quantity,
+        sizeMm: data.sizeMm,
         reason: data.reason,
       },
       include: { product: { select: { id: true, name: true, unit: true } } },

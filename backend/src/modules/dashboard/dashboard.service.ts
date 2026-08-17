@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma.js";
+import { PIPE_SIZES_MM } from "../../lib/pipeSizes.js";
 
 const LOW_STOCK_THRESHOLD = 10;
 
@@ -27,7 +28,7 @@ function businessMonthStarts(): Date[] {
 }
 
 export async function getDashboardSummary() {
-  const [customerCount, productCount, products, salesAgg] = await Promise.all([
+  const [customerCount, productCount, products, salesAgg, sizeStocks] = await Promise.all([
     prisma.customer.count(),
     prisma.product.count(),
     prisma.product.findMany({ select: { price: true, currentStock: true } }),
@@ -35,12 +36,26 @@ export async function getDashboardSummary() {
       where: { deletedAt: null },
       _sum: { totalAmount: true },
     }),
+    prisma.productSizeStock.findMany({
+      select: { sizeMm: true, quantity: true },
+    }),
   ]);
 
   const stockValue = products.reduce(
     (sum, product) => sum + Number(product.price) * Number(product.currentStock),
     0
   );
+
+  const qtyBySize = new Map<number, number>();
+  for (const row of sizeStocks) {
+    const sizeMm = Number(row.sizeMm);
+    qtyBySize.set(sizeMm, (qtyBySize.get(sizeMm) ?? 0) + Number(row.quantity));
+  }
+
+  const stockBySize = PIPE_SIZES_MM.map((sizeMm) => ({
+    sizeMm,
+    quantity: qtyBySize.get(sizeMm) ?? 0,
+  }));
 
   const lowStockCount = products.filter(
     (product) => Number(product.currentStock) <= LOW_STOCK_THRESHOLD
@@ -50,6 +65,7 @@ export async function getDashboardSummary() {
     customerCount,
     productCount,
     stockValue,
+    stockBySize,
     lowStockCount,
     totalSales: Number(salesAgg._sum.totalAmount ?? 0),
   };

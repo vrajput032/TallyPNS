@@ -69,6 +69,18 @@ model Product {
   salesInvoiceItems    SalesInvoiceItem[]
   purchaseBillItems    PurchaseBillItem[]
   stockMovements       StockMovement[]
+  sizeStocks           ProductSizeStock[]
+}
+
+model ProductSizeStock {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sizeMm    Decimal @db.Decimal(10, 2)
+  quantity  Decimal @default(0) @db.Decimal(14, 2)
+
+  @@unique([productId, sizeMm])
+  @@index([sizeMm])
 }
 
 model SalesInvoice {
@@ -155,6 +167,7 @@ model StockMovement {
   product   Product           @relation(fields: [productId], references: [id])
   type      StockMovementType
   quantity  Decimal           @db.Decimal(14, 2)
+  sizeMm    Decimal?          @db.Decimal(10, 2)
   reason    String?
   createdAt DateTime          @default(now())
 }

@@ -1,7 +1,10 @@
-import { IndianRupee, TrendingUp } from "lucide-react";
+import { Package, TrendingUp, Warehouse } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatPipeSize, LOW_STOCK_QTY, PIPE_SIZES_MM } from "@/lib/pipeSizes";
 import { StatCard } from "./StatCard";
 import { SalesChart } from "./SalesChart";
 import { SalesByCustomerChart } from "./SalesByCustomerChart";
@@ -35,13 +38,29 @@ function AnimatedCount({ target, prefix = "", suffix = "" }: { target: number; p
 }
 
 export function DashboardPage() {
+  const navigate = useNavigate();
   const { data, isLoading } = useDashboardSummary();
   const totalSales = data?.totalSales ?? 0;
+  const stockBySize = data?.stockBySize ?? PIPE_SIZES_MM.map((sizeMm) => ({ sizeMm, quantity: 0 }));
 
   return (
     <div className="grid gap-4">
-      <PageHeader title="Dashboard" />
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <PageHeader
+        title="Dashboard"
+        actions={
+          <>
+            <Button variant="outline" onClick={() => navigate("/sales")}>
+              <TrendingUp className="size-4" />
+              Sales
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/inventory")}>
+              <Warehouse className="size-4" />
+              Inventory
+            </Button>
+          </>
+        }
+      />
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard
           label="Total Sales"
           value={
@@ -53,16 +72,16 @@ export function DashboardPage() {
           icon={TrendingUp}
           isLoading={isLoading}
         />
-        <StatCard
-          label="Stock Value"
-          value={(data?.stockValue ?? 0).toLocaleString("en-IN", {
-            style: "currency",
-            currency: "INR",
-            maximumFractionDigits: 0,
-          })}
-          icon={IndianRupee}
-          isLoading={isLoading}
-        />
+        {stockBySize.map((row) => (
+          <StatCard
+            key={row.sizeMm}
+            label={formatPipeSize(row.sizeMm)}
+            value={<AnimatedCount target={Math.round(row.quantity)} />}
+            icon={Package}
+            isLoading={isLoading}
+            valueClassName={row.quantity < LOW_STOCK_QTY ? "text-red-600" : undefined}
+          />
+        ))}
       </div>
 
       <Card>

@@ -1,10 +1,11 @@
 import { Plus, Trash2 } from "lucide-react";
-import type { FieldValues, Path, UseFormRegister } from "react-hook-form";
+import { useFormContext, type FieldValues, type Path, type UseFormRegister } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { registerFormNumber } from "@/lib/formNumberInput";
+import { formatPipeSize, PIPE_SIZES_MM } from "@/lib/pipeSizes";
 import {
   Select,
   SelectContent,
@@ -68,9 +69,14 @@ export function LineItemsField<TFieldValues extends FieldValues>({
   allowManual = false,
 }: LineItemsFieldProps<TFieldValues>) {
   const isMobile = useIsMobile();
+  const form = useFormContext<TFieldValues>();
 
   function fieldPath(index: number, key: keyof LineItemValue) {
     return `items.${index}.${key}` as Path<TFieldValues>;
+  }
+
+  function setSizeMm(index: number, sizeMm: number) {
+    form.setValue(fieldPath(index, "sizeMm"), sizeMm as never, { shouldDirty: true });
   }
 
   function registerNumber(index: number, key: keyof LineItemValue) {
@@ -159,12 +165,25 @@ export function LineItemsField<TFieldValues extends FieldValues>({
                 {showSizeMm && !isManual && (
                   <div className="grid gap-1.5">
                     <Label>Size (mm)</Label>
-                    <Input
-                      type="text"
-                      inputMode="decimal"
-                      placeholder="e.g. 95"
-                      {...registerNumber(index, "sizeMm")}
-                    />
+                    <Select
+                      value={item?.sizeMm ? String(item.sizeMm) : ""}
+                      onValueChange={(value) => setSizeMm(index, Number(value))}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select size">
+                          {(value: string | null) =>
+                            value ? formatPipeSize(Number(value)) : "Select size"
+                          }
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PIPE_SIZES_MM.map((sizeMm) => (
+                          <SelectItem key={sizeMm} value={String(sizeMm)}>
+                            {formatPipeSize(sizeMm)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 )}
                 <div className="grid gap-1.5">
@@ -277,12 +296,25 @@ export function LineItemsField<TFieldValues extends FieldValues>({
                       {isManual ? (
                         <span className="text-muted-foreground">—</span>
                       ) : (
-                        <Input
-                          type="number"
-                          step="1"
-                          placeholder="95"
-                          {...registerNumber(index, "sizeMm")}
-                        />
+                        <Select
+                          value={item?.sizeMm ? String(item.sizeMm) : ""}
+                          onValueChange={(value) => setSizeMm(index, Number(value))}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Size">
+                              {(value: string | null) =>
+                                value ? formatPipeSize(Number(value)) : "Size"
+                              }
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {PIPE_SIZES_MM.map((sizeMm) => (
+                              <SelectItem key={sizeMm} value={String(sizeMm)}>
+                                {formatPipeSize(sizeMm)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       )}
                     </TableCell>
                   )}

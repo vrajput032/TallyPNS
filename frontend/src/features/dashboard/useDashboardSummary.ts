@@ -5,6 +5,7 @@ export interface DashboardSummary {
   customerCount: number;
   productCount: number;
   stockValue: number;
+  stockBySize: { sizeMm: number; quantity: number }[];
   lowStockCount: number;
   totalSales: number;
 }

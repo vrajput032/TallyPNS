@@ -15,7 +15,6 @@ import { ENABLE_3D } from "@/lib/featureFlags";
 
 export function Topbar() {
   const navigate = useNavigate();
-  const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -46,7 +45,6 @@ export function Topbar() {
       <div className="hidden md:block" />
       {ENABLE_3D ? (
         <TiltCard maxTilt={4} scale={1.01} speed={250} className="flex min-w-0 items-center gap-2 sm:gap-3">
-          <span className="truncate text-sm text-muted-foreground">{user?.name}</span>
           <Button variant="ghost" size="icon" className="shrink-0" onClick={handleLogout}>
             <LogOut className="size-4" />
             <span className="sr-only">Log out</span>
@@ -54,7 +52,6 @@ export function Topbar() {
         </TiltCard>
       ) : (
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-          <span className="truncate text-sm text-muted-foreground">{user?.name}</span>
           <Button variant="ghost" size="icon" className="shrink-0" onClick={handleLogout}>
             <LogOut className="size-4" />
             <span className="sr-only">Log out</span>

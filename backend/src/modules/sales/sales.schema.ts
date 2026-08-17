@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PIPE_SIZES_MM } from "../../lib/pipeSizes.js";
 
 export const salesInvoiceItemSchema = z
   .object({
@@ -6,7 +7,11 @@ export const salesInvoiceItemSchema = z
     description: z.string().trim().max(200).optional().nullable(),
     hsn: z.string().trim().max(20).optional().nullable(),
     unit: z.string().trim().max(20).optional().nullable(),
-    sizeMm: z.number().positive().optional().nullable(),
+    sizeMm: z
+      .number()
+      .refine((n) => (PIPE_SIZES_MM as readonly number[]).includes(n), "Select a valid size")
+      .optional()
+      .nullable(),
     quantity: z.number().positive(),
     rate: z.number().min(0),
     gstRate: z.number().min(0).max(100),
