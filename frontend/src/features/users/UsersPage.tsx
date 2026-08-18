@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TableSkeletonRows } from "@/components/loading/PageSkeletons";
 import {
   Table,
   TableBody,
@@ -189,11 +190,7 @@ export function UsersPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
-                    Loading...
-                  </TableCell>
-                </TableRow>
+                <TableSkeletonRows columns={4} rows={5} />
               ) : list.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center text-muted-foreground">

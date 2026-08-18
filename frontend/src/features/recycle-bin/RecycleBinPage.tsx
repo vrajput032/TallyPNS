@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { ConfirmDeletePinDialog } from "@/components/ConfirmDeletePinDialog";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
+import { CardListSkeleton } from "@/components/loading/PageSkeletons";
 import {
   Table,
   TableBody,
@@ -125,7 +126,7 @@ export function RecycleBinPage() {
       </p>
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading...</p>
+        <CardListSkeleton cards={5} />
       ) : isEmpty ? (
         <div className="rounded-md border bg-card p-8 text-center text-sm text-muted-foreground">
           Recycle bin is empty.

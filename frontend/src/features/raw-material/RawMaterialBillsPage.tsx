@@ -7,6 +7,7 @@ import { ConfirmDeletePinDialog } from "@/components/ConfirmDeletePinDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CardListSkeleton } from "@/components/loading/PageSkeletons";
 import {
   Table,
   TableBody,
@@ -204,7 +205,7 @@ export function RawMaterialBillsPage() {
           </Button>
         </div>
       ) : isLoading ? (
-        <Skeleton className="h-40 w-full rounded-xl" />
+        isMobile ? <CardListSkeleton /> : <Skeleton className="h-40 w-full rounded-xl" />
       ) : isMobile ? (
         <MobileBillCards
           bills={bills ?? []}

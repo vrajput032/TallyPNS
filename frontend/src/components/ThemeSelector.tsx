@@ -11,7 +11,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 
-function ThemeList({
+export function ThemeList({
   currentName,
   onSelect,
 }: {

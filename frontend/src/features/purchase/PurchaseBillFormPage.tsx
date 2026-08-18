@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { ConfirmDeletePinDialog } from "@/components/ConfirmDeletePinDialog";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { FormSkeleton } from "@/components/loading/PageSkeletons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -186,7 +187,7 @@ export function PurchaseBillFormPage() {
   }
 
   if (isEditing && isLoadingBill) {
-    return <p className="text-sm text-muted-foreground">Loading...</p>;
+    return <FormSkeleton />;
   }
 
   return (

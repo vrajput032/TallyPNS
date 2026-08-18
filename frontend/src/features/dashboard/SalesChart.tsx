@@ -7,6 +7,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { Loader2 } from "lucide-react";
 import { useMonthlySales, type MonthlySalesPoint } from "./useMonthlySales";
 import { formatInr } from "@/lib/formatInr";
 import { usePrimaryColor } from "@/lib/usePrimaryColor";
@@ -90,8 +91,8 @@ export function SalesChart({ months }: { months?: number }) {
         </AreaChart>
       </ResponsiveContainer>
       {isLoading && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-xl bg-card/60">
-          <p className="text-sm text-muted-foreground">Loading chart...</p>
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-xl bg-card/70">
+          <Loader2 className="size-6 animate-spin text-primary" />
         </div>
       )}
     </div>

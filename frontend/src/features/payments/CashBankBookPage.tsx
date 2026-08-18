@@ -1,5 +1,7 @@
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TableSkeletonRows } from "@/components/loading/PageSkeletons";
 import {
   Table,
   TableBody,
@@ -30,7 +32,7 @@ export function CashBankBookPage({
             <CardTitle className="text-sm font-medium text-muted-foreground">In</CardTitle>
           </CardHeader>
           <CardContent className="text-2xl font-semibold">
-            {formatInr(data?.totalIn ?? 0)}
+            {isLoading ? <Skeleton className="h-8 w-28" /> : formatInr(data?.totalIn ?? 0)}
           </CardContent>
         </Card>
         <Card>
@@ -38,7 +40,7 @@ export function CashBankBookPage({
             <CardTitle className="text-sm font-medium text-muted-foreground">Out</CardTitle>
           </CardHeader>
           <CardContent className="text-2xl font-semibold">
-            {formatInr(data?.totalOut ?? 0)}
+            {isLoading ? <Skeleton className="h-8 w-28" /> : formatInr(data?.totalOut ?? 0)}
           </CardContent>
         </Card>
         <Card>
@@ -48,7 +50,7 @@ export function CashBankBookPage({
             </CardTitle>
           </CardHeader>
           <CardContent className="text-2xl font-semibold">
-            {formatInr(data?.closingBalance ?? 0)}
+            {isLoading ? <Skeleton className="h-8 w-28" /> : formatInr(data?.closingBalance ?? 0)}
           </CardContent>
         </Card>
       </div>
@@ -67,11 +69,7 @@ export function CashBankBookPage({
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
-                  Loading...
-                </TableCell>
-              </TableRow>
+              <TableSkeletonRows columns={6} />
             ) : (data?.entries.length ?? 0) === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-muted-foreground">

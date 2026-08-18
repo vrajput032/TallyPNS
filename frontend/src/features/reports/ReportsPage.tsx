@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TableSkeletonRows } from "@/components/loading/PageSkeletons";
 import {
   Table,
   TableBody,
@@ -97,11 +98,7 @@ function StockReportTab() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
-                  Loading...
-                </TableCell>
-              </TableRow>
+              <TableSkeletonRows columns={6} />
             ) : (data?.rows.length ?? 0) === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-muted-foreground">
@@ -222,11 +219,7 @@ function TrialBalanceTab() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={3} className="text-center text-muted-foreground">
-                  Loading...
-                </TableCell>
-              </TableRow>
+              <TableSkeletonRows columns={3} rows={8} />
             ) : (
               data?.rows.map((row) => (
                 <TableRow key={row.account}>
@@ -268,11 +261,7 @@ function OutstandingTab() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={2} className="text-center text-muted-foreground">
-                  Loading...
-                </TableCell>
-              </TableRow>
+              <TableSkeletonRows columns={2} />
             ) : (data?.debtors.length ?? 0) === 0 ? (
               <TableRow>
                 <TableCell colSpan={2} className="text-center text-muted-foreground">
@@ -305,11 +294,7 @@ function OutstandingTab() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={2} className="text-center text-muted-foreground">
-                  Loading...
-                </TableCell>
-              </TableRow>
+              <TableSkeletonRows columns={2} />
             ) : (data?.creditors.length ?? 0) === 0 ? (
               <TableRow>
                 <TableCell colSpan={2} className="text-center text-muted-foreground">

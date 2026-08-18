@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
+import { AuthSplash } from "@/components/loading/AuthSplash";
 import { useAuthStore } from "@/store/authStore";
 
 export function ProtectedRoute() {
@@ -13,7 +14,7 @@ export function ProtectedRoute() {
   }, []);
 
   if (!hydrated) {
-    return null;
+    return <AuthSplash message="Loading your workspace..." />;
   }
 
   if (!accessToken) {

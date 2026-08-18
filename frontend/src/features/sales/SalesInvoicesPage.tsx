@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TableSkeletonRows } from "@/components/loading/PageSkeletons";
 import {
   Table,
   TableBody,
@@ -535,11 +536,7 @@ export function SalesInvoicesPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={columns.length + 1} className="text-center text-muted-foreground">
-                    Loading...
-                  </TableCell>
-                </TableRow>
+                <TableSkeletonRows columns={columns.length + 1} />
               ) : table.getRowModel().rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={columns.length + 1} className="text-center text-muted-foreground">

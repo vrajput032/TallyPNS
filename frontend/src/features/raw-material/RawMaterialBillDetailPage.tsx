@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ConfirmDeletePinDialog } from "@/components/ConfirmDeletePinDialog";
+import { DetailSkeleton } from "@/components/loading/PageSkeletons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -33,7 +34,7 @@ export function RawMaterialBillDetailPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   if (isLoading || !bill) {
-    return <p className="text-sm text-muted-foreground">Loading...</p>;
+    return <DetailSkeleton />;
   }
 
   const yieldRows = bill.yield?.length ? bill.yield : piecesFromKg(Number(bill.totalKg));

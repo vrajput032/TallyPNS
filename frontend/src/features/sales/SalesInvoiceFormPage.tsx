@@ -7,6 +7,7 @@ import { z } from "zod";
 import { ConfirmDeletePinDialog } from "@/components/ConfirmDeletePinDialog";
 import { LineItemsField } from "@/components/layout/LineItemsField";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { FormSkeleton } from "@/components/loading/PageSkeletons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -255,7 +256,7 @@ export function SalesInvoiceFormPage() {
   }
 
   if (isEditing && isLoadingInvoice) {
-    return <p className="text-sm text-muted-foreground">Loading...</p>;
+    return <FormSkeleton />;
   }
 
   return (
