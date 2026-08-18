@@ -6,12 +6,21 @@ type UseTiltOptions = {
   scale?: number;
   speed?: number;
   enabled?: boolean;
+  enableSpotlight?: boolean;
 };
 
 export function useTilt(options: UseTiltOptions = {}) {
-  const { maxTilt = 12, perspective = 1000, scale = 1.02, speed = 400, enabled = true } = options;
+  const {
+    maxTilt = 12,
+    perspective = 1000,
+    scale = 1.02,
+    speed = 400,
+    enabled = true,
+    enableSpotlight = true,
+  } = options;
   const ref = useRef<HTMLDivElement>(null);
   const [transform, setTransform] = useState<string>("");
+  const [spotlight, setSpotlight] = useState<{ x: number; y: number } | null>(null);
   const [isHovering, setIsHovering] = useState(false);
 
   useEffect(() => {
@@ -34,6 +43,13 @@ export function useTilt(options: UseTiltOptions = {}) {
         setTransform(
           `perspective(${perspective}px) rotateX(${tiltX.toFixed(2)}deg) rotateY(${tiltY.toFixed(2)}deg) scale3d(${scale}, ${scale}, ${scale})`
         );
+
+        if (enableSpotlight) {
+          setSpotlight({
+            x: ((x / rect.width) * 100).toFixed(1),
+            y: ((y / rect.height) * 100).toFixed(1),
+          });
+        }
       });
     };
 
@@ -44,6 +60,7 @@ export function useTilt(options: UseTiltOptions = {}) {
 
     const handleLeave = () => {
       setIsHovering(false);
+      setSpotlight(null);
       el.style.transition = `transform ${speed}ms ease-out`;
       setTransform(`perspective(${perspective}px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`);
     };
@@ -58,9 +75,9 @@ export function useTilt(options: UseTiltOptions = {}) {
       el.removeEventListener("mouseleave", handleLeave);
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [maxTilt, perspective, scale, speed, enabled]);
+  }, [maxTilt, perspective, scale, speed, enabled, enableSpotlight]);
 
-  return { ref, transform, isHovering } as const;
+  return { ref, transform, isHovering, spotlight } as const;
 }
 
 type TiltCardProps = {
@@ -71,6 +88,7 @@ type TiltCardProps = {
   scale?: number;
   speed?: number;
   disabled?: boolean;
+  enableSpotlight?: boolean;
 };
 
 export function TiltCard({
@@ -81,8 +99,15 @@ export function TiltCard({
   scale = 1.02,
   speed = 400,
   disabled = false,
+  enableSpotlight = true,
 }: TiltCardProps) {
-  const { ref, transform } = useTilt({ maxTilt, scale, speed, enabled: !disabled });
+  const { ref, transform, isHovering, spotlight } = useTilt({
+    maxTilt,
+    scale,
+    speed,
+    enabled: !disabled,
+    enableSpotlight,
+  });
 
   return (
     <div
@@ -96,6 +121,16 @@ export function TiltCard({
         ...style,
       }}
     >
+      {/* Spotlight overlay that follows cursor */}
+      {isHovering && spotlight && enableSpotlight && (
+        <div
+          className="pointer-events-none absolute inset-0 rounded-[inherit] transition-opacity duration-300"
+          style={{
+            background: `radial-gradient(600px circle at ${spotlight.x}% ${spotlight.y}%, rgba(var(--primary), 0.06), transparent 40%)`,
+            opacity: isHovering ? 1 : 0,
+          }}
+        />
+      )}
       {children}
     </div>
   );

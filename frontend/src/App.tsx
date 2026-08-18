@@ -20,40 +20,43 @@ import { BankPage } from "@/features/bank/BankPage";
 import { GstPage } from "@/features/gst/GstPage";
 import { ReportsPage } from "@/features/reports/ReportsPage";
 import { RecycleBinPage } from "@/features/recycle-bin/RecycleBinPage";
+import { ThemeProvider } from "@/lib/theme";
 
 const queryClient = new QueryClient();
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route element={<ProtectedRoute />}>
-            <Route element={<AppShell />}>
-              <Route path="/" element={<DashboardPage />} />
-              <Route path="/sales" element={<SalesInvoicesPage />} />
-              <Route path="/sales/new" element={<SalesInvoiceFormPage />} />
-              <Route path="/sales/:id/edit" element={<SalesInvoiceFormPage />} />
-              <Route path="/sales/:id" element={<SalesInvoiceDetailPage />} />
-              <Route path="/purchase" element={<PurchaseBillsPage />} />
-              <Route path="/purchase/new" element={<PurchaseBillFormPage />} />
-              <Route path="/purchase/:id/edit" element={<PurchaseBillFormPage />} />
-              <Route path="/purchase/:id" element={<PurchaseBillDetailPage />} />
-              <Route path="/inventory" element={<InventoryPage />} />
-              <Route path="/cash" element={<CashPage />} />
-              <Route path="/bank" element={<BankPage />} />
-              <Route path="/gst" element={<GstPage />} />
-              <Route path="/customers" element={<CustomersPage />} />
-              <Route path="/products" element={<ProductsPage />} />
-              <Route path="/vendors" element={<VendorsPage />} />
-              <Route path="/reports" element={<ReportsPage />} />
-              <Route path="/recycle-bin" element={<RecycleBinPage />} />
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route element={<ProtectedRoute />}>
+              <Route element={<AppShell />}>
+                <Route path="/" element={<DashboardPage />} />
+                <Route path="/sales" element={<SalesInvoicesPage />} />
+                <Route path="/sales/new" element={<SalesInvoiceFormPage />} />
+                <Route path="/sales/:id/edit" element={<SalesInvoiceFormPage />} />
+                <Route path="/sales/:id" element={<SalesInvoiceDetailPage />} />
+                <Route path="/purchase" element={<PurchaseBillsPage />} />
+                <Route path="/purchase/new" element={<PurchaseBillFormPage />} />
+                <Route path="/purchase/:id/edit" element={<PurchaseBillFormPage />} />
+                <Route path="/purchase/:id" element={<PurchaseBillDetailPage />} />
+                <Route path="/inventory" element={<InventoryPage />} />
+                <Route path="/cash" element={<CashPage />} />
+                <Route path="/bank" element={<BankPage />} />
+                <Route path="/gst" element={<GstPage />} />
+                <Route path="/customers" element={<CustomersPage />} />
+                <Route path="/products" element={<ProductsPage />} />
+                <Route path="/vendors" element={<VendorsPage />} />
+                <Route path="/reports" element={<ReportsPage />} />
+                <Route path="/recycle-bin" element={<RecycleBinPage />} />
+              </Route>
             </Route>
-          </Route>
-        </Routes>
-      </BrowserRouter>
-      <Toaster />
-    </QueryClientProvider>
+          </Routes>
+        </BrowserRouter>
+        <Toaster />
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }

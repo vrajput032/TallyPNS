@@ -9,6 +9,7 @@ import {
 } from "recharts";
 import { useMonthlySales, type MonthlySalesPoint } from "./useMonthlySales";
 import { formatInr } from "@/lib/formatInr";
+import { usePrimaryColor } from "@/lib/usePrimaryColor";
 
 function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) {
   if (!active || !payload?.length) return null;
@@ -22,6 +23,7 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
 
 export function SalesChart({ months }: { months?: number }) {
   const { data, isLoading, error } = useMonthlySales();
+  const primary = usePrimaryColor();
 
   if (error) {
     return (
@@ -48,8 +50,8 @@ export function SalesChart({ months }: { months?: number }) {
         <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 16, bottom: 0 }}>
           <defs>
             <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="oklch(0.488 0.243 264.376)" stopOpacity={0.35} />
-              <stop offset="95%" stopColor="oklch(0.488 0.243 264.376)" stopOpacity={0} />
+              <stop offset="0%" stopColor={primary} stopOpacity={0.35} />
+              <stop offset="95%" stopColor={primary} stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.922 0 0 / 0.5)" vertical={false} />
@@ -73,17 +75,17 @@ export function SalesChart({ months }: { months?: number }) {
             tickLine={false}
             width={36}
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ stroke: "oklch(0.488 0.243 264.376 / 0.3)", strokeWidth: 1.5 }} />
+          <Tooltip content={<CustomTooltip />} cursor={{ stroke: `${primary}66`, strokeWidth: 1.5 }} />
           <Area
             type="monotone"
             dataKey="total"
-            stroke="oklch(0.488 0.243 264.376)"
+            stroke={primary}
             strokeWidth={2.5}
             fill="url(#salesGrad)"
             animationDuration={800}
             animationEasing="ease-out"
             dot={false}
-            activeDot={{ r: 5, strokeWidth: 2, fill: "oklch(0.488 0.243 264.376)" }}
+            activeDot={{ r: 5, strokeWidth: 2, fill: primary }}
           />
         </AreaChart>
       </ResponsiveContainer>

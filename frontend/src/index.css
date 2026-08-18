@@ -38,6 +38,20 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* theme token fallbacks — overridden at runtime by ThemeProvider */
+  --primary: #0f172a;
+  --primary-foreground: #ffffff;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+  --background: #faf9f6;
+  --foreground: #1a1a2e;
+  --card: #ffffff;
+  --card-foreground: #1a1a2e;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --border: #e2e8f0;
+  --ring: #1d4ed8;
 }
 
 .dark {
@@ -72,6 +86,20 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* dark theme token fallbacks */
+  --primary: #7dd3fc;
+  --primary-foreground: #0f1115;
+  --accent: #1e1b2e;
+  --accent-foreground: #7dd3fc;
+  --background: #0f1115;
+  --foreground: #f4f1ea;
+  --card: #171a21;
+  --card-foreground: #f4f1ea;
+  --muted: #1e1b2e;
+  --muted-foreground: #9ca3af;
+  --border: #2a2f3a;
+  --ring: #7dd3fc;
 }
 
 @theme inline {
@@ -126,6 +154,30 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+@layer utilities {
+  /* Animated gradient shift used by parallax header */
+  @keyframes gradientShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  /* Subtle floating animation */
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
