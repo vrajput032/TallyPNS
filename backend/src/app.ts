@@ -29,7 +29,7 @@ app.use("/api", (_req, res, next) => {
 });
 
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok" });
+  res.json({ status: "ok", release: "raw-material" });
 });
 
 app.use("/api", apiRouter);
