@@ -4,6 +4,7 @@ import { requireAuth, requireCanDelete } from "../../middleware/auth.js";
 import { requireDeletePin } from "../../middleware/requireDeletePin.js";
 import { createSalesInvoiceSchema } from "./sales.schema.js";
 import * as salesService from "./sales.service.js";
+import { routeParam } from "../../lib/routeParam.js";
 
 export const salesRouter = Router();
 
@@ -28,7 +29,7 @@ salesRouter.get(
 salesRouter.get(
   "/:id",
   asyncHandler(async (req, res) => {
-    const invoice = await salesService.getSalesInvoice(req.params.id);
+    const invoice = await salesService.getSalesInvoice(routeParam(req.params.id));
     res.json(invoice);
   })
 );
@@ -47,7 +48,7 @@ salesRouter.put(
   requireDeletePin,
   asyncHandler(async (req, res) => {
     const data = createSalesInvoiceSchema.parse(req.body);
-    const invoice = await salesService.updateSalesInvoice(req.params.id, data);
+    const invoice = await salesService.updateSalesInvoice(routeParam(req.params.id), data);
     res.json(invoice);
   })
 );
@@ -57,7 +58,7 @@ salesRouter.delete(
   requireCanDelete,
   requireDeletePin,
   asyncHandler(async (req, res) => {
-    await salesService.permanentlyDeleteSalesInvoice(req.params.id);
+    await salesService.permanentlyDeleteSalesInvoice(routeParam(req.params.id));
     res.status(204).send();
   })
 );
@@ -66,7 +67,7 @@ salesRouter.post(
   "/:id/restore",
   requireCanDelete,
   asyncHandler(async (req, res) => {
-    await salesService.restoreSalesInvoice(req.params.id);
+    await salesService.restoreSalesInvoice(routeParam(req.params.id));
     res.status(204).send();
   })
 );
@@ -76,7 +77,7 @@ salesRouter.delete(
   requireCanDelete,
   requireDeletePin,
   asyncHandler(async (req, res) => {
-    await salesService.deleteSalesInvoice(req.params.id);
+    await salesService.deleteSalesInvoice(routeParam(req.params.id));
     res.status(204).send();
   })
 );

@@ -3,6 +3,7 @@ import { asyncHandler } from "../../middleware/asyncHandler.js";
 import { requireAuth, requireCanDelete } from "../../middleware/auth.js";
 import { createVendorSchema, updateVendorSchema } from "./vendor.schema.js";
 import * as vendorService from "./vendor.service.js";
+import { routeParam } from "../../lib/routeParam.js";
 
 export const vendorRouter = Router();
 
@@ -19,7 +20,7 @@ vendorRouter.get(
 vendorRouter.get(
   "/:id",
   asyncHandler(async (req, res) => {
-    const vendor = await vendorService.getVendor(req.params.id);
+    const vendor = await vendorService.getVendor(routeParam(req.params.id));
     res.json(vendor);
   })
 );
@@ -37,7 +38,7 @@ vendorRouter.put(
   "/:id",
   asyncHandler(async (req, res) => {
     const data = updateVendorSchema.parse(req.body);
-    const vendor = await vendorService.updateVendor(req.params.id, data);
+    const vendor = await vendorService.updateVendor(routeParam(req.params.id), data);
     res.json(vendor);
   })
 );
@@ -46,7 +47,7 @@ vendorRouter.delete(
   "/:id",
   requireCanDelete,
   asyncHandler(async (req, res) => {
-    await vendorService.deleteVendor(req.params.id);
+    await vendorService.deleteVendor(routeParam(req.params.id));
     res.status(204).send();
   })
 );

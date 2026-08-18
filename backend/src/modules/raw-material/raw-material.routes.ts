@@ -4,6 +4,7 @@ import { asyncHandler } from "../../middleware/asyncHandler.js";
 import { requireAuth, requireCanDelete } from "../../middleware/auth.js";
 import { requireDeletePin } from "../../middleware/requireDeletePin.js";
 import { ApiError } from "../../middleware/errorHandler.js";
+import { routeParam } from "../../lib/routeParam.js";
 import { extractPdfText } from "./extractPdf.js";
 import { parseRawMaterialInvoiceText } from "./parseInvoice.js";
 import {
@@ -15,11 +16,6 @@ import * as rawMaterialService from "./raw-material.service.js";
 export const rawMaterialRouter = Router();
 
 rawMaterialRouter.use(requireAuth);
-
-function routeParam(value: string | string[] | undefined): string {
-  if (Array.isArray(value)) return value[0] ?? "";
-  return value ?? "";
-}
 
 const upload = multer({
   storage: multer.memoryStorage(),

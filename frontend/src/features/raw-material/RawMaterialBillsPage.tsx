@@ -105,7 +105,7 @@ function MobileBillCards({
 }
 
 export function RawMaterialBillsPage() {
-  const { data: bills, isLoading } = useRawMaterialBills();
+  const { data: bills, isLoading, isError, refetch } = useRawMaterialBills();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const allowDelete = canDelete(useAuthStore((state) => state.user));
@@ -193,7 +193,17 @@ export function RawMaterialBillsPage() {
         </Card>
       </div>
 
-      {isLoading ? (
+      {isError ? (
+        <div className="rounded-md border border-destructive/30 bg-card p-4 text-sm">
+          <p className="font-medium">Could not load raw material bills.</p>
+          <p className="mt-1 text-muted-foreground">
+            If you are in the installed app, close it fully and open it again so it can refresh.
+          </p>
+          <Button className="mt-3" variant="outline" size="sm" onClick={() => void refetch()}>
+            Retry
+          </Button>
+        </div>
+      ) : isLoading ? (
         <Skeleton className="h-40 w-full rounded-xl" />
       ) : isMobile ? (
         <MobileBillCards

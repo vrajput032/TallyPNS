@@ -3,6 +3,7 @@ import { asyncHandler } from "../../middleware/asyncHandler.js";
 import { requireAuth, requireCanDelete } from "../../middleware/auth.js";
 import { createProductSchema, updateProductSchema } from "./product.schema.js";
 import * as productService from "./product.service.js";
+import { routeParam } from "../../lib/routeParam.js";
 
 export const productRouter = Router();
 
@@ -19,7 +20,7 @@ productRouter.get(
 productRouter.get(
   "/:id",
   asyncHandler(async (req, res) => {
-    const product = await productService.getProduct(req.params.id);
+    const product = await productService.getProduct(routeParam(req.params.id));
     res.json(product);
   })
 );
@@ -37,7 +38,7 @@ productRouter.put(
   "/:id",
   asyncHandler(async (req, res) => {
     const data = updateProductSchema.parse(req.body);
-    const product = await productService.updateProduct(req.params.id, data);
+    const product = await productService.updateProduct(routeParam(req.params.id), data);
     res.json(product);
   })
 );
@@ -46,7 +47,7 @@ productRouter.delete(
   "/:id",
   requireCanDelete,
   asyncHandler(async (req, res) => {
-    await productService.deleteProduct(req.params.id);
+    await productService.deleteProduct(routeParam(req.params.id));
     res.status(204).send();
   })
 );

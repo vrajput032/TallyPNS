@@ -5,6 +5,7 @@ import { authRateLimit } from "../../middleware/authRateLimit.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import { createUserSchema, loginSchema, refreshSchema, registerSchema } from "./auth.schema.js";
 import * as authService from "./auth.service.js";
+import { routeParam } from "../../lib/routeParam.js";
 
 export const authRouter = Router();
 
@@ -49,7 +50,7 @@ authRouter.delete(
     if (!req.user) {
       throw new ApiError(401, "Missing access token");
     }
-    await authService.deleteUser(req.params.id, req.user.sub);
+    await authService.deleteUser(routeParam(req.params.id), req.user.sub);
     res.status(204).send();
   })
 );

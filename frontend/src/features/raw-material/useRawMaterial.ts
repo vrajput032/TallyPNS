@@ -13,9 +13,15 @@ export function useRawMaterialBills() {
   return useQuery({
     queryKey: KEY,
     queryFn: async () => {
-      const { data } = await api.get<RawMaterialBill[]>("/raw-material");
+      const { data } = await api.get<RawMaterialBill[]>("/raw-material", {
+        headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+      });
       return data;
     },
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnReconnect: true,
+    refetchOnWindowFocus: true,
   });
 }
 

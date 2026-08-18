@@ -12,3 +12,15 @@ export function getAllowedOrigins(): string[] {
     ? [...PRODUCTION_ORIGINS]
     : [...DEV_ORIGINS];
 }
+
+/** Installed PWAs and Cloudflare preview deploys use tallypns.pages.dev subdomains. */
+export function isAllowedOrigin(origin: string | undefined): boolean {
+  if (!origin) return true;
+  if (getAllowedOrigins().includes(origin)) return true;
+  try {
+    const { hostname } = new URL(origin);
+    return hostname === "tallypns.pages.dev" || hostname.endsWith(".tallypns.pages.dev");
+  } catch {
+    return false;
+  }
+}

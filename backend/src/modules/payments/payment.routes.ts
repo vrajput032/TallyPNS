@@ -3,6 +3,7 @@ import { asyncHandler } from "../../middleware/asyncHandler.js";
 import { requireAuth, requireCanDelete } from "../../middleware/auth.js";
 import { createReceiptSchema, createVendorPaymentSchema } from "./payment.schema.js";
 import * as paymentService from "./payment.service.js";
+import { routeParam } from "../../lib/routeParam.js";
 
 export const paymentRouter = Router();
 
@@ -21,7 +22,7 @@ paymentRouter.delete(
   "/receipts/:id",
   requireCanDelete,
   asyncHandler(async (req, res) => {
-    await paymentService.deleteReceipt(req.params.id);
+    await paymentService.deleteReceipt(routeParam(req.params.id));
     res.status(204).send();
   })
 );
@@ -39,7 +40,7 @@ paymentRouter.delete(
   "/vendor-payments/:id",
   requireCanDelete,
   asyncHandler(async (req, res) => {
-    await paymentService.deleteVendorPayment(req.params.id);
+    await paymentService.deleteVendorPayment(routeParam(req.params.id));
     res.status(204).send();
   })
 );

@@ -1,7 +1,7 @@
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
-import { getAllowedOrigins } from "./config/cors.js";
+import { isAllowedOrigin } from "./config/cors.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { apiRouter } from "./routes/index.js";
 
@@ -12,8 +12,7 @@ app.use(helmet());
 app.use(
   cors({
     origin(origin, callback) {
-      const allowed = getAllowedOrigins();
-      if (!origin || allowed.includes(origin)) {
+      if (isAllowedOrigin(origin)) {
         callback(null, true);
         return;
       }
@@ -22,6 +21,12 @@ app.use(
   })
 );
 app.use(express.json());
+
+app.use("/api", (_req, res, next) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  next();
+});
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });

@@ -4,6 +4,7 @@ import { requireAuth, requireCanDelete } from "../../middleware/auth.js";
 import { requireDeletePin } from "../../middleware/requireDeletePin.js";
 import { createPurchaseBillSchema } from "./purchase.schema.js";
 import * as purchaseService from "./purchase.service.js";
+import { routeParam } from "../../lib/routeParam.js";
 
 export const purchaseRouter = Router();
 
@@ -20,7 +21,7 @@ purchaseRouter.get(
 purchaseRouter.get(
   "/:id",
   asyncHandler(async (req, res) => {
-    const bill = await purchaseService.getPurchaseBill(req.params.id);
+    const bill = await purchaseService.getPurchaseBill(routeParam(req.params.id));
     res.json(bill);
   })
 );
@@ -39,7 +40,7 @@ purchaseRouter.put(
   requireDeletePin,
   asyncHandler(async (req, res) => {
     const data = createPurchaseBillSchema.parse(req.body);
-    const bill = await purchaseService.updatePurchaseBill(req.params.id, data);
+    const bill = await purchaseService.updatePurchaseBill(routeParam(req.params.id), data);
     res.json(bill);
   })
 );
@@ -49,7 +50,7 @@ purchaseRouter.delete(
   requireCanDelete,
   requireDeletePin,
   asyncHandler(async (req, res) => {
-    await purchaseService.permanentlyDeletePurchaseBill(req.params.id);
+    await purchaseService.permanentlyDeletePurchaseBill(routeParam(req.params.id));
     res.status(204).send();
   })
 );
@@ -58,7 +59,7 @@ purchaseRouter.post(
   "/:id/restore",
   requireCanDelete,
   asyncHandler(async (req, res) => {
-    await purchaseService.restorePurchaseBill(req.params.id);
+    await purchaseService.restorePurchaseBill(routeParam(req.params.id));
     res.status(204).send();
   })
 );
@@ -68,7 +69,7 @@ purchaseRouter.delete(
   requireCanDelete,
   requireDeletePin,
   asyncHandler(async (req, res) => {
-    await purchaseService.deletePurchaseBill(req.params.id);
+    await purchaseService.deletePurchaseBill(routeParam(req.params.id));
     res.status(204).send();
   })
 );
