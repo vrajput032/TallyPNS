@@ -58,23 +58,35 @@ function RevealCard({ children, className }: { children: ReactNode; className?: 
 
 function ParallaxHeader() {
   const navigate = useNavigate();
-  const [offset, setOffset] = useState(0);
+  const elRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const onScroll = () => setOffset(window.scrollY);
+    let ticking = false;
+
+    const applyOffset = () => {
+      ticking = false;
+      const el = elRef.current;
+      if (!el) return;
+      const offset = window.scrollY;
+      const isH = Math.min(offset / 140, 1);
+      el.style.transform = `translateY(${offset * 0.15}px)`;
+      el.style.opacity = String(1 - isH * 0.2);
+    };
+
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(applyOffset);
+    };
+
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const isH = Math.min(offset / 140, 1);
-
   return (
     <div
-      className="relative z-10 mb-4 min-w-0 overflow-hidden rounded-xl border border-border/40 bg-card/40 shadow-[0_4px_30px_rgba(0,0,0,0.04)] backdrop-blur-xl"
-      style={{
-        transform: `translateY(${offset * 0.15}px)`,
-        opacity: 1 - isH * 0.2,
-      }}
+      ref={elRef}
+      className="relative z-10 mb-4 min-w-0 overflow-hidden rounded-xl border border-border/40 bg-card/40 shadow-[0_4px_30px_rgba(0,0,0,0.04)] backdrop-blur-xl will-change-transform"
     >
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/5 to-transparent dark:from-primary/15 dark:via-primary/5" />
       <div

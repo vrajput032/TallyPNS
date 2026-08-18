@@ -15,6 +15,7 @@ import { reportsRouter } from "../modules/reports/reports.routes.js";
 import { salesRouter } from "../modules/sales/sales.routes.js";
 import { vendorRouter } from "../modules/vendors/vendor.routes.js";
 import { recycleBinRouter } from "../modules/recycle-bin/recycle-bin.routes.js";
+import { rawMaterialRouter } from "../modules/raw-material/raw-material.routes.js";
 
 export const apiRouter = Router();
 
@@ -26,6 +27,7 @@ apiRouter.use("/vendors", vendorRouter);
 apiRouter.use("/sales", salesRouter);
 apiRouter.use("/purchase", purchaseRouter);
 apiRouter.use("/inventory", inventoryRouter);
+apiRouter.use("/raw-material", rawMaterialRouter);
 apiRouter.use("/gst", gstRouter);
 apiRouter.use("/reports", reportsRouter);
 apiRouter.use("/payments", paymentRouter);

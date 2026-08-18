@@ -236,3 +236,62 @@ model LedgerEntry {
   entryDate   DateTime        @default(now())
   createdAt   DateTime        @default(now())
 }
+
+/** Supplier steel / MS tube bills (kg in, yield to pipe pieces). Separate from catalog PurchaseBill. */
+model RawMaterialBill {
+  id             String    @id @default(cuid())
+  billNo         String    @unique
+  supplierName   String
+  supplierGstin  String?
+  billDate       DateTime  @default(now())
+  vehicleNo      String?
+  destination    String?
+  taxableAmount  Decimal   @default(0) @db.Decimal(14, 2)
+  cgstAmount     Decimal   @default(0) @db.Decimal(14, 2)
+  sgstAmount     Decimal   @default(0) @db.Decimal(14, 2)
+  igstAmount     Decimal   @default(0) @db.Decimal(14, 2)
+  roundOff       Decimal   @default(0) @db.Decimal(14, 2)
+  totalAmount    Decimal   @default(0) @db.Decimal(14, 2)
+  totalKg        Decimal   @default(0) @db.Decimal(14, 3)
+  notes          String?
+  sourceFileName String?
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  items    RawMaterialBillItem[]
+  payments RawMaterialPayment[]
+
+  @@index([deletedAt])
+  @@index([billDate])
+  @@index([supplierName])
+}
+
+model RawMaterialBillItem {
+  id          String          @id @default(cuid())
+  billId      String
+  bill        RawMaterialBill @relation(fields: [billId], references: [id], onDelete: Cascade)
+  description String
+  hsn         String?
+  quantityKg  Decimal         @db.Decimal(14, 3)
+  ratePerKg   Decimal         @db.Decimal(14, 4)
+  amount      Decimal         @db.Decimal(14, 2)
+}
+
+model RawMaterialPayment {
+  id          String          @id @default(cuid())
+  paymentNo   String          @unique
+  billId      String
+  bill        RawMaterialBill @relation(fields: [billId], references: [id], onDelete: Cascade)
+  amount      Decimal         @db.Decimal(14, 2)
+  mode        PaymentMode
+  reference   String?
+  paymentDate DateTime        @default(now())
+  narration   String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([billId])
+  @@index([paymentDate])
+  @@index([mode])
+}

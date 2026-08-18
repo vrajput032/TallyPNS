@@ -22,6 +22,9 @@ import { GstPage } from "@/features/gst/GstPage";
 import { ReportsPage } from "@/features/reports/ReportsPage";
 import { RecycleBinPage } from "@/features/recycle-bin/RecycleBinPage";
 import { UsersPage } from "@/features/users/UsersPage";
+import { RawMaterialBillsPage } from "@/features/raw-material/RawMaterialBillsPage";
+import { RawMaterialBillFormPage } from "@/features/raw-material/RawMaterialBillFormPage";
+import { RawMaterialBillDetailPage } from "@/features/raw-material/RawMaterialBillDetailPage";
 import { ThemeProvider } from "@/lib/theme";
 
 const queryClient = new QueryClient();
@@ -45,6 +48,10 @@ export default function App() {
                 <Route path="/purchase/:id/edit" element={<PurchaseBillFormPage />} />
                 <Route path="/purchase/:id" element={<PurchaseBillDetailPage />} />
                 <Route path="/inventory" element={<InventoryPage />} />
+                <Route path="/raw-material" element={<RawMaterialBillsPage />} />
+                <Route path="/raw-material/new" element={<RawMaterialBillFormPage />} />
+                <Route path="/raw-material/:id/edit" element={<RawMaterialBillFormPage />} />
+                <Route path="/raw-material/:id" element={<RawMaterialBillDetailPage />} />
                 <Route path="/cash" element={<CashPage />} />
                 <Route path="/bank" element={<BankPage />} />
                 <Route path="/gst" element={<GstPage />} />

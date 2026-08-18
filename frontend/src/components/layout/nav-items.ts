@@ -1,6 +1,7 @@
 import {
   Banknote,
   Building2,
+  Factory,
   LayoutDashboard,
   Package,
   Receipt,
@@ -19,6 +20,7 @@ export const navItems = [
   { to: "/sales", label: "Sales", icon: TrendingUp },
   { to: "/purchase", label: "Purchase", icon: ShoppingCart },
   { to: "/inventory", label: "Inventory", icon: Warehouse },
+  { to: "/raw-material", label: "Raw material", icon: Factory },
   { to: "/cash", label: "Cash", icon: Banknote },
   { to: "/bank", label: "Bank", icon: Building2 },
   { to: "/gst", label: "GST", icon: Receipt },

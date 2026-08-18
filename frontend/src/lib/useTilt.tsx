@@ -46,8 +46,8 @@ export function useTilt(options: UseTiltOptions = {}) {
 
         if (enableSpotlight) {
           setSpotlight({
-            x: ((x / rect.width) * 100).toFixed(1),
-            y: ((y / rect.height) * 100).toFixed(1),
+            x: Number(((x / rect.width) * 100).toFixed(1)),
+            y: Number(((y / rect.height) * 100).toFixed(1)),
           });
         }
       });

@@ -36,7 +36,7 @@ function hexToOklch(hex: string) {
 function generatePalette(primaryHex: string, count: number): string[] {
   const base = hexToOklch(primaryHex);
   const m = base.match(/oklch\(([^)]+)\)/);
-  if (!m) return Array.from({ length: count }, (_, i) => base);
+  if (!m) return Array.from({ length: count }, () => base);
   const parts = m[1].split(/\s+/);
   const baseL = parseFloat(parts[0]);
   const baseC = parseFloat(parts[1]);
