@@ -11,6 +11,7 @@ import {
   Warehouse,
   FileText,
   Trash2,
+  UserCog,
 } from "lucide-react";
 
 export const navItems = [
@@ -25,5 +26,6 @@ export const navItems = [
   { to: "/vendors", label: "Vendors", icon: Truck },
   { to: "/products", label: "Products", icon: Package },
   { to: "/reports", label: "Reports", icon: FileText },
-  { to: "/recycle-bin", label: "Recycle Bin", icon: Trash2 },
+  { to: "/users", label: "Users", icon: UserCog, adminOnly: true },
+  { to: "/recycle-bin", label: "Recycle Bin", icon: Trash2, adminOnly: true },
 ] as const;

@@ -71,11 +71,11 @@ export function SalesByCustomerChart() {
   const chartData: CustomerSalesPoint[] = data ?? [];
 
   return (
-    <div className="relative h-72 w-full">
+    <div className="relative h-64 w-full min-w-0 overflow-hidden sm:h-72">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={chartData}
-          margin={{ top: 8, right: 8, left: 16, bottom: 8 }}
+          margin={{ top: 8, right: 4, left: 0, bottom: 8 }}
           barGap={4}
         >
           <defs>

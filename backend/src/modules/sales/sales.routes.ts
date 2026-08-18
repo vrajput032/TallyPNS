@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { asyncHandler } from "../../middleware/asyncHandler.js";
-import { requireAuth } from "../../middleware/auth.js";
+import { requireAuth, requireCanDelete } from "../../middleware/auth.js";
 import { requireDeletePin } from "../../middleware/requireDeletePin.js";
 import { createSalesInvoiceSchema } from "./sales.schema.js";
 import * as salesService from "./sales.service.js";
@@ -54,6 +54,7 @@ salesRouter.put(
 
 salesRouter.delete(
   "/:id/permanent",
+  requireCanDelete,
   requireDeletePin,
   asyncHandler(async (req, res) => {
     await salesService.permanentlyDeleteSalesInvoice(req.params.id);
@@ -63,6 +64,7 @@ salesRouter.delete(
 
 salesRouter.post(
   "/:id/restore",
+  requireCanDelete,
   asyncHandler(async (req, res) => {
     await salesService.restoreSalesInvoice(req.params.id);
     res.status(204).send();
@@ -71,6 +73,7 @@ salesRouter.post(
 
 salesRouter.delete(
   "/:id",
+  requireCanDelete,
   requireDeletePin,
   asyncHandler(async (req, res) => {
     await salesService.deleteSalesInvoice(req.params.id);

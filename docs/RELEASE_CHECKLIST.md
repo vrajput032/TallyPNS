@@ -20,7 +20,7 @@ npm run deploy
 
 - [ ] https://tallypns-api.onrender.com/health returns `{"status":"ok"}`
 - [ ] https://tallypns.pages.dev loads
-- [ ] Login works (`admin@pnsenterprises.com`)
+- [ ] Login works (`admin` / `garvit`)
 - [ ] Spot-check changed pages (Sales, Purchase, Inventory, GST, Reports)
 - [ ] Hard refresh or private tab on mobile if cache looks stale
 

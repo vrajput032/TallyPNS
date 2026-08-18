@@ -45,6 +45,8 @@ import { useDeleteSalesInvoice, useSalesInvoices } from "./useSales";
 import type { SalesInvoice } from "./types";
 import { PaymentStatusBadge } from "@/features/payments/PaymentStatusBadge";
 import { formatInr } from "@/lib/formatInr";
+import { canDelete } from "@/lib/permissions";
+import { useAuthStore } from "@/store/authStore";
 
 function invoicePieces(invoice: SalesInvoice) {
   return invoice.items.reduce((sum, item) => sum + Number(item.quantity), 0);
@@ -149,7 +151,7 @@ function MobileInvoiceCards({
   emptyMessage: string;
   onView: (invoice: SalesInvoice) => void;
   onEdit: (invoice: SalesInvoice) => void;
-  onDelete: (invoice: SalesInvoice) => void;
+  onDelete?: (invoice: SalesInvoice) => void;
 }) {
   if (isLoading) {
     return (
@@ -236,9 +238,11 @@ function MobileInvoiceCards({
                     <Pencil className="size-4" />
                   </Button>
                 )}
-                <Button variant="ghost" size="icon" onClick={() => onDelete(invoice)}>
-                  <Trash2 className="size-4" />
-                </Button>
+                {onDelete ? (
+                  <Button variant="ghost" size="icon" onClick={() => onDelete(invoice)}>
+                    <Trash2 className="size-4" />
+                  </Button>
+                ) : null}
                 <ChevronRight className="size-4 text-muted-foreground" />
               </div>
             </div>
@@ -253,6 +257,7 @@ export function SalesInvoicesPage() {
   const { data: invoices, isLoading } = useSalesInvoices();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const allowDelete = canDelete(useAuthStore((state) => state.user));
   const deleteInvoice = useDeleteSalesInvoice();
   const [deleteTarget, setDeleteTarget] = useState<SalesInvoice | null>(null);
   const [sorting, setSorting] = useState<SortingState>([{ id: "invoiceDate", desc: true }]);
@@ -501,7 +506,7 @@ export function SalesInvoicesPage() {
             }
             onView={(invoice) => navigate(`/sales/${invoice.id}`)}
             onEdit={(invoice) => navigate(`/sales/${invoice.id}/edit`)}
-            onDelete={handleDelete}
+            onDelete={allowDelete ? handleDelete : undefined}
           />
         </>
       ) : (
@@ -568,13 +573,15 @@ export function SalesInvoicesPage() {
                           <Pencil className="size-4" />
                         </Button>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(row.original)}
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
+                      {allowDelete ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(row.original)}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      ) : null}
                     </TableCell>
                   </TableRow>
                 ))

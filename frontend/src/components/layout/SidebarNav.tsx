@@ -1,13 +1,18 @@
 import { NavLink } from "react-router-dom";
+import { canDelete } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/store/authStore";
 import { navItems } from "./nav-items";
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+  const user = useAuthStore((state) => state.user);
+  const items = navItems.filter((item) => !("adminOnly" in item && item.adminOnly) || canDelete(user));
+
   return (
     <>
       <div className="flex h-14 items-center border-b px-4 font-semibold">PNS ERP</div>
       <nav className="flex flex-col gap-1 p-2">
-        {navItems.map(({ to, label, icon: Icon }) => (
+        {items.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}

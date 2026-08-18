@@ -81,10 +81,9 @@ Think of it as a lightweight Tally-like web app for one company.
 
 | Field | Value |
 |-------|-------|
-| Email | `admin@pnsenterprises.com` |
-| Password | Set via `ADMIN_SEED_PASSWORD` in `backend/.env` when running seed |
-| Name | Admin |
-| Role | ADMIN |
+| Admin username | `admin` |
+| Staff username | `garvit` (can add, cannot delete) |
+| Passwords | Set via `ADMIN_SEED_PASSWORD` / `GARVIT_SEED_PASSWORD` in `backend/.env` |
 
 Seed script: `backend/prisma/seed.ts`  
 Command: `npm run seed -w backend`

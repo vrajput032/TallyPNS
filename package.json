@@ -13,6 +13,7 @@
     "deploy:frontend": "bash scripts/deploy.sh frontend",
     "deploy:backend": "bash scripts/deploy.sh backend",
     "db:backup": "bash scripts/db-backup.sh",
+    "db:backup:push": "bash scripts/db-backup-push.sh",
     "db:restore": "bash scripts/db-restore.sh",
     "db:export:sheets": "npm run export:sheets -w backend",
     "demo:purchase-sales-gst": "node scripts/demo-purchase-sales-gst.mjs"

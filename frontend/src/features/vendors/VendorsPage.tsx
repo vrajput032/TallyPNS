@@ -22,6 +22,8 @@ import {
 import { VendorFormDialog } from "./VendorFormDialog";
 import { useDeleteVendor, useVendors } from "./useVendors";
 import type { Vendor } from "./types";
+import { canDelete } from "@/lib/permissions";
+import { useAuthStore } from "@/store/authStore";
 
 const columns: ColumnDef<Vendor>[] = [
   { accessorKey: "name", header: "Name" },
@@ -37,6 +39,7 @@ const columns: ColumnDef<Vendor>[] = [
 
 export function VendorsPage() {
   const { data: vendors, isLoading } = useVendors();
+  const allowDelete = canDelete(useAuthStore((state) => state.user));
   const deleteVendor = useDeleteVendor();
   const [globalFilter, setGlobalFilter] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -131,9 +134,11 @@ export function VendorsPage() {
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(row.original)}>
                       <Pencil className="size-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(row.original)}>
-                      <Trash2 className="size-4" />
-                    </Button>
+                    {allowDelete ? (
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(row.original)}>
+                        <Trash2 className="size-4" />
+                      </Button>
+                    ) : null}
                   </TableCell>
                 </TableRow>
               ))

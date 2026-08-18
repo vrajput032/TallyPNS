@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { asyncHandler } from "../../middleware/asyncHandler.js";
-import { requireAuth } from "../../middleware/auth.js";
+import { requireAuth, requireCanDelete } from "../../middleware/auth.js";
 import { createVendorSchema, updateVendorSchema } from "./vendor.schema.js";
 import * as vendorService from "./vendor.service.js";
 
@@ -44,6 +44,7 @@ vendorRouter.put(
 
 vendorRouter.delete(
   "/:id",
+  requireCanDelete,
   asyncHandler(async (req, res) => {
     await vendorService.deleteVendor(req.params.id);
     res.status(204).send();

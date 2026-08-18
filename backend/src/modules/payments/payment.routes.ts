@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { asyncHandler } from "../../middleware/asyncHandler.js";
-import { requireAuth } from "../../middleware/auth.js";
+import { requireAuth, requireCanDelete } from "../../middleware/auth.js";
 import { createReceiptSchema, createVendorPaymentSchema } from "./payment.schema.js";
 import * as paymentService from "./payment.service.js";
 
@@ -19,6 +19,7 @@ paymentRouter.post(
 
 paymentRouter.delete(
   "/receipts/:id",
+  requireCanDelete,
   asyncHandler(async (req, res) => {
     await paymentService.deleteReceipt(req.params.id);
     res.status(204).send();
@@ -36,6 +37,7 @@ paymentRouter.post(
 
 paymentRouter.delete(
   "/vendor-payments/:id",
+  requireCanDelete,
   asyncHandler(async (req, res) => {
     await paymentService.deleteVendorPayment(req.params.id);
     res.status(204).send();

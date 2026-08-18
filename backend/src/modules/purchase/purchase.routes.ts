@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { asyncHandler } from "../../middleware/asyncHandler.js";
-import { requireAuth } from "../../middleware/auth.js";
+import { requireAuth, requireCanDelete } from "../../middleware/auth.js";
 import { requireDeletePin } from "../../middleware/requireDeletePin.js";
 import { createPurchaseBillSchema } from "./purchase.schema.js";
 import * as purchaseService from "./purchase.service.js";
@@ -46,6 +46,7 @@ purchaseRouter.put(
 
 purchaseRouter.delete(
   "/:id/permanent",
+  requireCanDelete,
   requireDeletePin,
   asyncHandler(async (req, res) => {
     await purchaseService.permanentlyDeletePurchaseBill(req.params.id);
@@ -55,6 +56,7 @@ purchaseRouter.delete(
 
 purchaseRouter.post(
   "/:id/restore",
+  requireCanDelete,
   asyncHandler(async (req, res) => {
     await purchaseService.restorePurchaseBill(req.params.id);
     res.status(204).send();
@@ -63,6 +65,7 @@ purchaseRouter.post(
 
 purchaseRouter.delete(
   "/:id",
+  requireCanDelete,
   requireDeletePin,
   asyncHandler(async (req, res) => {
     await purchaseService.deletePurchaseBill(req.params.id);

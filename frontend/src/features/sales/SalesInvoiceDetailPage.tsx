@@ -20,6 +20,8 @@ import { useDeleteReceipt } from "@/features/payments/usePayments";
 import { SalesInvoicePrint } from "./SalesInvoicePrint";
 import { useDeleteSalesInvoice, useSalesInvoice } from "./useSales";
 import { formatInr } from "@/lib/formatInr";
+import { canDelete } from "@/lib/permissions";
+import { useAuthStore } from "@/store/authStore";
 
 export function SalesInvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +29,7 @@ export function SalesInvoiceDetailPage() {
   const { data: invoice, isLoading } = useSalesInvoice(id);
   const deleteInvoice = useDeleteSalesInvoice();
   const deleteReceipt = useDeleteReceipt();
+  const allowDelete = canDelete(useAuthStore((state) => state.user));
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -107,14 +110,16 @@ export function SalesInvoiceDetailPage() {
                 Edit
               </Button>
             )}
-            <Button
-              variant="destructive"
-              onClick={() => setDeleteOpen(true)}
-              disabled={deleteInvoice.isPending}
-            >
-              <Trash2 className="size-4" />
-              Delete
-            </Button>
+            {allowDelete ? (
+              <Button
+                variant="destructive"
+                onClick={() => setDeleteOpen(true)}
+                disabled={deleteInvoice.isPending}
+              >
+                <Trash2 className="size-4" />
+                Delete
+              </Button>
+            ) : null}
           </>
         }
       />
@@ -179,19 +184,21 @@ export function SalesInvoiceDetailPage() {
                     {formatInr(receipt.amount)}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        if (!confirm(`Delete receipt ${receipt.receiptNo}?`)) return;
-                        deleteReceipt.mutate(receipt.id, {
-                          onSuccess: () => toast.success("Receipt deleted"),
-                          onError: () => toast.error("Failed to delete receipt"),
-                        });
-                      }}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
+                    {allowDelete ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          if (!confirm(`Delete receipt ${receipt.receiptNo}?`)) return;
+                          deleteReceipt.mutate(receipt.id, {
+                            onSuccess: () => toast.success("Receipt deleted"),
+                            onError: () => toast.error("Failed to delete receipt"),
+                          });
+                        }}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    ) : null}
                   </TableCell>
                 </TableRow>
               ))}

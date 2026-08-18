@@ -28,7 +28,7 @@ async function refreshAccessToken(): Promise<string> {
     refreshToken,
   });
 
-  useAuthStore.getState().setAccessToken(data.accessToken);
+  useAuthStore.getState().setTokens(data.accessToken, data.refreshToken);
   return data.accessToken;
 }
 
@@ -40,6 +40,11 @@ api.interceptors.response.use(
       | undefined;
 
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+      const requestUrl = originalRequest.url ?? "";
+      if (requestUrl.includes("/auth/login") || requestUrl.includes("/auth/refresh")) {
+        return Promise.reject(error);
+      }
+
       originalRequest._retry = true;
       try {
         refreshPromise ??= refreshAccessToken();

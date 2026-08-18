@@ -37,13 +37,13 @@ Phase 1 MVP scaffold: React + Vite frontend, Express + Prisma backend, PostgreSQ
    npm run prisma:migrate -w backend
    ```
 
-5. Seed an admin user (set `ADMIN_SEED_PASSWORD` in `backend/.env` first — min 12 characters):
+5. Seed users (set `ADMIN_SEED_PASSWORD` and `GARVIT_SEED_PASSWORD` in `backend/.env` first — min 8 characters):
 
    ```bash
    npm run seed -w backend
    ```
 
-   Default admin email: `admin@pnsenterprises.com`. The password is only in your local `.env`, not in this repo.
+   Default admin username: `admin`. Staff username: `garvit` (add only, cannot delete). Passwords are only in your local `.env`, not in this repo.
 
 6. Start both servers:
 
@@ -124,8 +124,13 @@ Use `frontend/.env.example` / `frontend/.env.production.example` as templates �
 ```bash
 npm run db:backup
 ```
-Creates `backups/tallypns-YYYYMMDD-HHMMSS.dump` and updates `backups/tallypns-latest.dump`.  
-**Copy that file to Google Drive / iCloud / USB.**
+Creates `backups/tallypns-YYYYMMDD-HHMMSS.dump` and updates `backups/tallypns-latest.dump`.
+
+Dump **and** push to the private GitHub repo [`vrajput032/DBDumps`](https://github.com/vrajput032/DBDumps):
+```bash
+npm run db:backup:push
+```
+Needs a local clone at `../DBDumps` (next to this project).
 
 ### 3. Restore if something is lost
 Local Docker copy:

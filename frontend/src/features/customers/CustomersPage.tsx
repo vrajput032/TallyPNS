@@ -20,6 +20,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatInr } from "@/lib/formatInr";
+import { canDelete } from "@/lib/permissions";
+import { useAuthStore } from "@/store/authStore";
 import { CustomerFormDialog } from "./CustomerFormDialog";
 import { useCustomers, useDeleteCustomer } from "./useCustomers";
 import type { Customer } from "./types";
@@ -51,6 +53,7 @@ const columns: ColumnDef<Customer>[] = [
 
 export function CustomersPage() {
   const { data: customers, isLoading } = useCustomers();
+  const allowDelete = canDelete(useAuthStore((state) => state.user));
   const deleteCustomer = useDeleteCustomer();
   const [globalFilter, setGlobalFilter] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -145,9 +148,11 @@ export function CustomersPage() {
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(row.original)}>
                       <Pencil className="size-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(row.original)}>
-                      <Trash2 className="size-4" />
-                    </Button>
+                    {allowDelete ? (
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(row.original)}>
+                        <Trash2 className="size-4" />
+                      </Button>
+                    ) : null}
                   </TableCell>
                 </TableRow>
               ))

@@ -25,6 +25,8 @@ import { useDeletePurchaseBill, usePurchaseBills } from "./usePurchase";
 import type { PurchaseBill } from "./types";
 import { PaymentStatusBadge } from "@/features/payments/PaymentStatusBadge";
 import { formatInr } from "@/lib/formatInr";
+import { canDelete } from "@/lib/permissions";
+import { useAuthStore } from "@/store/authStore";
 
 function billPieces(bill: PurchaseBill) {
   return bill.items.reduce((sum, item) => sum + Number(item.quantity), 0);
@@ -83,6 +85,7 @@ const columns: ColumnDef<PurchaseBill>[] = [
 export function PurchaseBillsPage() {
   const { data: bills, isLoading } = usePurchaseBills();
   const navigate = useNavigate();
+  const allowDelete = canDelete(useAuthStore((state) => state.user));
   const deleteBill = useDeletePurchaseBill();
   const [deleteTarget, setDeleteTarget] = useState<PurchaseBill | null>(null);
   const [sorting, setSorting] = useState<SortingState>([{ id: "billDate", desc: true }]);
@@ -194,13 +197,15 @@ export function PurchaseBillsPage() {
                         <Pencil className="size-4" />
                       </Button>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(row.original)}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
+                    {allowDelete ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(row.original)}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    ) : null}
                   </TableCell>
                 </TableRow>
               ))

@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -28,7 +29,7 @@ import { api } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  username: z.string().trim().min(2, "Enter your username"),
   password: z.string().min(6),
 });
 
@@ -37,15 +38,32 @@ type LoginValues = z.infer<typeof loginSchema>;
 export function LoginPage() {
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const [hydrated, setHydrated] = useState(() => useAuthStore.persist.hasHydrated());
+
+  useEffect(() => {
+    const unsub = useAuthStore.persist.onFinishHydration(() => setHydrated(true));
+    setHydrated(useAuthStore.persist.hasHydrated());
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (hydrated && accessToken) {
+      navigate("/", { replace: true });
+    }
+  }, [hydrated, accessToken, navigate]);
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
+    defaultValues: { username: "", password: "" },
   });
 
   const loginMutation = useMutation({
     mutationFn: async (values: LoginValues) => {
-      const { data } = await api.post("/auth/login", values);
+      const { data } = await api.post("/auth/login", {
+        username: values.username.trim().toLowerCase(),
+        password: values.password,
+      });
       return data;
     },
     onSuccess: (data) => {
@@ -59,7 +77,7 @@ export function LoginPage() {
         toast.error("Cannot reach the server. Check your connection.");
         return;
       }
-      toast.error("Invalid email or password");
+      toast.error("Invalid username or password");
     },
   });
 
@@ -84,12 +102,12 @@ export function LoginPage() {
                 >
                   <FormField
                     control={form.control}
-                    name="email"
+                    name="username"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel>Username</FormLabel>
                         <FormControl>
-                          <Input type="email" placeholder="admin@pnsenterprises.com" {...field} />
+                          <Input type="text" autoComplete="username" placeholder="admin" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -102,7 +120,7 @@ export function LoginPage() {
                       <FormItem>
                         <FormLabel>Password</FormLabel>
                         <FormControl>
-                          <Input type="password" {...field} />
+                          <Input type="password" autoComplete="current-password" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

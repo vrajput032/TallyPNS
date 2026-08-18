@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { asyncHandler } from "../../middleware/asyncHandler.js";
-import { requireAuth } from "../../middleware/auth.js";
+import { requireAuth, requireCanDelete } from "../../middleware/auth.js";
 import { createCustomerSchema, updateCustomerSchema } from "./customer.schema.js";
 import * as customerService from "./customer.service.js";
 
@@ -44,6 +44,7 @@ customerRouter.put(
 
 customerRouter.delete(
   "/:id",
+  requireCanDelete,
   asyncHandler(async (req, res) => {
     await customerService.deleteCustomer(req.params.id);
     res.status(204).send();

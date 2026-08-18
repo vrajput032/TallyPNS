@@ -1,12 +1,12 @@
 import { Router } from "express";
 import { asyncHandler } from "../../middleware/asyncHandler.js";
-import { requireAuth } from "../../middleware/auth.js";
+import { requireAdmin, requireAuth } from "../../middleware/auth.js";
 import * as purchaseService from "../purchase/purchase.service.js";
 import * as salesService from "../sales/sales.service.js";
 
 export const recycleBinRouter = Router();
 
-recycleBinRouter.use(requireAuth);
+recycleBinRouter.use(requireAuth, requireAdmin);
 
 recycleBinRouter.get(
   "/",

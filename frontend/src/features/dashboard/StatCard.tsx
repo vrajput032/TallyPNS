@@ -18,7 +18,7 @@ export function StatCard({ label, value, icon: Icon, isLoading, valueClassName }
   const card = (
     <Card
       className={cn(
-        "group relative overflow-hidden border-border/40 bg-card/60 backdrop-blur-xl transition-all duration-300",
+        "group relative min-w-0 overflow-hidden border-border/40 bg-card/60 backdrop-blur-xl transition-all duration-300",
         "shadow-[0_4px_30px_rgba(0,0,0,0.04)] hover:border-primary/40 hover:shadow-[0_8px_40px_rgba(0,0,0,0.08),0_0_0_1px_rgba(var(--primary),0.15)]",
         "dark:shadow-[0_4px_30px_rgba(0,0,0,0.2)] dark:hover:shadow-[0_8px_40px_rgba(0,0,0,0.35),0_0_0_1px_rgba(var(--primary),0.3)]",
       )}
@@ -40,7 +40,9 @@ export function StatCard({ label, value, icon: Icon, isLoading, valueClassName }
         {isLoading ? (
           <Skeleton className="h-8 w-24" />
         ) : (
-          <div className={cn("text-2xl font-semibold", valueClassName)}>{value}</div>
+          <div className={cn("truncate text-lg font-semibold tabular-nums sm:text-2xl", valueClassName)}>
+            {value}
+          </div>
         )}
       </CardContent>
     </Card>
@@ -49,7 +51,7 @@ export function StatCard({ label, value, icon: Icon, isLoading, valueClassName }
   if (!ENABLE_3D) return card;
 
   return (
-    <TiltCard maxTilt={10} scale={1.03} speed={300}>
+    <TiltCard maxTilt={10} scale={1.03} speed={300} className="min-w-0 w-full">
       {card}
     </TiltCard>
   );

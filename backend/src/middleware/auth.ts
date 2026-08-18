@@ -2,10 +2,13 @@ import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { ApiError } from "./errorHandler.js";
 
+export type RoleName = "ADMIN" | "STAFF";
+
 export interface AuthPayload {
   sub: string;
+  username: string;
   email: string;
-  role: "ADMIN" | "STAFF";
+  role: RoleName;
 }
 
 declare global {
@@ -38,9 +41,33 @@ export function requireAdmin(req: Request, _res: Response, next: NextFunction) {
     throw new ApiError(401, "Missing access token");
   }
 
-  if (req.user.role !== "ADMIN") {
-    throw new ApiError(403, "Admin access required");
+  switch (req.user.role) {
+    case "ADMIN":
+      next();
+      return;
+    case "STAFF":
+      throw new ApiError(403, "Admin access required");
+    default: {
+      const _exhaustive: never = req.user.role;
+      throw new ApiError(403, `Unhandled role: ${_exhaustive}`);
+    }
+  }
+}
+
+export function requireCanDelete(req: Request, _res: Response, next: NextFunction) {
+  if (!req.user) {
+    throw new ApiError(401, "Missing access token");
   }
 
-  next();
+  switch (req.user.role) {
+    case "ADMIN":
+      next();
+      return;
+    case "STAFF":
+      throw new ApiError(403, "You do not have permission to delete");
+    default: {
+      const _exhaustive: never = req.user.role;
+      throw new ApiError(403, `Unhandled role: ${_exhaustive}`);
+    }
+  }
 }

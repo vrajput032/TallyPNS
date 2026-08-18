@@ -20,6 +20,8 @@ import { useDeleteVendorPayment } from "@/features/payments/usePayments";
 import { PurchaseBillPrint } from "./PurchaseBillPrint";
 import { useDeletePurchaseBill, usePurchaseBill } from "./usePurchase";
 import { formatInr } from "@/lib/formatInr";
+import { canDelete } from "@/lib/permissions";
+import { useAuthStore } from "@/store/authStore";
 
 export function PurchaseBillDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +29,7 @@ export function PurchaseBillDetailPage() {
   const { data: bill, isLoading } = usePurchaseBill(id);
   const deleteBill = useDeletePurchaseBill();
   const deletePayment = useDeleteVendorPayment();
+  const allowDelete = canDelete(useAuthStore((state) => state.user));
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -79,10 +82,12 @@ export function PurchaseBillDetailPage() {
                 Edit
               </Button>
             )}
-            <Button variant="destructive" onClick={() => setDeleteOpen(true)} disabled={deleteBill.isPending}>
-              <Trash2 className="size-4" />
-              Delete
-            </Button>
+            {allowDelete ? (
+              <Button variant="destructive" onClick={() => setDeleteOpen(true)} disabled={deleteBill.isPending}>
+                <Trash2 className="size-4" />
+                Delete
+              </Button>
+            ) : null}
           </>
         }
       />
@@ -145,19 +150,21 @@ export function PurchaseBillDetailPage() {
                     {formatInr(payment.amount)}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        if (!confirm(`Delete payment ${payment.paymentNo}?`)) return;
-                        deletePayment.mutate(payment.id, {
-                          onSuccess: () => toast.success("Payment deleted"),
-                          onError: () => toast.error("Failed to delete payment"),
-                        });
-                      }}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
+                    {allowDelete ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          if (!confirm(`Delete payment ${payment.paymentNo}?`)) return;
+                          deletePayment.mutate(payment.id, {
+                            onSuccess: () => toast.success("Payment deleted"),
+                            onError: () => toast.error("Failed to delete payment"),
+                          });
+                        }}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    ) : null}
                   </TableCell>
                 </TableRow>
               ))}

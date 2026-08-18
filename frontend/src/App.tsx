@@ -2,8 +2,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { AppShell } from "@/components/layout/AppShell";
-import { ProtectedRoute } from "@/features/auth/ProtectedRoute";
+import { AdminRoute } from "@/features/auth/AdminRoute";
 import { LoginPage } from "@/features/auth/LoginPage";
+import { ProtectedRoute } from "@/features/auth/ProtectedRoute";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { CustomersPage } from "@/features/customers/CustomersPage";
 import { ProductsPage } from "@/features/products/ProductsPage";
@@ -20,6 +21,7 @@ import { BankPage } from "@/features/bank/BankPage";
 import { GstPage } from "@/features/gst/GstPage";
 import { ReportsPage } from "@/features/reports/ReportsPage";
 import { RecycleBinPage } from "@/features/recycle-bin/RecycleBinPage";
+import { UsersPage } from "@/features/users/UsersPage";
 import { ThemeProvider } from "@/lib/theme";
 
 const queryClient = new QueryClient();
@@ -50,7 +52,10 @@ export default function App() {
                 <Route path="/products" element={<ProductsPage />} />
                 <Route path="/vendors" element={<VendorsPage />} />
                 <Route path="/reports" element={<ReportsPage />} />
-                <Route path="/recycle-bin" element={<RecycleBinPage />} />
+                <Route element={<AdminRoute />}>
+                  <Route path="/users" element={<UsersPage />} />
+                  <Route path="/recycle-bin" element={<RecycleBinPage />} />
+                </Route>
               </Route>
             </Route>
           </Routes>

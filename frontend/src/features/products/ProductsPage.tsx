@@ -22,6 +22,8 @@ import {
 import { ProductFormDialog } from "./ProductFormDialog";
 import { useDeleteProduct, useProducts } from "./useProducts";
 import type { Product } from "./types";
+import { canDelete } from "@/lib/permissions";
+import { useAuthStore } from "@/store/authStore";
 
 const columns: ColumnDef<Product>[] = [
   { accessorKey: "name", header: "Name" },
@@ -46,6 +48,7 @@ const columns: ColumnDef<Product>[] = [
 
 export function ProductsPage() {
   const { data: products, isLoading } = useProducts();
+  const allowDelete = canDelete(useAuthStore((state) => state.user));
   const deleteProduct = useDeleteProduct();
   const [globalFilter, setGlobalFilter] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -140,9 +143,11 @@ export function ProductsPage() {
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(row.original)}>
                       <Pencil className="size-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(row.original)}>
-                      <Trash2 className="size-4" />
-                    </Button>
+                    {allowDelete ? (
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(row.original)}>
+                        <Trash2 className="size-4" />
+                      </Button>
+                    ) : null}
                   </TableCell>
                 </TableRow>
               ))
