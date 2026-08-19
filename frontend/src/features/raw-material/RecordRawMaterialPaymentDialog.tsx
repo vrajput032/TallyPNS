@@ -28,7 +28,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatInr } from "@/lib/formatInr";
-import { useCreateRawMaterialPayment } from "./useRawMaterial";
+import type { RawMaterialPayment } from "./types";
+import { useCreateRawMaterialPayment, useUpdateRawMaterialPayment } from "./useRawMaterial";
 
 const schema = z.object({
   amount: z.coerce.number().positive("Enter amount"),
@@ -46,6 +47,7 @@ interface RecordRawMaterialPaymentDialogProps {
   billId: string;
   billNo: string;
   balanceAmount: number;
+  payment?: RawMaterialPayment | null;
 }
 
 export function RecordRawMaterialPaymentDialog({
@@ -54,8 +56,14 @@ export function RecordRawMaterialPaymentDialog({
   billId,
   billNo,
   balanceAmount,
+  payment = null,
 }: RecordRawMaterialPaymentDialogProps) {
+  const isEditing = payment != null;
+  const maxAmount = isEditing ? balanceAmount + Number(payment.amount) : balanceAmount;
   const createPayment = useCreateRawMaterialPayment();
+  const updatePayment = useUpdateRawMaterialPayment();
+  const isPending = createPayment.isPending || updatePayment.isPending;
+
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -68,34 +76,62 @@ export function RecordRawMaterialPaymentDialog({
   });
 
   useEffect(() => {
-    if (open) {
+    if (!open) return;
+    if (payment) {
       form.reset({
-        amount: balanceAmount,
-        mode: "BANK",
-        reference: "",
-        paymentDate: new Date().toISOString().slice(0, 10),
-        narration: "",
+        amount: Number(payment.amount),
+        mode: payment.mode,
+        reference: payment.reference ?? "",
+        paymentDate: payment.paymentDate.slice(0, 10),
+        narration: payment.narration ?? "",
       });
-    }
-  }, [open, balanceAmount, form]);
-
-  function onSubmit(values: FormValues) {
-    if (!billId) return;
-    if (values.amount > balanceAmount + 0.009) {
-      toast.error(`Amount cannot exceed balance ₹${formatInr(balanceAmount)}`);
       return;
     }
+    form.reset({
+      amount: balanceAmount,
+      mode: "BANK",
+      reference: "",
+      paymentDate: new Date().toISOString().slice(0, 10),
+      narration: "",
+    });
+  }, [open, balanceAmount, payment, form]);
+
+  function onSubmit(values: FormValues) {
+    if (values.amount > maxAmount + 0.009) {
+      toast.error(`Amount cannot exceed ₹${formatInr(maxAmount)}`);
+      return;
+    }
+
+    const input = {
+      amount: values.amount,
+      mode: values.mode,
+      reference: values.reference || null,
+      paymentDate: values.paymentDate,
+      narration: values.narration || null,
+    };
+
+    if (isEditing && payment) {
+      updatePayment.mutate(
+        { paymentId: payment.id, input },
+        {
+          onSuccess: () => {
+            toast.success("Payment updated");
+            onOpenChange(false);
+          },
+          onError: (error: unknown) => {
+            const message =
+              (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+              "Failed to update payment";
+            toast.error(message);
+          },
+        }
+      );
+      return;
+    }
+
+    if (!billId) return;
     createPayment.mutate(
-      {
-        billId,
-        input: {
-          amount: values.amount,
-          mode: values.mode,
-          reference: values.reference || null,
-          paymentDate: values.paymentDate,
-          narration: values.narration || null,
-        },
-      },
+      { billId, input },
       {
         onSuccess: () => {
           toast.success("Payment recorded");
@@ -115,10 +151,14 @@ export function RecordRawMaterialPaymentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Pay supplier — {billNo}</DialogTitle>
+          <DialogTitle>
+            {isEditing ? `Edit payment — ${billNo}` : `Pay supplier — ${billNo}`}
+          </DialogTitle>
         </DialogHeader>
         <p className="text-sm text-muted-foreground">
-          Still to send: ₹{formatInr(balanceAmount)}
+          {isEditing
+            ? `Max amount: ₹${formatInr(maxAmount)}`
+            : `Still to send: ₹${formatInr(balanceAmount)}`}
         </p>
         <Form {...form}>
           <form className="grid gap-3" onSubmit={form.handleSubmit(onSubmit)}>
@@ -199,8 +239,8 @@ export function RecordRawMaterialPaymentDialog({
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={createPayment.isPending}>
-                {createPayment.isPending ? "Saving..." : "Save payment"}
+              <Button type="submit" disabled={isPending}>
+                {isPending ? "Saving..." : isEditing ? "Save changes" : "Save payment"}
               </Button>
             </DialogFooter>
           </form>

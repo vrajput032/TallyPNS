@@ -114,6 +114,25 @@ export function useCreateRawMaterialPayment() {
   });
 }
 
+export function useUpdateRawMaterialPayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      paymentId,
+      input,
+    }: {
+      paymentId: string;
+      input: CreateRawMaterialPaymentInput;
+    }) => {
+      const { data } = await api.put<RawMaterialBill>(`/raw-material/payments/${paymentId}`, input);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: KEY });
+    },
+  });
+}
+
 export function useDeleteRawMaterialPayment() {
   const queryClient = useQueryClient();
   return useMutation({

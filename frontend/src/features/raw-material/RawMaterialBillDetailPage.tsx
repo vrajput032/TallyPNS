@@ -16,10 +16,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PaymentStatusBadge } from "@/features/payments/PaymentStatusBadge";
+import { MobilePaymentSentCards } from "@/features/payments/MobilePaymentSentCards";
 import { formatInr } from "@/lib/formatInr";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { canDelete } from "@/lib/permissions";
 import { piecesFromKg } from "@/lib/rawMaterialYield";
 import { useAuthStore } from "@/store/authStore";
+import type { RawMaterialPayment } from "./types";
 import { RecordRawMaterialPaymentDialog } from "./RecordRawMaterialPaymentDialog";
 import { useDeleteRawMaterialBill, useDeleteRawMaterialPayment, useRawMaterialBill } from "./useRawMaterial";
 
@@ -30,7 +33,9 @@ export function RawMaterialBillDetailPage() {
   const deleteBill = useDeleteRawMaterialBill();
   const deletePayment = useDeleteRawMaterialPayment();
   const allowDelete = canDelete(useAuthStore((state) => state.user));
+  const isMobile = useIsMobile();
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [editPayment, setEditPayment] = useState<RawMaterialPayment | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   if (isLoading || !bill) {
@@ -199,10 +204,10 @@ export function RawMaterialBillDetailPage() {
       </Card>
 
       <div className="min-w-0 rounded-md border bg-card">
-        <div className="flex items-center justify-between border-b px-4 py-2">
+        <div className="flex flex-col gap-2 border-b px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <span className="text-sm font-medium">Payments sent</span>
           {bill.paymentStatus !== "PAID" ? (
-            <Button size="sm" onClick={() => setPaymentOpen(true)}>
+            <Button size="sm" className="w-full sm:w-auto" onClick={() => setPaymentOpen(true)}>
               <Banknote className="size-4" />
               Record payment
             </Button>
@@ -212,6 +217,29 @@ export function RawMaterialBillDetailPage() {
           <p className="px-4 py-6 text-sm text-muted-foreground">
             No payment recorded yet. Click Record payment when you send money to the supplier.
           </p>
+        ) : isMobile ? (
+          <MobilePaymentSentCards
+            payments={bill.payments ?? []}
+            deletePending={deletePayment.isPending}
+            onEdit={(payment) => {
+              const match = bill.payments?.find((row) => row.id === payment.id);
+              if (!match) return;
+              setEditPayment(match);
+              setPaymentOpen(true);
+            }}
+            onDelete={(payment) => {
+              if (!confirm(`Delete payment ${payment.paymentNo}?`)) return;
+              deletePayment.mutate(payment.id, {
+                onSuccess: () => toast.success("Payment deleted"),
+                onError: (error: unknown) => {
+                  const message =
+                    (error as { response?: { data?: { error?: string } } })?.response?.data
+                      ?.error ?? "Failed to delete payment";
+                  toast.error(message);
+                },
+              });
+            }}
+          />
         ) : (
           <Table>
             <TableHeader>
@@ -220,7 +248,7 @@ export function RawMaterialBillDetailPage() {
                 <TableHead>Date</TableHead>
                 <TableHead>Mode</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
-                <TableHead className="w-16" />
+                <TableHead className="w-24 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -231,21 +259,39 @@ export function RawMaterialBillDetailPage() {
                   <TableCell>{payment.mode}</TableCell>
                   <TableCell className="text-right tabular-nums">{formatInr(payment.amount)}</TableCell>
                   <TableCell className="text-right">
-                    {allowDelete ? (
+                    <div className="flex justify-end gap-1">
                       <Button
                         variant="ghost"
                         size="icon"
+                        aria-label={`Edit payment ${payment.paymentNo}`}
+                        onClick={() => {
+                          setEditPayment(payment);
+                          setPaymentOpen(true);
+                        }}
+                      >
+                        <Pencil className="size-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Delete payment ${payment.paymentNo}`}
+                        disabled={deletePayment.isPending}
                         onClick={() => {
                           if (!confirm(`Delete payment ${payment.paymentNo}?`)) return;
                           deletePayment.mutate(payment.id, {
                             onSuccess: () => toast.success("Payment deleted"),
-                            onError: () => toast.error("Failed to delete payment"),
+                            onError: (error: unknown) => {
+                              const message =
+                                (error as { response?: { data?: { error?: string } } })?.response
+                                  ?.data?.error ?? "Failed to delete payment";
+                              toast.error(message);
+                            },
                           });
                         }}
                       >
                         <Trash2 className="size-4" />
                       </Button>
-                    ) : null}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -256,10 +302,14 @@ export function RawMaterialBillDetailPage() {
 
       <RecordRawMaterialPaymentDialog
         open={paymentOpen}
-        onOpenChange={setPaymentOpen}
+        onOpenChange={(open) => {
+          setPaymentOpen(open);
+          if (!open) setEditPayment(null);
+        }}
         billId={bill.id}
         billNo={bill.billNo}
         balanceAmount={bill.balanceAmount}
+        payment={editPayment}
       />
 
       <ConfirmDeletePinDialog

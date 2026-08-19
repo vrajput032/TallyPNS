@@ -214,6 +214,36 @@ export async function createRawMaterialPayment(
   return getRawMaterialBill(billId);
 }
 
+export async function updateRawMaterialPayment(
+  paymentId: string,
+  data: z.infer<typeof createRawMaterialPaymentSchema>
+) {
+  const payment = await prisma.rawMaterialPayment.findUnique({ where: { id: paymentId } });
+  if (!payment) throw new ApiError(404, "Payment not found");
+  const bill = await getRawMaterialBill(payment.billId);
+
+  const otherPaid = (bill.payments ?? [])
+    .filter((p) => p.id !== paymentId)
+    .reduce((sum, p) => sum + Number(p.amount), 0);
+  const maxAmount = money(Number(bill.totalAmount) - otherPaid);
+
+  if (data.amount > maxAmount + 0.009) {
+    throw new ApiError(400, `Amount exceeds balance due (₹${maxAmount.toFixed(2)})`);
+  }
+
+  await prisma.rawMaterialPayment.update({
+    where: { id: paymentId },
+    data: {
+      amount: money(data.amount),
+      mode: data.mode,
+      reference: data.reference?.trim() || null,
+      paymentDate: data.paymentDate ?? payment.paymentDate,
+      narration: data.narration?.trim() || null,
+    },
+  });
+  return getRawMaterialBill(payment.billId);
+}
+
 export async function deleteRawMaterialPayment(paymentId: string) {
   const payment = await prisma.rawMaterialPayment.findUnique({ where: { id: paymentId } });
   if (!payment) throw new ApiError(404, "Payment not found");

@@ -110,9 +110,20 @@ rawMaterialRouter.post(
   })
 );
 
+rawMaterialRouter.put(
+  "/payments/:paymentId",
+  asyncHandler(async (req, res) => {
+    const data = createRawMaterialPaymentSchema.parse(req.body);
+    const bill = await rawMaterialService.updateRawMaterialPayment(
+      routeParam(req.params.paymentId),
+      data
+    );
+    res.json(bill);
+  })
+);
+
 rawMaterialRouter.delete(
   "/payments/:paymentId",
-  requireCanDelete,
   asyncHandler(async (req, res) => {
     const bill = await rawMaterialService.deleteRawMaterialPayment(routeParam(req.params.paymentId));
     res.json(bill);
