@@ -1,6 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 
+export interface RawMaterialSummary {
+  totalBilled: number;
+  totalPaid: number;
+  balance: number;
+  billCount: number;
+}
+
 export interface DashboardSummary {
   customerCount: number;
   productCount: number;
@@ -8,6 +15,7 @@ export interface DashboardSummary {
   stockBySize: { sizeMm: number; quantity: number }[];
   lowStockCount: number;
   totalSales: number;
+  rawMaterial?: RawMaterialSummary;
 }
 
 export function useDashboardSummary() {

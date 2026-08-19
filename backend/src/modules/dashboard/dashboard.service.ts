@@ -61,6 +61,23 @@ export async function getDashboardSummary() {
     (product) => Number(product.currentStock) <= LOW_STOCK_THRESHOLD
   ).length;
 
+  const rawMaterialBills = await prisma.rawMaterialBill.findMany({
+    where: { deletedAt: null },
+    select: {
+      totalAmount: true,
+      payments: { select: { amount: true } },
+    },
+  });
+
+  let rawMaterialTotal = 0;
+  let rawMaterialPaid = 0;
+  for (const bill of rawMaterialBills) {
+    rawMaterialTotal += Number(bill.totalAmount);
+    for (const p of bill.payments) {
+      rawMaterialPaid += Number(p.amount);
+    }
+  }
+
   return {
     customerCount,
     productCount,
@@ -68,6 +85,12 @@ export async function getDashboardSummary() {
     stockBySize,
     lowStockCount,
     totalSales: Number(salesAgg._sum.totalAmount ?? 0),
+    rawMaterial: {
+      totalBilled: Math.round(rawMaterialTotal),
+      totalPaid: Math.round(rawMaterialPaid),
+      balance: Math.round(rawMaterialTotal - rawMaterialPaid),
+      billCount: rawMaterialBills.length,
+    },
   };
 }
 

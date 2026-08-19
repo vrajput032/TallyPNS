@@ -11,6 +11,7 @@ import {
 import { ThemeSelector } from "@/components/ThemeSelector";
 import { formatPipeSize, LOW_STOCK_QTY, PIPE_SIZES_MM } from "@/lib/pipeSizes";
 import { cn } from "@/lib/utils";
+import { RawMaterialPaymentCard } from "./RawMaterialPaymentCard";
 import { StatCard } from "./StatCard";
 import { SalesChart } from "./SalesChart";
 import { SalesByCustomerChart } from "./SalesByCustomerChart";
@@ -186,6 +187,10 @@ export function DashboardPage() {
           />
         ))}
       </div>
+
+      <RevealCard className="min-w-0">
+        <RawMaterialPaymentCard data={data?.rawMaterial} isLoading={isLoading} />
+      </RevealCard>
 
       <RevealCard className="min-w-0">
         <Card className="relative min-w-0 overflow-hidden border-border/40 bg-card/60 shadow-[0_4px_30px_rgba(0,0,0,0.04)] backdrop-blur-xl">

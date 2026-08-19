@@ -94,29 +94,29 @@ export function RawMaterialBillDetailPage() {
         }
       />
 
-      <div className="grid gap-3 sm:grid-cols-4">
-        <Card>
+      <div className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader className="pb-1">
             <CardTitle className="text-sm text-muted-foreground">Bill total</CardTitle>
           </CardHeader>
-          <CardContent className="text-xl font-semibold tabular-nums">
+          <CardContent className="truncate text-base font-semibold tabular-nums sm:text-xl">
             ₹{formatInr(bill.totalAmount)}
           </CardContent>
         </Card>
-        <Card>
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader className="pb-1">
             <CardTitle className="text-sm text-muted-foreground">Paid</CardTitle>
           </CardHeader>
-          <CardContent className="text-xl font-semibold tabular-nums">
+          <CardContent className="truncate text-base font-semibold tabular-nums sm:text-xl">
             ₹{formatInr(bill.paidAmount)}
           </CardContent>
         </Card>
-        <Card>
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader className="pb-1">
             <CardTitle className="text-sm text-muted-foreground">Still to send</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2">
-            <p className="text-xl font-semibold tabular-nums text-red-600">
+            <p className="truncate text-base font-semibold tabular-nums text-red-600 sm:text-xl">
               ₹{formatInr(bill.balanceAmount)}
             </p>
             {bill.paymentStatus !== "PAID" ? (
@@ -127,7 +127,7 @@ export function RawMaterialBillDetailPage() {
             ) : null}
           </CardContent>
         </Card>
-        <Card>
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader className="pb-1">
             <CardTitle className="text-sm text-muted-foreground">Status</CardTitle>
           </CardHeader>
@@ -161,7 +161,7 @@ export function RawMaterialBillDetailPage() {
         </CardContent>
       </Card>
 
-      <div className="min-w-0 rounded-md border bg-card">
+      <div className="min-w-0 overflow-x-auto rounded-md border bg-card">
         <div className="border-b px-4 py-2 text-sm font-medium">Items</div>
         <Table>
           <TableHeader>

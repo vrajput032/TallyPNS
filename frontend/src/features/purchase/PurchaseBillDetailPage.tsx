@@ -93,30 +93,32 @@ export function PurchaseBillDetailPage() {
         }
       />
 
-      <div className="print:hidden grid gap-4 sm:grid-cols-4">
-        <Card>
+      <div className="print:hidden grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground">Total</CardTitle>
           </CardHeader>
-          <CardContent className="text-xl font-semibold">
+          <CardContent className="truncate text-base font-semibold tabular-nums sm:text-xl">
             {formatInr(bill.totalAmount)}
           </CardContent>
         </Card>
-        <Card>
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground">Paid</CardTitle>
           </CardHeader>
-          <CardContent className="text-xl font-semibold">{formatInr(bill.paidAmount)}</CardContent>
+          <CardContent className="truncate text-base font-semibold tabular-nums sm:text-xl">
+            {formatInr(bill.paidAmount)}
+          </CardContent>
         </Card>
-        <Card>
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground">Balance</CardTitle>
           </CardHeader>
-          <CardContent className="text-xl font-semibold">
+          <CardContent className="truncate text-base font-semibold tabular-nums sm:text-xl">
             {formatInr(bill.balanceAmount)}
           </CardContent>
         </Card>
-        <Card>
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground">Status</CardTitle>
           </CardHeader>
@@ -127,7 +129,7 @@ export function PurchaseBillDetailPage() {
       </div>
 
       {(bill.payments?.length ?? 0) > 0 && (
-        <div className="print:hidden min-w-0 rounded-md border bg-card">
+        <div className="print:hidden min-w-0 overflow-x-auto rounded-md border bg-card">
           <div className="border-b px-4 py-2 text-sm font-medium">Payments</div>
           <Table>
             <TableHeader>
