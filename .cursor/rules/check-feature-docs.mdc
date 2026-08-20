@@ -1,0 +1,15 @@
+---
+description: Read docs/features markdown before changing or explaining product behaviour
+alwaysApply: true
+---
+
+# Check feature docs first
+
+Before adding, changing, or explaining a product feature:
+
+1. Open [`docs/features/README.md`](docs/features/README.md) and **read the matching file** in `docs/features/` (for example sales → `docs/features/sales.md`).
+2. If the change touches data or HTTP, also read [`docs/DATABASE.md`](docs/DATABASE.md) and [`docs/APIS.md`](docs/APIS.md).
+3. Match the behaviour already written there. Do not invent screens, fields, roles, or endpoints that contradict those files.
+4. If you change behaviour, **update the feature MD in the same change** (and DATABASE/APIS if schema or routes change).
+
+Do not start coding a feature until you have read its markdown file.

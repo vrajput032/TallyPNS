@@ -61,12 +61,15 @@ backend/    Express + TypeScript + Prisma API
 frontend/   React + Vite + TypeScript SPA
 ```
 
-Full CRUD is implemented for **Customers**, **Products**, and **Vendors**. **Sales** and
-**Purchase** support creating invoices/bills with line items, automatic stock adjustment, and a
-print view matching a GST tax invoice format (CGST/SGST split, company header, amount in words).
-Remaining MVP modules (Inventory, Cash, Bank, GST, Reports) are routed with placeholder
-pages/stub endpoints, ready to be built out following the same pattern (see
-`backend/src/modules/customers` and `frontend/src/features/customers`).
+## Documentation
+
+| Doc | Contents |
+|-----|----------|
+| [docs/features/README.md](docs/features/README.md) | Product features (one MD per module) |
+| [docs/DATABASE.md](docs/DATABASE.md) | Prisma models, relations, numbering |
+| [docs/APIS.md](docs/APIS.md) | REST endpoints, auth, request bodies |
+
+Full workflow: **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** · Checklist: **[docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md)**
 
 ## Useful commands
 
@@ -77,8 +80,6 @@ pages/stub endpoints, ready to be built out following the same pattern (see
 - `npm run set-admin-password -w backend` — rotate admin password (`ADMIN_PASSWORD` env, min 12 chars)
 
 ## Deploy
-
-Full workflow: **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** · Checklist: **[docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md)**
 
 **Policy:** batch changes, then deploy once to save Render pipeline minutes.
 
