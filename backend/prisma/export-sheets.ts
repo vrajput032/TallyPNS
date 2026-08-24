@@ -115,7 +115,7 @@ async function main() {
     purchase_bills: purchases.map((b) => ({
       id: b.id,
       billNo: b.billNo,
-      vendor: b.vendor.name,
+      vendor: b.vendor?.name ?? "",
       billDate: b.billDate.toISOString().slice(0, 10),
       totalAmount: Number(b.totalAmount),
     })),

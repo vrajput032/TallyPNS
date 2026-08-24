@@ -164,7 +164,7 @@ export function DashboardPage() {
   return (
     <div className="grid min-w-0 max-w-full gap-4 overflow-x-hidden sm:gap-5">
       <ParallaxHeader />
-      <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
+      <div className="min-w-0">
         <StatCard
           label="Total Sales"
           value={
@@ -176,16 +176,27 @@ export function DashboardPage() {
           icon={TrendingUp}
           isLoading={isLoading}
         />
-        {stockBySize.map((row) => (
-          <StatCard
-            key={row.sizeMm}
-            label={formatPipeSize(row.sizeMm)}
-            value={<AnimatedCount target={Math.round(row.quantity)} />}
-            icon={Package}
-            isLoading={isLoading}
-            valueClassName={row.quantity < LOW_STOCK_QTY ? "text-red-600" : undefined}
-          />
-        ))}
+      </div>
+
+      <div className="grid min-w-0 gap-2 sm:gap-3">
+        <div className="min-w-0 px-0.5">
+          <h2 className="text-base font-semibold tracking-tight sm:text-lg">Current pieces</h2>
+          <p className="text-sm text-muted-foreground">
+            Pipe stock on hand right now, by size
+          </p>
+        </div>
+        <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
+          {stockBySize.map((row) => (
+            <StatCard
+              key={row.sizeMm}
+              label={formatPipeSize(row.sizeMm)}
+              value={<AnimatedCount target={Math.round(row.quantity)} />}
+              icon={Package}
+              isLoading={isLoading}
+              valueClassName={row.quantity < LOW_STOCK_QTY ? "text-red-600" : undefined}
+            />
+          ))}
+        </div>
       </div>
 
       <RevealCard className="min-w-0">

@@ -3,14 +3,15 @@
 **Routes:** `/purchase`, `/purchase/new`, `/purchase/:id`, `/purchase/:id/edit`  
 **Frontend:** `frontend/src/features/purchase/`  
 **Backend:** `backend/src/modules/purchase/`  
-**API:** `/api/purchase` · **DB:** `PurchaseBill`, `PurchaseBillItem`, `VendorPayment`
+**API:** `/api/purchase` · **DB:** `PurchaseBill`, `PurchaseBillItem`, `PurchaseAttachment`, `VendorPayment`
 
-Catalog purchase from vendors (stock in). Separate from [raw-material](./raw-material.md) steel bills.
+Bills for **machines and equipment** (CNC, Traub, etc.). This is **not** pipe stock and **not** customers.
 
-- Auto bill number: `PB-{year}-{seq}` (e.g. `PB-2026-0001`)
-- Header: vendor, date, transport, vehicle number
-- Lines: product, quantity (tons / product unit), optional **₹/kg** (rate = ₹/kg × 1000), GST %
-- **Adds stock** (no size split on purchase — qty goes to product total)
-- Print view for the bill
-- **Payments:** record vendor payments (cash or bank). Status PENDING / PARTIAL / PAID
-- Edit/delete: PIN; delete is soft + stock reverse; permanent delete is admin + PIN
+- Pipe / catalog stock is **not** entered here (use Inventory adjustments and Raw material)
+- Parties are **suppliers (vendors)**, never customers
+- Auto bill number: `PB-{year}-{seq}`
+- Lines: free-text description, qty, rate, GST
+- Optional supplier invoice number and notes
+- **Attachments:** PDF or image (JPG/PNG/WEBP), max 10 MB, Supabase Storage `pns-purchase`
+- **Payments:** vendor payments (cash or bank)
+- Edit/delete: PIN; delete is admin + PIN. Does not change pipe stock for new bills

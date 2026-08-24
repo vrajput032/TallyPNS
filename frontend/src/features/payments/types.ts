@@ -18,7 +18,7 @@ export interface PaymentReceipt {
 export interface VendorPayment {
   id: string;
   paymentNo: string;
-  vendorId: string;
+  vendorId: string | null;
   purchaseBillId: string;
   amount: string;
   mode: PaymentMode;

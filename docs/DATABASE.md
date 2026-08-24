@@ -142,7 +142,7 @@ Qty per pipe diameter. Unique `(productId, sizeMm)`. Index on `sizeMm`.
 |--------|------|--------|
 | `id` | String PK | |
 | `productId` | FK → Product | Cascade delete |
-| `sizeMm` | Decimal(10,2) | One of 95, 110, 90, 55, 45 |
+| `sizeMm` | Decimal(10,2) | One of 95, 110, 90, 55, 85 |
 | `quantity` | Decimal(14,2) | Default 0 |
 
 Sales catalog lines and inventory adjustments change this table. Purchase bills currently update `Product.currentStock` only (not size rows).
@@ -390,7 +390,7 @@ Balance sheet cash/bank = receipts − vendor payments by `PaymentMode` (raw-mat
 
 Code (not DB lookup tables):
 
-- Sizes: `95, 110, 90, 55, 45` mm — `backend/src/lib/pipeSizes.ts`
+- Sizes: `95, 110, 90, 55, 85` mm — `backend/src/lib/pipeSizes.ts`
 - Yield: 95 mm → 9.1 pcs/kg, 110 mm → 8.33 pcs/kg — `backend/src/lib/rawMaterialYield.ts`
 
 ---
@@ -410,6 +410,7 @@ Code (not DB lookup tables):
 | `20260817172958_stock_by_pipe_size` | `ProductSizeStock` |
 | `20260818123000_user_username` | `User.username` |
 | `20260818184500_raw_material_bills` | Raw material + payments + `deletedAt` |
+| `20260824115520_rename_pipe_size_45_to_85` | Catalog size 45mm → 85mm (merge stock) |
 
 ---
 

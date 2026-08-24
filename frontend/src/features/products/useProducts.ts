@@ -51,3 +51,19 @@ export function useDeleteProduct() {
     },
   });
 }
+
+export function useUploadProductImage() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, file }: { id: string; file: File }) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      const { data } = await api.post<Product>(`/products/${id}/image`, formData);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: PRODUCTS_KEY });
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+    },
+  });
+}

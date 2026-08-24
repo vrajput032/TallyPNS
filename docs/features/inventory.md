@@ -7,9 +7,10 @@
 
 Stock of finished pipes by size.
 
-- Per-product cards with qty for each size (95 / 110 / 90 / 55 / 45 mm)
+- Per-product cards with qty for each size (95 / 110 / 90 / 55 / 85 mm)
+- Product **photo** on the stock card (JPG/PNG/WEBP, max 10 MB) stored in Supabase Storage bucket `pns-products`
 - Low-stock highlight when a size qty is below **100**
 - **Adjustments:** signed qty + size + optional reason → `StockMovement` type `ADJUSTMENT`; updates both size stock and product `currentStock`
-- Movement history: IN (purchase), OUT (sales), ADJUSTMENT, with optional size and reason
+- Movement history: IN / OUT / ADJUSTMENT, with optional size and reason
 
-Sales OUT and purchase IN are written automatically when invoices/bills are created, edited, or moved to/from the recycle bin.
+Sales OUT is written when invoices are created, edited, or moved to/from the recycle bin. New purchase bills do **not** add pipe stock.

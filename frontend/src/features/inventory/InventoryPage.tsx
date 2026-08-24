@@ -1,5 +1,6 @@
-import { Package, Plus, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ImagePlus, Package, Plus, Search } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StockAdjustmentDialog } from "./StockAdjustmentDialog";
 import { useStock, useStockMovements } from "./useInventory";
+import { useUploadProductImage } from "@/features/products/useProducts";
 import type { StockMovement, StockRow } from "./types";
 import { formatPipeSize, LOW_STOCK_QTY, PIPE_SIZES_MM } from "@/lib/pipeSizes";
 
@@ -89,6 +91,9 @@ function StockView({
   onSearchChange: (value: string) => void;
   onAdjust: (sizeMm?: number) => void;
 }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const uploadImage = useUploadProductImage();
+
   if (isLoading) {
     return (
       <div className="grid gap-3">
@@ -128,12 +133,55 @@ function StockView({
         />
       </div>
 
-      <div className="rounded-2xl border bg-card p-4">
-        <p className="text-sm text-muted-foreground">{row.name}</p>
-        <p className="text-3xl font-bold leading-tight">
-          {totalStock.toLocaleString("en-IN")}
-          <span className="ml-1 text-base font-normal text-muted-foreground">{row.unit}</span>
-        </p>
+      <div className="flex items-center gap-4 rounded-2xl border bg-card p-4">
+        <button
+          type="button"
+          className="relative size-20 shrink-0 overflow-hidden rounded-xl border bg-muted"
+          onClick={() => fileRef.current?.click()}
+          disabled={uploadImage.isPending}
+        >
+          {row.imageUrl ? (
+            <img src={row.imageUrl} alt={row.name} className="size-full object-cover" />
+          ) : (
+            <span className="flex size-full flex-col items-center justify-center gap-1 text-muted-foreground">
+              <ImagePlus className="size-5" />
+              <span className="text-[10px]">Photo</span>
+            </span>
+          )}
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*,.jpg,.jpeg,.png,.webp"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            uploadImage.mutate(
+              { id: row.id, file },
+              {
+                onSuccess: () => toast.success("Product photo saved"),
+                onError: (error: unknown) => {
+                  const message =
+                    (error as { response?: { data?: { error?: string } } })?.response?.data
+                      ?.error ?? "Failed to upload photo";
+                  toast.error(message);
+                },
+              }
+            );
+            e.target.value = "";
+          }}
+        />
+        <div className="min-w-0">
+          <p className="text-sm text-muted-foreground">{row.name}</p>
+          <p className="text-3xl font-bold leading-tight">
+            {totalStock.toLocaleString("en-IN")}
+            <span className="ml-1 text-base font-normal text-muted-foreground">{row.unit}</span>
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {uploadImage.isPending ? "Uploading photo…" : "Tap the photo to upload JPG/PNG"}
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">

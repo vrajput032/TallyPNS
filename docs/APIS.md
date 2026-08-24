@@ -173,7 +173,7 @@ All require auth.
 }
 ```
 
-`lowStockCount` = products with `currentStock ≤ 10`. `stockBySize` always includes 95, 110, 90, 55, 45.
+`lowStockCount` = products with `currentStock ≤ 10`. `stockBySize` always includes 95, 110, 90, 55, 85.
 
 ### `GET /dashboard/sales/monthly`
 

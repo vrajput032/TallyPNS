@@ -163,7 +163,7 @@ export async function listCashBankBook(mode: PaymentMode) {
       kind: "OUT" as const,
       voucherNo: p.paymentNo,
       date: p.paymentDate,
-      party: p.vendor.name,
+      party: p.vendor?.name ?? p.purchaseBill.billNo,
       against: p.purchaseBill.billNo,
       amount: Number(p.amount),
       reference: p.reference,

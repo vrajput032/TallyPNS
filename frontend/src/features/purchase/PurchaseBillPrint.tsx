@@ -2,6 +2,7 @@ import { COMPANY } from "@/config/company";
 import { amountToIndianWords } from "@/lib/numberToWords";
 import { formatInr } from "@/lib/formatInr";
 import type { PurchaseBill } from "./types";
+import { purchaseLineLabel } from "./types";
 
 const KG_PER_TON = 1000;
 
@@ -11,6 +12,7 @@ function formatDate(iso: string) {
 }
 
 export function PurchaseBillPrint({ bill }: { bill: PurchaseBill }) {
+  const isEquipment = bill.kind === "EQUIPMENT";
   const taxableTotal = bill.items.reduce(
     (sum, item) => sum + Number(item.quantity) * Number(item.rate),
     0
@@ -19,6 +21,7 @@ export function PurchaseBillPrint({ bill }: { bill: PurchaseBill }) {
   const gstGroups = new Map<number, { taxable: number; tax: number }>();
   for (const item of bill.items) {
     const rate = Number(item.gstRate);
+    if (rate <= 0) continue;
     const taxable = Number(item.quantity) * Number(item.rate);
     const tax = (taxable * rate) / 100;
     const existing = gstGroups.get(rate) ?? { taxable: 0, tax: 0 };
@@ -27,17 +30,33 @@ export function PurchaseBillPrint({ bill }: { bill: PurchaseBill }) {
 
   const totalTax = [...gstGroups.values()].reduce((sum, g) => sum + g.tax, 0);
   const grandTotal = taxableTotal + totalTax;
-  const totalTons = bill.items.reduce((sum, item) => sum + Number(item.quantity), 0);
+  const totalQty = bill.items.reduce((sum, item) => sum + Number(item.quantity), 0);
+  const sellerName = bill.vendor?.name ?? "Equipment purchase";
+  const sellerGstin = bill.supplierGstin ?? bill.vendor?.gstin ?? "-";
+  const sellerAddress = bill.vendor?.address ?? null;
 
   return (
     <div className="-mx-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:overflow-visible sm:px-0 sm:pb-0">
       <div className="mx-auto min-w-[640px] max-w-3xl border-[2.5px] border-black bg-white p-0 text-black sm:min-w-0 print:min-w-0">
         <div className="grid grid-cols-2 border-b-2 border-black">
           <div className="border-r-2 border-black p-3">
-            <p className="text-sm font-semibold">GSTIN: {bill.vendor.gstin ?? "-"}</p>
-            <h1 className="text-xl font-bold">{bill.vendor.name}</h1>
-            {bill.vendor.address && (
-              <p className="text-xs leading-tight">{bill.vendor.address}</p>
+            {bill.vendor || bill.supplierGstin ? (
+              <>
+                <p className="text-sm font-semibold">GSTIN: {sellerGstin}</p>
+                {bill.vendor ? (
+                  <>
+                    <h1 className="text-xl font-bold">{sellerName}</h1>
+                    {sellerAddress ? <p className="text-xs leading-tight">{sellerAddress}</p> : null}
+                  </>
+                ) : (
+                  <h1 className="text-xl font-bold">Equipment purchase</h1>
+                )}
+              </>
+            ) : (
+              <>
+                <h1 className="text-xl font-bold">{COMPANY.name}</h1>
+                <p className="text-xs leading-tight">Equipment purchase record</p>
+              </>
             )}
           </div>
           <div className="p-3">
@@ -52,18 +71,24 @@ export function PurchaseBillPrint({ bill }: { bill: PurchaseBill }) {
                   <td className="py-0.5 font-semibold">Date of Bill</td>
                   <td className="py-0.5">: {formatDate(bill.billDate)}</td>
                 </tr>
-                {bill.transport?.trim() && (
+                {bill.supplierInvoiceNo?.trim() ? (
+                  <tr>
+                    <td className="py-0.5 font-semibold">Invoice No.</td>
+                    <td className="py-0.5">: {bill.supplierInvoiceNo}</td>
+                  </tr>
+                ) : null}
+                {bill.transport?.trim() ? (
                   <tr>
                     <td className="py-0.5 font-semibold">Transport</td>
                     <td className="py-0.5">: {bill.transport}</td>
                   </tr>
-                )}
-                {bill.vehicleNo?.trim() && (
+                ) : null}
+                {bill.vehicleNo?.trim() ? (
                   <tr>
                     <td className="py-0.5 font-semibold">Vehicle No.</td>
                     <td className="py-0.5">: {bill.vehicleNo}</td>
                   </tr>
-                )}
+                ) : null}
               </tbody>
             </table>
           </div>
@@ -80,6 +105,9 @@ export function PurchaseBillPrint({ bill }: { bill: PurchaseBill }) {
             ))}
           </p>
           <p className="text-xs font-semibold">GSTIN/UIN: {COMPANY.gstin}</p>
+          {bill.notes?.trim() ? (
+            <p className="mt-2 whitespace-pre-wrap text-xs">{bill.notes}</p>
+          ) : null}
         </div>
 
         <table className="w-full border-b-2 border-black text-xs">
@@ -87,16 +115,24 @@ export function PurchaseBillPrint({ bill }: { bill: PurchaseBill }) {
             <tr className="border-b-2 border-black">
               <th className="border-r border-black p-1.5 text-center">S.N</th>
               <th className="border-r border-black p-1.5 text-center">Description</th>
-              <th className="border-r border-black p-1.5 text-center">HSN</th>
-              <th className="border-r border-black p-1.5 text-center">Qty (Tons)</th>
-              <th className="border-r border-black p-1.5 text-center">Price/Kg (₹)</th>
-              <th className="border-r border-black p-1.5 text-center">Rate/Ton (₹)</th>
+              {!isEquipment ? <th className="border-r border-black p-1.5 text-center">HSN</th> : null}
+              <th className="border-r border-black p-1.5 text-center">
+                {isEquipment ? "Qty" : "Qty (Tons)"}
+              </th>
+              {!isEquipment ? (
+                <>
+                  <th className="border-r border-black p-1.5 text-center">Price/Kg (₹)</th>
+                  <th className="border-r border-black p-1.5 text-center">Rate/Ton (₹)</th>
+                </>
+              ) : (
+                <th className="border-r border-black p-1.5 text-center">Rate (₹)</th>
+              )}
               <th className="p-1.5 text-center">Amount (₹)</th>
             </tr>
           </thead>
           <tbody>
             {bill.items.map((item, index) => {
-              const tons = Number(item.quantity);
+              const qty = Number(item.quantity);
               const pricePerKg =
                 item.pricePerKg != null && Number(item.pricePerKg) > 0
                   ? Number(item.pricePerKg)
@@ -105,21 +141,33 @@ export function PurchaseBillPrint({ bill }: { bill: PurchaseBill }) {
                 <tr key={item.id} className="border-b border-black/20">
                   <td className="border-r border-black p-1.5">{index + 1}.</td>
                   <td className="border-r border-black p-1.5 font-medium">
-                    {item.product.name.replace(/\s*\d+\s*mm\b/gi, "").trim() || item.product.name}
+                    {purchaseLineLabel(item)}
                   </td>
-                  <td className="border-r border-black p-1.5">{item.product.hsn ?? "-"}</td>
+                  {!isEquipment ? (
+                    <td className="border-r border-black p-1.5">{item.product?.hsn ?? "-"}</td>
+                  ) : null}
                   <td className="border-r border-black p-1.5 text-right">
-                    {formatInr(tons, 3)}
-                    <span className="block text-[10px] text-neutral-600">
-                      {(tons * KG_PER_TON).toFixed(0)} Kg
-                    </span>
+                    {formatInr(qty, isEquipment ? 0 : 3)}
+                    {!isEquipment ? (
+                      <span className="block text-[10px] text-neutral-600">
+                        {(qty * KG_PER_TON).toFixed(0)} Kg
+                      </span>
+                    ) : null}
                   </td>
-                  <td className="border-r border-black p-1.5 text-right">
-                    {formatInr(pricePerKg)}
-                  </td>
-                  <td className="border-r border-black p-1.5 text-right">
-                    {formatInr(Number(item.rate))}
-                  </td>
+                  {!isEquipment ? (
+                    <>
+                      <td className="border-r border-black p-1.5 text-right">
+                        {formatInr(pricePerKg)}
+                      </td>
+                      <td className="border-r border-black p-1.5 text-right">
+                        {formatInr(Number(item.rate))}
+                      </td>
+                    </>
+                  ) : (
+                    <td className="border-r border-black p-1.5 text-right">
+                      {formatInr(Number(item.rate))}
+                    </td>
+                  )}
                   <td className="p-1.5 text-right">
                     {formatInr(Number(item.quantity) * Number(item.rate))}
                   </td>
@@ -128,7 +176,10 @@ export function PurchaseBillPrint({ bill }: { bill: PurchaseBill }) {
             })}
             {[...gstGroups.entries()].map(([rate, group]) => (
               <tr key={rate}>
-                <td colSpan={6} className="border-r border-black p-1.5 text-right">
+                <td
+                  colSpan={isEquipment ? 4 : 6}
+                  className="border-r border-black p-1.5 text-right"
+                >
                   Add : CGST @ {(rate / 2).toFixed(2)}%
                 </td>
                 <td className="p-1.5 text-right">{formatInr(group.tax / 2)}</td>
@@ -136,7 +187,10 @@ export function PurchaseBillPrint({ bill }: { bill: PurchaseBill }) {
             ))}
             {[...gstGroups.entries()].map(([rate, group]) => (
               <tr key={`sgst-${rate}`}>
-                <td colSpan={6} className="border-r border-black p-1.5 text-right">
+                <td
+                  colSpan={isEquipment ? 4 : 6}
+                  className="border-r border-black p-1.5 text-right"
+                >
                   Add : SGST @ {(rate / 2).toFixed(2)}%
                 </td>
                 <td className="p-1.5 text-right">{formatInr(group.tax / 2)}</td>
@@ -145,14 +199,14 @@ export function PurchaseBillPrint({ bill }: { bill: PurchaseBill }) {
           </tbody>
           <tfoot>
             <tr className="border-t-2 border-black font-bold">
-              <td colSpan={3} className="border-r border-black p-1.5">
+              <td colSpan={isEquipment ? 2 : 3} className="border-r border-black p-1.5">
                 Grand Total
               </td>
               <td className="border-r border-black p-1.5 text-right">
-                {formatInr(totalTons, 3)}
-                <span className="block text-[10px] font-normal">Tons</span>
+                {formatInr(totalQty, isEquipment ? 0 : 3)}
+                {!isEquipment ? <span className="block text-[10px] font-normal">Tons</span> : null}
               </td>
-              <td className="border-r border-black p-1.5" colSpan={2} />
+              <td className="border-r border-black p-1.5" colSpan={isEquipment ? 1 : 2} />
               <td className="p-1.5 text-right">₹{formatInr(grandTotal)}</td>
             </tr>
           </tfoot>

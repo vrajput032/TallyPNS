@@ -7,6 +7,9 @@ export interface Product {
   price: string;
   openingStock: string;
   currentStock: string;
+  imagePath?: string | null;
+  imageMime?: string | null;
+  imageUrl?: string | null;
   createdAt: string;
   updatedAt: string;
 }

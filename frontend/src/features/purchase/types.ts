@@ -1,10 +1,24 @@
 import type { Product } from "@/features/products/types";
 import type { Vendor } from "@/features/vendors/types";
 
+export type PurchaseBillKind = "CATALOG" | "EQUIPMENT";
+
+export interface PurchaseAttachment {
+  id: string;
+  purchaseBillId: string;
+  fileName: string;
+  mimeType: string;
+  storagePath: string;
+  sizeBytes: number;
+  url?: string;
+  createdAt: string;
+}
+
 export interface PurchaseBillItem {
   id: string;
-  productId: string;
-  product: Product;
+  productId: string | null;
+  product: Product | null;
+  description: string | null;
   quantity: string;
   pricePerKg: string | null;
   rate: string;
@@ -15,11 +29,15 @@ export interface PurchaseBillItem {
 export interface PurchaseBill {
   id: string;
   billNo: string;
-  vendorId: string;
-  vendor: Vendor;
+  vendorId: string | null;
+  vendor: Vendor | null;
+  kind: PurchaseBillKind;
   billDate: string;
   transport: string | null;
   vehicleNo: string | null;
+  supplierInvoiceNo: string | null;
+  supplierGstin: string | null;
+  notes: string | null;
   totalAmount: string;
   paidAmount: number;
   balanceAmount: number;
@@ -34,13 +52,15 @@ export interface PurchaseBill {
     narration: string | null;
   }[];
   items: PurchaseBillItem[];
+  attachments?: PurchaseAttachment[];
   deletedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface PurchaseBillItemInput {
-  productId: string;
+  productId?: string | null;
+  description?: string | null;
   quantity: number;
   pricePerKg?: number | null;
   rate: number;
@@ -48,8 +68,18 @@ export interface PurchaseBillItemInput {
 }
 
 export interface PurchaseBillInput {
-  vendorId: string;
+  vendorId?: string | null;
+  kind?: PurchaseBillKind;
   transport?: string | null;
   vehicleNo?: string | null;
+  supplierInvoiceNo?: string | null;
+  supplierGstin?: string | null;
+  notes?: string | null;
   items: PurchaseBillItemInput[];
+}
+
+export function purchaseLineLabel(item: PurchaseBillItem) {
+  if (item.product?.name) return item.product.name;
+  if (item.description?.trim()) return item.description.trim();
+  return "Item";
 }

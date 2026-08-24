@@ -1,0 +1,2 @@
+ALTER TABLE "PurchaseBill" ALTER COLUMN "vendorId" DROP NOT NULL;
+ALTER TABLE "VendorPayment" ALTER COLUMN "vendorId" DROP NOT NULL;

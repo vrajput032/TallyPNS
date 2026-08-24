@@ -11,6 +11,8 @@ export interface StockRow {
   price: string;
   openingStock: string;
   currentStock: string;
+  imagePath?: string | null;
+  imageUrl?: string | null;
   sizeStocks?: SizeStock[];
 }
 

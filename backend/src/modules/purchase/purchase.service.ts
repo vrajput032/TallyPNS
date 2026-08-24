@@ -1,6 +1,12 @@
 import { prisma } from "../../lib/prisma.js";
 import { activeOnly, deletedOnly } from "../../lib/activeRecords.js";
 import { ApiError } from "../../middleware/errorHandler.js";
+import {
+  deleteObject,
+  publicObjectUrl,
+  PURCHASE_BUCKET,
+  uploadObject,
+} from "../../lib/storage.js";
 import { withBillPaymentSummary } from "../payments/payment.utils.js";
 import { rateFromPricePerKg, type createPurchaseBillSchema } from "./purchase.schema.js";
 import type { z } from "zod";
@@ -9,24 +15,107 @@ const billInclude = {
   vendor: true,
   items: { include: { product: true } },
   payments: { orderBy: { paymentDate: "desc" as const } },
+  attachments: { orderBy: { createdAt: "desc" as const } },
 };
+
+type BillInput = z.infer<typeof createPurchaseBillSchema>;
+type BillItemInput = BillInput["items"][number];
+
+function catalogProductId(item: { productId?: string | null }) {
+  const id = item.productId?.trim();
+  return id || null;
+}
+
+function lineDescription(item: BillItemInput) {
+  return item.description?.trim() || null;
+}
+
+function lineRate(item: BillItemInput) {
+  return item.pricePerKg != null && item.pricePerKg > 0
+    ? rateFromPricePerKg(item.pricePerKg)
+    : item.rate;
+}
+
+function lineAmount(item: BillItemInput) {
+  const rate = lineRate(item);
+  const base = item.quantity * rate;
+  return base + (base * item.gstRate) / 100;
+}
+
+function mapItemCreate(item: BillItemInput) {
+  const pricePerKg = item.pricePerKg != null && item.pricePerKg > 0 ? item.pricePerKg : null;
+  const rate = pricePerKg != null ? rateFromPricePerKg(pricePerKg) : item.rate;
+  const base = item.quantity * rate;
+  return {
+    productId: catalogProductId(item),
+    description: lineDescription(item),
+    quantity: item.quantity,
+    pricePerKg,
+    rate,
+    gstRate: item.gstRate,
+    amount: base + (base * item.gstRate) / 100,
+  };
+}
+
+function withAttachmentUrls<T extends { attachments?: { storagePath: string }[] | null }>(bill: T) {
+  if (!bill.attachments?.length) return bill;
+  return {
+    ...bill,
+    attachments: bill.attachments.map((a) => ({
+      ...a,
+      url: publicObjectUrl(PURCHASE_BUCKET, a.storagePath),
+    })),
+  };
+}
+
+function presentBill<T extends Parameters<typeof withBillPaymentSummary>[0] & {
+  attachments?: { storagePath: string }[] | null;
+}>(bill: T) {
+  return withAttachmentUrls(withBillPaymentSummary(bill));
+}
+
+async function assertCatalogProducts(items: BillItemInput[]) {
+  const productIds = [
+    ...new Set(items.map((item) => catalogProductId(item)).filter((id): id is string => Boolean(id))),
+  ];
+  if (productIds.length === 0) return new Map<string, { id: string; name: string; currentStock: unknown }>();
+
+  const products = await prisma.product.findMany({ where: { id: { in: productIds } } });
+  const productMap = new Map(products.map((product) => [product.id, product]));
+  for (const id of productIds) {
+    if (!productMap.has(id)) {
+      throw new ApiError(400, `Product ${id} not found`);
+    }
+  }
+  return productMap;
+}
 
 export async function listPurchaseBills() {
   const bills = await prisma.purchaseBill.findMany({
     where: activeOnly,
-    include: { vendor: true, items: true, payments: true },
+    include: {
+      vendor: true,
+      items: true,
+      payments: true,
+      attachments: { orderBy: { createdAt: "desc" } },
+    },
     orderBy: { billDate: "desc" },
   });
-  return bills.map(withBillPaymentSummary);
+  return bills.map(presentBill);
 }
 
 export async function listDeletedPurchaseBills() {
   const bills = await prisma.purchaseBill.findMany({
     where: deletedOnly,
-    include: { vendor: true, items: true, payments: true },
+    include: {
+      vendor: true,
+      items: true,
+      payments: true,
+      attachments: { orderBy: { createdAt: "desc" } },
+    },
     orderBy: { deletedAt: "desc" },
   });
-  return bills.map(withBillPaymentSummary);
+  return bills.map(presentBill);
 }
 
 export async function getPurchaseBill(id: string, options?: { includeDeleted?: boolean }) {
@@ -40,7 +129,7 @@ export async function getPurchaseBill(id: string, options?: { includeDeleted?: b
   if (!options?.includeDeleted && bill.deletedAt) {
     throw new ApiError(404, "Purchase bill not found");
   }
-  return withBillPaymentSummary(bill);
+  return presentBill(bill);
 }
 
 async function generateBillNo() {
@@ -49,83 +138,40 @@ async function generateBillNo() {
   return `PB-${year}-${String(count + 1).padStart(4, "0")}`;
 }
 
-export async function createPurchaseBill(data: z.infer<typeof createPurchaseBillSchema>) {
-  const products = await prisma.product.findMany({
-    where: { id: { in: data.items.map((item) => item.productId) } },
-  });
-
-  const productMap = new Map(products.map((product) => [product.id, product]));
-  for (const item of data.items) {
-    if (!productMap.has(item.productId)) {
-      throw new ApiError(400, `Product ${item.productId} not found`);
-    }
-  }
-
-  const totalAmount = data.items.reduce((sum, item) => {
-    const rate =
-      item.pricePerKg != null && item.pricePerKg > 0
-        ? Math.round(item.pricePerKg * 1000 * 100) / 100
-        : item.rate;
-    const base = item.quantity * rate;
-    return sum + base + (base * item.gstRate) / 100;
-  }, 0);
-
+export async function createPurchaseBill(data: BillInput) {
+  await assertCatalogProducts(data.items);
+  const totalAmount = data.items.reduce((sum, item) => sum + lineAmount(item), 0);
   const billNo = await generateBillNo();
 
   return prisma.$transaction(async (tx) => {
     const bill = await tx.purchaseBill.create({
       data: {
         billNo,
-        vendorId: data.vendorId,
+        vendorId: data.vendorId?.trim() || null,
+        kind: "EQUIPMENT",
         billDate: data.billDate ?? new Date(),
         transport: data.transport?.trim() || null,
         vehicleNo: data.vehicleNo?.trim() || null,
+        supplierInvoiceNo: data.supplierInvoiceNo?.trim() || null,
+        supplierGstin: data.supplierGstin?.trim() || null,
+        notes: data.notes?.trim() || null,
         totalAmount,
         items: {
-          create: data.items.map((item) => {
-            const pricePerKg =
-              item.pricePerKg != null && item.pricePerKg > 0 ? item.pricePerKg : null;
-            const rate =
-              pricePerKg != null ? Math.round(pricePerKg * 1000 * 100) / 100 : item.rate;
-            const base = item.quantity * rate;
-            return {
-              productId: item.productId,
-              quantity: item.quantity,
-              pricePerKg,
-              rate,
-              gstRate: item.gstRate,
-              amount: base + (base * item.gstRate) / 100,
-            };
-          }),
+          create: data.items.map((item) => ({
+            ...mapItemCreate(item),
+            productId: null,
+          })),
         },
       },
-      include: { vendor: true, items: { include: { product: true } }, payments: true },
+      include: billInclude,
     });
 
-    for (const item of data.items) {
-      await tx.product.update({
-        where: { id: item.productId },
-        data: { currentStock: { increment: item.quantity } },
-      });
-      await tx.stockMovement.create({
-        data: {
-          productId: item.productId,
-          type: "IN",
-          quantity: item.quantity,
-          reason: `Purchase bill ${billNo}`,
-        },
-      });
-    }
-
-    return withBillPaymentSummary(bill);
+    return presentBill(bill);
   });
 }
 
 /** Full edit of an existing bill: reverses old stock effects, validates and applies new ones. */
-export async function updatePurchaseBill(
-  id: string,
-  data: z.infer<typeof createPurchaseBillSchema>
-) {
+export async function updatePurchaseBill(id: string, data: BillInput) {
   const existingBill = await prisma.purchaseBill.findUnique({
     where: { id },
     include: { items: true, payments: true },
@@ -137,36 +183,27 @@ export async function updatePurchaseBill(
     throw new ApiError(400, "Cannot edit bill with payments. Delete payments first.");
   }
 
-  const productIds = [
-    ...new Set([
-      ...data.items.map((item) => item.productId),
-      ...existingBill.items.map((item) => item.productId),
-    ]),
-  ];
-  const products = await prisma.product.findMany({ where: { id: { in: productIds } } });
-  const productMap = new Map(products.map((product) => [product.id, product]));
+  const productMap = await assertCatalogProducts(
+    existingBill.items.map((item) => ({
+      productId: item.productId,
+      description: item.description,
+      quantity: Number(item.quantity),
+      rate: Number(item.rate),
+      gstRate: Number(item.gstRate),
+      pricePerKg: item.pricePerKg != null ? Number(item.pricePerKg) : null,
+    }))
+  );
 
-  for (const item of data.items) {
-    if (!productMap.has(item.productId)) {
-      throw new ApiError(400, `Product ${item.productId} not found`);
-    }
-  }
-
-  // Reversing old quantities first can leave stock negative if items were also consumed by
-  // later sales, so check against stock as it would be after the old quantities are restored.
   const availableStock = new Map<string, number>();
-  for (const product of products) {
+  for (const product of productMap.values()) {
     availableStock.set(product.id, Number(product.currentStock));
   }
   for (const item of existingBill.items) {
+    if (!item.productId) continue;
     availableStock.set(
       item.productId,
       (availableStock.get(item.productId) ?? 0) - Number(item.quantity)
     );
-  }
-  for (const item of data.items) {
-    const nextAvailable = (availableStock.get(item.productId) ?? 0) + item.quantity;
-    availableStock.set(item.productId, nextAvailable);
   }
   for (const [productId, projected] of availableStock) {
     if (projected < 0) {
@@ -178,15 +215,11 @@ export async function updatePurchaseBill(
     }
   }
 
-  const totalAmount = data.items.reduce((sum, item) => {
-    const rate =
-      item.pricePerKg != null && item.pricePerKg > 0 ? rateFromPricePerKg(item.pricePerKg) : item.rate;
-    const base = item.quantity * rate;
-    return sum + base + (base * item.gstRate) / 100;
-  }, 0);
+  const totalAmount = data.items.reduce((sum, item) => sum + lineAmount(item), 0);
 
   return prisma.$transaction(async (tx) => {
     for (const item of existingBill.items) {
+      if (!item.productId) continue;
       await tx.product.update({
         where: { id: item.productId },
         data: { currentStock: { decrement: Number(item.quantity) } },
@@ -198,47 +231,26 @@ export async function updatePurchaseBill(
     const bill = await tx.purchaseBill.update({
       where: { id },
       data: {
-        vendorId: data.vendorId,
+        vendorId: data.vendorId?.trim() || null,
+        kind: "EQUIPMENT",
         billDate: data.billDate ?? existingBill.billDate,
         transport: data.transport?.trim() || null,
         vehicleNo: data.vehicleNo?.trim() || null,
+        supplierInvoiceNo: data.supplierInvoiceNo?.trim() || null,
+        supplierGstin: data.supplierGstin?.trim() || null,
+        notes: data.notes?.trim() || null,
         totalAmount,
         items: {
-          create: data.items.map((item) => {
-            const pricePerKg =
-              item.pricePerKg != null && item.pricePerKg > 0 ? item.pricePerKg : null;
-            const rate = pricePerKg != null ? rateFromPricePerKg(pricePerKg) : item.rate;
-            const base = item.quantity * rate;
-            return {
-              productId: item.productId,
-              quantity: item.quantity,
-              pricePerKg,
-              rate,
-              gstRate: item.gstRate,
-              amount: base + (base * item.gstRate) / 100,
-            };
-          }),
+          create: data.items.map((item) => ({
+            ...mapItemCreate(item),
+            productId: null,
+          })),
         },
       },
-      include: { vendor: true, items: { include: { product: true } }, payments: true },
+      include: billInclude,
     });
 
-    for (const item of data.items) {
-      await tx.product.update({
-        where: { id: item.productId },
-        data: { currentStock: { increment: item.quantity } },
-      });
-      await tx.stockMovement.create({
-        data: {
-          productId: item.productId,
-          type: "IN",
-          quantity: item.quantity,
-          reason: `Edited purchase bill ${existingBill.billNo}`,
-        },
-      });
-    }
-
-    return withBillPaymentSummary(bill);
+    return presentBill(bill);
   });
 }
 
@@ -251,6 +263,7 @@ export async function deletePurchaseBill(id: string) {
   }
 
   for (const item of bill.items) {
+    if (!item.productId || !item.product) continue;
     if (Number(item.product.currentStock) < Number(item.quantity)) {
       throw new ApiError(
         400,
@@ -261,6 +274,7 @@ export async function deletePurchaseBill(id: string) {
 
   await prisma.$transaction(async (tx) => {
     for (const item of bill.items) {
+      if (!item.productId) continue;
       await tx.product.update({
         where: { id: item.productId },
         data: { currentStock: { decrement: Number(item.quantity) } },
@@ -294,6 +308,7 @@ export async function restorePurchaseBill(id: string) {
 
   await prisma.$transaction(async (tx) => {
     for (const item of bill.items) {
+      if (!item.productId) continue;
       await tx.product.update({
         where: { id: item.productId },
         data: { currentStock: { increment: Number(item.quantity) } },
@@ -319,7 +334,7 @@ export async function restorePurchaseBill(id: string) {
 export async function permanentlyDeletePurchaseBill(id: string) {
   const bill = await prisma.purchaseBill.findUnique({
     where: { id },
-    include: { payments: true },
+    include: { payments: true, attachments: true },
   });
   if (!bill?.deletedAt) {
     throw new ApiError(404, "Bill not found in recycle bin");
@@ -328,5 +343,57 @@ export async function permanentlyDeletePurchaseBill(id: string) {
     throw new ApiError(400, "Cannot permanently delete bill with payments");
   }
 
+  for (const attachment of bill.attachments) {
+    await deleteObject(PURCHASE_BUCKET, attachment.storagePath);
+  }
+
   await prisma.purchaseBill.delete({ where: { id } });
+}
+
+export async function addPurchaseAttachment(
+  billId: string,
+  file: Express.Multer.File
+) {
+  const bill = await prisma.purchaseBill.findUnique({ where: { id: billId } });
+  if (!bill || bill.deletedAt) {
+    throw new ApiError(404, "Purchase bill not found");
+  }
+
+  const safeName = file.originalname.replace(/[^\w.\-()+ ]+/g, "_").slice(0, 120);
+  const storagePath = `${billId}/${Date.now()}-${safeName}`;
+  const mimeType = file.mimetype || "application/octet-stream";
+
+  await uploadObject({
+    bucket: PURCHASE_BUCKET,
+    path: storagePath,
+    buffer: file.buffer,
+    mimeType,
+  });
+
+  const attachment = await prisma.purchaseAttachment.create({
+    data: {
+      purchaseBillId: billId,
+      fileName: file.originalname.slice(0, 200),
+      mimeType,
+      storagePath,
+      sizeBytes: file.size,
+    },
+  });
+
+  return {
+    ...attachment,
+    url: publicObjectUrl(PURCHASE_BUCKET, storagePath),
+  };
+}
+
+export async function deletePurchaseAttachment(billId: string, attachmentId: string) {
+  const attachment = await prisma.purchaseAttachment.findFirst({
+    where: { id: attachmentId, purchaseBillId: billId },
+  });
+  if (!attachment) {
+    throw new ApiError(404, "Attachment not found");
+  }
+
+  await deleteObject(PURCHASE_BUCKET, attachment.storagePath);
+  await prisma.purchaseAttachment.delete({ where: { id: attachmentId } });
 }

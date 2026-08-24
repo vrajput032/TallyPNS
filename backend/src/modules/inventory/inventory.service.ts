@@ -1,11 +1,12 @@
 import { prisma } from "../../lib/prisma.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import { applySizeStockDelta } from "../../lib/sizeStock.js";
+import { PRODUCT_BUCKET, publicObjectUrl } from "../../lib/storage.js";
 import type { createAdjustmentSchema } from "./inventory.schema.js";
 import type { z } from "zod";
 
-export function listStock() {
-  return prisma.product.findMany({
+export async function listStock() {
+  const rows = await prisma.product.findMany({
     orderBy: { name: "asc" },
     select: {
       id: true,
@@ -15,12 +16,18 @@ export function listStock() {
       price: true,
       openingStock: true,
       currentStock: true,
+      imagePath: true,
+      imageMime: true,
       sizeStocks: {
         select: { sizeMm: true, quantity: true },
         orderBy: { sizeMm: "desc" },
       },
     },
   });
+  return rows.map((row) => ({
+    ...row,
+    imageUrl: row.imagePath ? publicObjectUrl(PRODUCT_BUCKET, row.imagePath) : null,
+  }));
 }
 
 export function listStockMovements(productId?: string) {

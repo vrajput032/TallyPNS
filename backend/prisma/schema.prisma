@@ -64,6 +64,9 @@ model Product {
   price         Decimal  @default(0) @db.Decimal(14, 2)
   openingStock  Decimal  @default(0) @db.Decimal(14, 2)
   currentStock  Decimal  @default(0) @db.Decimal(14, 2)
+  /** Supabase Storage path in bucket `pns-products` */
+  imagePath     String?
+  imageMime     String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -124,36 +127,67 @@ model SalesInvoiceItem {
   amount         Decimal      @db.Decimal(14, 2)
 }
 
+enum PurchaseBillKind {
+  CATALOG
+  EQUIPMENT
+}
+
 model PurchaseBill {
-  id          String   @id @default(cuid())
-  billNo      String   @unique
-  vendorId    String
-  vendor      Vendor   @relation(fields: [vendorId], references: [id])
-  billDate    DateTime @default(now())
-  transport   String?
-  vehicleNo   String?
-  totalAmount Decimal   @default(0) @db.Decimal(14, 2)
-  deletedAt   DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                String           @id @default(cuid())
+  billNo            String           @unique
+  vendorId          String?
+  vendor            Vendor?          @relation(fields: [vendorId], references: [id])
+  billDate          DateTime         @default(now())
+  /** CATALOG = legacy pipe stock-in; new bills are EQUIPMENT (CNC, Traub, etc.) */
+  kind              PurchaseBillKind @default(EQUIPMENT)
+  transport         String?
+  vehicleNo         String?
+  /** Their invoice number if written on the uploaded bill */
+  supplierInvoiceNo String?
+  /** Seller GSTIN when not linked to a vendor record */
+  supplierGstin     String?
+  notes             String?
+  totalAmount       Decimal          @default(0) @db.Decimal(14, 2)
+  deletedAt         DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
   items       PurchaseBillItem[]
   payments    VendorPayment[]
+  attachments PurchaseAttachment[]
 
   @@index([deletedAt])
+  @@index([kind])
 }
 
 model PurchaseBillItem {
   id             String       @id @default(cuid())
   purchaseBillId String
   purchaseBill   PurchaseBill @relation(fields: [purchaseBillId], references: [id], onDelete: Cascade)
-  productId      String
-  product        Product      @relation(fields: [productId], references: [id])
+  /** Null for equipment / free-text lines (CNC, Traub, etc.) */
+  productId      String?
+  product        Product?     @relation(fields: [productId], references: [id], onDelete: SetNull)
+  /** Free-text description when productId is null */
+  description    String?
   quantity       Decimal      @db.Decimal(14, 3) // Tons (or product unit qty)
   pricePerKg     Decimal?     @db.Decimal(14, 4)
   rate           Decimal      @db.Decimal(14, 2) // ₹ per Ton (or per unit)
   gstRate        Decimal      @db.Decimal(5, 2)
   amount         Decimal      @db.Decimal(14, 2)
+}
+
+model PurchaseAttachment {
+  id             String       @id @default(cuid())
+  purchaseBillId String
+  purchaseBill   PurchaseBill @relation(fields: [purchaseBillId], references: [id], onDelete: Cascade)
+  fileName       String
+  mimeType       String
+  /** Path inside Supabase Storage bucket `pns-purchase` */
+  storagePath    String
+  sizeBytes      Int
+  createdAt      DateTime     @default(now())
+
+  @@index([purchaseBillId])
 }
 
 enum StockMovementType {
@@ -209,8 +243,8 @@ model PaymentReceipt {
 model VendorPayment {
   id             String       @id @default(cuid())
   paymentNo      String       @unique
-  vendorId       String
-  vendor         Vendor       @relation(fields: [vendorId], references: [id])
+  vendorId       String?
+  vendor         Vendor?      @relation(fields: [vendorId], references: [id])
   purchaseBillId String
   purchaseBill   PurchaseBill @relation(fields: [purchaseBillId], references: [id])
   amount         Decimal      @db.Decimal(14, 2)

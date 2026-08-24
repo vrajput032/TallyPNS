@@ -196,7 +196,7 @@ export function RecycleBinPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Bill No.</TableHead>
-                    <TableHead>Vendor</TableHead>
+                    <TableHead>Notes</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead className="text-right">Total</TableHead>
                     <TableHead>Deleted</TableHead>
@@ -207,7 +207,7 @@ export function RecycleBinPage() {
                   {purchase.map((bill) => (
                     <TableRow key={bill.id}>
                       <TableCell>{bill.billNo}</TableCell>
-                      <TableCell>{bill.vendor.name}</TableCell>
+                      <TableCell>{bill.notes?.trim() || bill.vendor?.name || "—"}</TableCell>
                       <TableCell>
                         {new Date(bill.billDate).toLocaleDateString("en-GB")}
                       </TableCell>

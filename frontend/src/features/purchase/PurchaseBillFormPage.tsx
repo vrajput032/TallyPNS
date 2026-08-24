@@ -18,58 +18,62 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { PurchaseAttachmentsPanel } from "./PurchaseAttachmentsPanel";
+import { PurchaseLineItemsField } from "./PurchaseLineItemsField";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useProducts } from "@/features/products/useProducts";
-import { useVendors } from "@/features/vendors/useVendors";
-import { KG_PER_TON, PurchaseLineItemsField } from "./PurchaseLineItemsField";
-import { useCreatePurchaseBill, usePurchaseBill, useUpdatePurchaseBill } from "./usePurchase";
+  useCreatePurchaseBill,
+  usePurchaseBill,
+  useUpdatePurchaseBill,
+  useUploadPurchaseAttachment,
+} from "./usePurchase";
 import { formatInr } from "@/lib/formatInr";
 
 const lineItemSchema = z.object({
-  productId: z.string().min(1, "Select a material"),
-  quantity: z.coerce.number().positive("Qty (Tons) must be greater than 0"),
-  pricePerKg: z.coerce.number().min(0, "Price/Kg is required"),
+  description: z.string().trim().min(1, "Enter what was purchased (e.g. CNC / Traub)"),
+  quantity: z.coerce.number().positive("Qty must be greater than 0"),
+  pricePerKg: z.coerce.number().min(0).optional(),
   rate: z.coerce.number().min(0),
   gstRate: z.coerce.number().min(0).max(100),
 });
 
 const billFormSchema = z.object({
-  vendorId: z.string().min(1, "Select a vendor"),
-  transport: z.string().trim().max(100).optional(),
-  vehicleNo: z.string().trim().max(40).optional(),
+  supplierInvoiceNo: z.string().trim().max(80).optional(),
+  supplierGstin: z.string().trim().max(15).optional(),
+  notes: z.string().trim().max(2000).optional(),
   items: z.array(lineItemSchema).min(1, "Add at least one item"),
 });
 
 type BillFormValues = z.infer<typeof billFormSchema>;
 
-const emptyItem = { productId: "", quantity: 1, pricePerKg: 0, rate: 0, gstRate: 18 };
+const emptyItem = {
+  description: "",
+  quantity: 1,
+  pricePerKg: 0,
+  rate: 0,
+  gstRate: 0,
+};
 
 export function PurchaseBillFormPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isEditing = !!id;
-  const { data: vendors } = useVendors();
-  const { data: products } = useProducts();
   const { data: existingBill, isLoading: isLoadingBill } = usePurchaseBill(
     isEditing ? id : undefined
   );
   const createBill = useCreatePurchaseBill();
   const updateBill = useUpdatePurchaseBill();
+  const uploadAttachment = useUploadPurchaseAttachment();
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
   const [pendingValues, setPendingValues] = useState<BillFormValues | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
   const form = useForm<BillFormValues>({
     resolver: zodResolver(billFormSchema),
     defaultValues: {
-      vendorId: "",
-      transport: "",
-      vehicleNo: "",
+      supplierInvoiceNo: "",
+      supplierGstin: "",
+      notes: "",
       items: [{ ...emptyItem }],
     },
   });
@@ -77,13 +81,13 @@ export function PurchaseBillFormPage() {
   useEffect(() => {
     if (!existingBill) return;
     form.reset({
-      vendorId: existingBill.vendorId,
-      transport: existingBill.transport ?? "",
-      vehicleNo: existingBill.vehicleNo ?? "",
+      supplierInvoiceNo: existingBill.supplierInvoiceNo ?? "",
+      supplierGstin: existingBill.supplierGstin ?? existingBill.vendor?.gstin ?? "",
+      notes: existingBill.notes ?? "",
       items: existingBill.items.map((item) => ({
-        productId: item.productId,
+        description: item.description ?? item.product?.name ?? "",
         quantity: Number(item.quantity),
-        pricePerKg: item.pricePerKg != null ? Number(item.pricePerKg) : 0,
+        pricePerKg: 0,
         rate: Number(item.rate),
         gstRate: Number(item.gstRate),
       })),
@@ -97,51 +101,40 @@ export function PurchaseBillFormPage() {
 
   const items = form.watch("items");
   const grandTotal = items.reduce((sum, item) => {
-    const pricePerKg = Number(item.pricePerKg) || 0;
     const qty = Number(item.quantity) || 0;
+    const rate = Number(item.rate) || 0;
     const gst = Number(item.gstRate) || 0;
-    const rate =
-      pricePerKg > 0
-        ? Math.round(pricePerKg * KG_PER_TON * 100) / 100
-        : Number(item.rate) || 0;
     const base = qty * rate;
     return sum + base + (base * gst) / 100;
   }, 0);
-  const totalTons = items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
-
-  function handleProductChange(index: number, productId: string) {
-    const product = products?.find((p) => p.id === productId);
-    form.setValue(`items.${index}.productId`, productId);
-    if (product) {
-      const pricePerKg = Number(product.price);
-      form.setValue(`items.${index}.pricePerKg`, pricePerKg);
-      form.setValue(
-        `items.${index}.rate`,
-        Math.round(pricePerKg * KG_PER_TON * 100) / 100
-      );
-      form.setValue(`items.${index}.gstRate`, Number(product.gstRate));
-    }
-  }
 
   function buildPayload(values: BillFormValues) {
     return {
-      vendorId: values.vendorId,
-      transport: values.transport?.trim() || null,
-      vehicleNo: values.vehicleNo?.trim() || null,
-      items: values.items.map((item) => {
-        const rate =
-          item.pricePerKg > 0
-            ? Math.round(item.pricePerKg * KG_PER_TON * 100) / 100
-            : item.rate;
-        return {
-          productId: item.productId,
-          quantity: item.quantity,
-          pricePerKg: item.pricePerKg,
-          rate,
-          gstRate: item.gstRate,
-        };
-      }),
+      vendorId: null,
+      kind: "EQUIPMENT" as const,
+      supplierInvoiceNo: values.supplierInvoiceNo?.trim() || null,
+      supplierGstin: values.supplierGstin?.trim() || null,
+      notes: values.notes?.trim() || null,
+      items: values.items.map((item) => ({
+        productId: null,
+        description: item.description.trim(),
+        quantity: item.quantity,
+        pricePerKg: null,
+        rate: item.rate,
+        gstRate: item.gstRate,
+      })),
     };
+  }
+
+  async function uploadPending(billId: string) {
+    for (const file of pendingFiles) {
+      try {
+        await uploadAttachment.mutateAsync({ id: billId, file });
+      } catch {
+        toast.error(`Bill saved, but failed to upload ${file.name}`);
+      }
+    }
+    setPendingFiles([]);
   }
 
   function onSubmit(values: BillFormValues) {
@@ -152,7 +145,8 @@ export function PurchaseBillFormPage() {
     }
 
     createBill.mutate(buildPayload(values), {
-      onSuccess: (bill) => {
+      onSuccess: async (bill) => {
+        await uploadPending(bill.id);
         toast.success(`Bill ${bill.billNo} created`);
         navigate(`/purchase/${bill.id}`);
       },
@@ -170,7 +164,8 @@ export function PurchaseBillFormPage() {
     updateBill.mutate(
       { id, pin, input: buildPayload(pendingValues) },
       {
-        onSuccess: (bill) => {
+        onSuccess: async (bill) => {
+          await uploadPending(bill.id);
           toast.success(`Bill ${bill.billNo} updated`);
           setPinDialogOpen(false);
           setPendingValues(null);
@@ -201,46 +196,17 @@ export function PurchaseBillFormPage() {
         <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
           <Card>
             <CardHeader>
-              <CardTitle>Vendor</CardTitle>
+              <CardTitle>Bill details</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
-                name="vendorId"
-                render={({ field }) => (
-                  <FormItem className="sm:col-span-2 sm:max-w-sm">
-                    <FormLabel>Bill From</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a vendor">
-                            {(value: string | null) =>
-                              vendors?.find((vendor) => vendor.id === value)?.name ??
-                              "Select a vendor"
-                            }
-                          </SelectValue>
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {vendors?.map((vendor) => (
-                          <SelectItem key={vendor.id} value={vendor.id}>
-                            {vendor.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="transport"
+                name="supplierInvoiceNo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Transport (optional)</FormLabel>
+                    <FormLabel>Invoice no. (optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. REGULAR" {...field} value={field.value ?? ""} />
+                      <Input placeholder="Their bill number" {...field} value={field.value ?? ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -248,13 +214,27 @@ export function PurchaseBillFormPage() {
               />
               <FormField
                 control={form.control}
-                name="vehicleNo"
+                name="supplierGstin"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Vehicle No. (optional)</FormLabel>
+                    <FormLabel>GSTIN (optional)</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="e.g. HR55AB1234"
+                      <Input placeholder="Seller GST number" {...field} value={field.value ?? ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem className="sm:col-span-2">
+                    <FormLabel>Notes / details (optional)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Serial no., warranty, installation notes…"
+                        rows={3}
                         {...field}
                         value={field.value ?? ""}
                       />
@@ -268,26 +248,38 @@ export function PurchaseBillFormPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Raw Material (Tons)</CardTitle>
+              <CardTitle>Machines / equipment</CardTitle>
             </CardHeader>
             <CardContent>
               <PurchaseLineItemsField
+                mode="EQUIPMENT"
                 fields={fields}
                 items={items}
-                products={products}
+                products={undefined}
                 register={form.register}
                 setValue={form.setValue}
-                onProductChange={handleProductChange}
+                onProductChange={() => undefined}
                 onAdd={() => append({ ...emptyItem })}
                 onRemove={remove}
                 errorMessage={form.formState.errors.items?.message}
               />
               <div className="mt-4 flex flex-col items-end gap-1 text-sm">
-                <div className="text-muted-foreground">
-                  Total qty: {totalTons.toFixed(3)} Tons ({(totalTons * KG_PER_TON).toFixed(0)} Kg)
-                </div>
                 <div className="text-lg font-semibold">Grand Total: ₹{formatInr(grandTotal)}</div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Attachments (PDF / image)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PurchaseAttachmentsPanel
+                billId={id ?? "new"}
+                attachments={existingBill?.attachments}
+                pendingFiles={pendingFiles}
+                onPendingFilesChange={setPendingFiles}
+              />
             </CardContent>
           </Card>
 
@@ -299,7 +291,12 @@ export function PurchaseBillFormPage() {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={createBill.isPending || updateBill.isPending}>
+            <Button
+              type="submit"
+              disabled={
+                createBill.isPending || updateBill.isPending || uploadAttachment.isPending
+              }
+            >
               {createBill.isPending || updateBill.isPending
                 ? "Saving..."
                 : isEditing
@@ -317,7 +314,7 @@ export function PurchaseBillFormPage() {
           if (!open) setPendingValues(null);
         }}
         title="Confirm bill edit"
-        description="Editing this bill will recalculate stock and totals. Enter the PIN to confirm."
+        description="Enter the PIN to confirm this edit. Pipe stock is not changed."
         confirmLabel="Save Changes"
         confirmVariant="default"
         pinLabel="Edit PIN"

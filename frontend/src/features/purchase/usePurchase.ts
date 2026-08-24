@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { PurchaseBill, PurchaseBillInput } from "./types";
+import type { PurchaseAttachment, PurchaseBill, PurchaseBillInput } from "./types";
 
 const PURCHASE_KEY = ["purchase"];
 
@@ -82,6 +82,41 @@ export function useDeletePurchaseBill() {
       queryClient.invalidateQueries({ queryKey: ["gst"] });
       queryClient.invalidateQueries({ queryKey: ["reports"] });
       queryClient.invalidateQueries({ queryKey: ["recycle-bin"] });
+    },
+  });
+}
+
+export function useUploadPurchaseAttachment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, file }: { id: string; file: File }) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      const { data } = await api.post<PurchaseAttachment>(`/purchase/${id}/attachments`, formData);
+      return data;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: [...PURCHASE_KEY, variables.id] });
+      queryClient.invalidateQueries({ queryKey: PURCHASE_KEY });
+    },
+  });
+}
+
+export function useDeletePurchaseAttachment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      billId,
+      attachmentId,
+    }: {
+      billId: string;
+      attachmentId: string;
+    }) => {
+      await api.delete(`/purchase/${billId}/attachments/${attachmentId}`);
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: [...PURCHASE_KEY, variables.billId] });
+      queryClient.invalidateQueries({ queryKey: PURCHASE_KEY });
     },
   });
 }
