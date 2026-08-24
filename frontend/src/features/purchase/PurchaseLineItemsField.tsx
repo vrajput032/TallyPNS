@@ -33,7 +33,7 @@ export interface PurchaseLineItemValue {
   productId?: string;
   description?: string;
   quantity: number;
-  pricePerKg: number;
+  pricePerKg?: number;
   rate: number;
   gstRate: number;
 }
