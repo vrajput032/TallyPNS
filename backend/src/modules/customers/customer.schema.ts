@@ -7,6 +7,7 @@ export const createCustomerSchema = z.object({
   gstin: z.string().optional(),
   address: z.string().optional(),
   openingBalance: z.number().default(0),
+  paymentTermDays: z.number().int().min(0).default(0),
 });
 
 export const updateCustomerSchema = createCustomerSchema.partial();

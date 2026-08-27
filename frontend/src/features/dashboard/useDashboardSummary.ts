@@ -15,6 +15,7 @@ export interface DashboardSummary {
   stockBySize: { sizeMm: number; quantity: number }[];
   lowStockCount: number;
   totalSales: number;
+  totalReceived: number;
   rawMaterial?: RawMaterialSummary;
 }
 

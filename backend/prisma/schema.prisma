@@ -26,15 +26,17 @@ model User {
 }
 
 model Customer {
-  id             String   @id @default(cuid())
-  name           String
-  phone          String?
-  email          String?
-  gstin          String?
-  address        String?
-  openingBalance Decimal  @default(0) @db.Decimal(14, 2)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String   @id @default(cuid())
+  name            String
+  phone           String?
+  email           String?
+  gstin           String?
+  address         String?
+  openingBalance  Decimal  @default(0) @db.Decimal(14, 2)
+  /** Credit period in days from invoice date */
+  paymentTermDays Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   salesInvoices  SalesInvoice[]
   receipts       PaymentReceipt[]

@@ -77,3 +77,17 @@ export function salesItemHsn(item: SalesInvoiceItem) {
 export function salesItemUnit(item: SalesInvoiceItem) {
   return item.product?.unit ?? item.unit ?? "NOS";
 }
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/** Days remaining until the invoice is due (negative when overdue). Null when the customer has no payment term set. */
+export function daysUntilDue(invoice: SalesInvoice): number | null {
+  const termDays = invoice.customer?.paymentTermDays;
+  if (!termDays) return null;
+  const invoiceDate = new Date(invoice.invoiceDate);
+  const dueDate = new Date(invoiceDate.getTime() + termDays * MS_PER_DAY);
+  const today = new Date();
+  const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const dueMidnight = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+  return Math.round((dueMidnight.getTime() - todayMidnight.getTime()) / MS_PER_DAY);
+}

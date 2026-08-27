@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/table";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useDeleteSalesInvoice, useSalesInvoices } from "./useSales";
-import type { SalesInvoice } from "./types";
+import { daysUntilDue, type SalesInvoice } from "./types";
 import { PaymentStatusBadge } from "@/features/payments/PaymentStatusBadge";
 import { formatInr } from "@/lib/formatInr";
 import { canDelete } from "@/lib/permissions";
@@ -87,6 +87,26 @@ const SORT_OPTIONS: { value: string; label: string; id: string; desc: boolean }[
   { value: "pieces-asc", label: "Pieces (low to high)", id: "pieces", desc: false },
 ];
 
+function DueStatus({ invoice }: { invoice: SalesInvoice }) {
+  const balance = invoice.balanceAmount ?? 0;
+  const days = daysUntilDue(invoice);
+  if (balance <= 0 || days === null) return null;
+
+  if (days < 0) {
+    return (
+      <span className="font-medium text-red-600">{Math.abs(days)} days overdue</span>
+    );
+  }
+  if (days === 0) {
+    return <span className="font-medium text-amber-600">Due today</span>;
+  }
+  return (
+    <span className={days <= 7 ? "font-medium text-amber-600" : "text-muted-foreground"}>
+      {days} days left
+    </span>
+  );
+}
+
 function SortableHeader({ label, sorted }: { label: string; sorted: false | "asc" | "desc" }) {
   const Icon = sorted === "asc" ? ArrowUp : sorted === "desc" ? ArrowDown : ArrowUpDown;
   return (
@@ -129,6 +149,11 @@ const columns: ColumnDef<SalesInvoice>[] = [
     id: "balance",
     header: "Balance",
     cell: ({ row }) => formatInr(row.original.balanceAmount ?? 0),
+  },
+  {
+    id: "due",
+    header: "Due",
+    cell: ({ row }) => <DueStatus invoice={row.original} />,
   },
   {
     id: "status",
@@ -227,6 +252,11 @@ function MobileInvoiceCards({
                       </span>
                     )}
                   </p>
+                  {daysUntilDue(invoice) !== null && balance > 0 && (
+                    <p className="text-xs">
+                      <DueStatus invoice={invoice} />
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -590,7 +620,7 @@ export function SalesInvoicesPage() {
                   <TableCell colSpan={3}>Total</TableCell>
                   <TableCell>{totalPieces.toLocaleString("en-IN")}</TableCell>
                   <TableCell>{formatInr(totalAmount)}</TableCell>
-                  <TableCell colSpan={3} />
+                  <TableCell colSpan={4} />
                 </TableRow>
               </tfoot>
             )}

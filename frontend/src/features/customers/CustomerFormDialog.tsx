@@ -30,6 +30,7 @@ const customerSchema = z.object({
   gstin: z.string().optional(),
   address: z.string().optional(),
   openingBalance: z.coerce.number(),
+  paymentTermDays: z.coerce.number().int().min(0),
 });
 
 type CustomerFormValues = z.infer<typeof customerSchema>;
@@ -41,6 +42,7 @@ const emptyValues: CustomerFormValues = {
   gstin: "",
   address: "",
   openingBalance: 0,
+  paymentTermDays: 0,
 };
 
 interface CustomerFormDialogProps {
@@ -70,6 +72,7 @@ export function CustomerFormDialog({ open, onOpenChange, customer }: CustomerFor
               gstin: customer.gstin ?? "",
               address: customer.address ?? "",
               openingBalance: Number(customer.openingBalance),
+              paymentTermDays: customer.paymentTermDays ?? 0,
             }
           : emptyValues
       );
@@ -171,6 +174,19 @@ export function CustomerFormDialog({ open, onOpenChange, customer }: CustomerFor
                 )}
               />
             </div>
+            <FormField
+              control={form.control}
+              name="paymentTermDays"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Payment Term (days)</FormLabel>
+                  <FormControl>
+                    <Input type="number" step="1" min="0" placeholder="0" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="address"

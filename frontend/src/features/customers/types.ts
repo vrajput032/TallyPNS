@@ -6,6 +6,7 @@ export interface Customer {
   gstin: string | null;
   address: string | null;
   openingBalance: string;
+  paymentTermDays: number;
   totalBilled: number;
   totalPaid: number;
   balanceAmount: number;
@@ -20,4 +21,5 @@ export interface CustomerInput {
   gstin?: string;
   address?: string;
   openingBalance: number;
+  paymentTermDays: number;
 }

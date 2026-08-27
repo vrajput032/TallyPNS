@@ -1,4 +1,4 @@
-import { Package, TrendingUp, Warehouse } from "lucide-react";
+import { CircleDollarSign, Package, TrendingUp, Warehouse } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -159,12 +159,13 @@ function AnimatedCount({ target, prefix = "", suffix = "" }: { target: number; p
 export function DashboardPage() {
   const { data, isLoading } = useDashboardSummary();
   const totalSales = data?.totalSales ?? 0;
+  const totalReceived = data?.totalReceived ?? 0;
   const stockBySize = data?.stockBySize ?? PIPE_SIZES_MM.map((sizeMm) => ({ sizeMm, quantity: 0 }));
 
   return (
     <div className="grid min-w-0 max-w-full gap-4 overflow-x-hidden sm:gap-5">
       <ParallaxHeader />
-      <div className="min-w-0">
+      <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-4">
         <StatCard
           label="Total Sales"
           value={
@@ -174,6 +175,17 @@ export function DashboardPage() {
             />
           }
           icon={TrendingUp}
+          isLoading={isLoading}
+        />
+        <StatCard
+          label="Payment Received"
+          value={
+            <AnimatedCount
+              target={totalReceived}
+              prefix="₹"
+            />
+          }
+          icon={CircleDollarSign}
           isLoading={isLoading}
         />
       </div>
