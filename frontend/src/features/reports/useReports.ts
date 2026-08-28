@@ -1,5 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { useValueQuery } from "@/store/hooks/useReduxData";
+import {
+  fetchBalanceSheet,
+  fetchProfitAndLoss,
+  fetchStockReport,
+  fetchTrialBalance,
+} from "@/store/slices/reportsSlice";
 
 export interface ProfitAndLoss {
   totalSales: number;
@@ -41,41 +46,17 @@ export interface TrialBalance {
 }
 
 export function useProfitAndLoss() {
-  return useQuery({
-    queryKey: ["reports", "profit-loss"],
-    queryFn: async () => {
-      const { data } = await api.get<ProfitAndLoss>("/reports/profit-loss");
-      return data;
-    },
-  });
+  return useValueQuery<ProfitAndLoss>((s) => s.reports.profitLoss, fetchProfitAndLoss);
 }
 
 export function useStockReport() {
-  return useQuery({
-    queryKey: ["reports", "stock"],
-    queryFn: async () => {
-      const { data } = await api.get<StockReport>("/reports/stock");
-      return data;
-    },
-  });
+  return useValueQuery<StockReport>((s) => s.reports.stock, fetchStockReport);
 }
 
 export function useBalanceSheet() {
-  return useQuery({
-    queryKey: ["reports", "balance-sheet"],
-    queryFn: async () => {
-      const { data } = await api.get<BalanceSheet>("/reports/balance-sheet");
-      return data;
-    },
-  });
+  return useValueQuery<BalanceSheet>((s) => s.reports.balanceSheet, fetchBalanceSheet);
 }
 
 export function useTrialBalance() {
-  return useQuery({
-    queryKey: ["reports", "trial-balance"],
-    queryFn: async () => {
-      const { data } = await api.get<TrialBalance>("/reports/trial-balance");
-      return data;
-    },
-  });
+  return useValueQuery<TrialBalance>((s) => s.reports.trialBalance, fetchTrialBalance);
 }

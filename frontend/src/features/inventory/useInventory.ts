@@ -1,38 +1,19 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
-import type { AdjustmentInput, StockMovement, StockRow } from "./types";
+import { useListQuery, useAsyncMutation } from "@/store/hooks/useReduxData";
+import type { AdjustmentInput, StockMovement, StockRow } from "@/features/inventory/types";
+import {
+  createAdjustment,
+  fetchStock,
+  fetchStockMovements,
+} from "@/store/slices/inventorySlice";
 
 export function useStock() {
-  return useQuery({
-    queryKey: ["inventory", "stock"],
-    queryFn: async () => {
-      const { data } = await api.get<StockRow[]>("/inventory/stock");
-      return data;
-    },
-  });
+  return useListQuery<StockRow>((s) => s.inventory.stock, fetchStock);
 }
 
 export function useStockMovements() {
-  return useQuery({
-    queryKey: ["inventory", "movements"],
-    queryFn: async () => {
-      const { data } = await api.get<StockMovement[]>("/inventory/movements");
-      return data;
-    },
-  });
+  return useListQuery<StockMovement>((s) => s.inventory.movements, fetchStockMovements);
 }
 
 export function useCreateAdjustment() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: AdjustmentInput) => {
-      const { data } = await api.post<StockMovement>("/inventory/adjustments", input);
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["inventory"] });
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    },
-  });
+  return useAsyncMutation<AdjustmentInput, StockMovement>(createAdjustment);
 }

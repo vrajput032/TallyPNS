@@ -1,6 +1,9 @@
 import { useCallback, useState } from "react";
 import { Outlet } from "react-router-dom";
+import { SectionDataSync } from "@/store/SectionDataSync";
+import { cn } from "@/lib/utils";
 import { EdgeSwipeGuards } from "./EdgeSwipeGuards";
+import { MobileTabBar } from "./MobileTabBar";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { GlobalBackground } from "@/components/effects/GlobalBackground";
@@ -30,6 +33,7 @@ export function AppShell() {
 
   return (
     <div className="relative flex min-h-screen overscroll-x-none">
+      <SectionDataSync />
       {ENABLE_3D && <GlobalBackground />}
       {isCompactNav ? <EdgeSwipeGuards className="print:hidden" /> : null}
       <div className="print:hidden">
@@ -44,10 +48,16 @@ export function AppShell() {
             onRightOpenChange={setRightOpen}
           />
         </div>
-        <main className="min-w-0 flex-1 p-4 sm:p-6 print:p-0">
+        <main
+          className={cn(
+            "min-w-0 flex-1 p-4 sm:p-6 print:p-0",
+            isCompactNav && "pb-[calc(6rem+env(safe-area-inset-bottom))]"
+          )}
+        >
           <Outlet />
         </main>
       </div>
+      {isCompactNav ? <MobileTabBar /> : null}
     </div>
   );
 }

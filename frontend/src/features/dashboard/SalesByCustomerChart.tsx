@@ -9,6 +9,7 @@ import {
   YAxis,
 } from "recharts";
 import { Loader2 } from "lucide-react";
+import { useRef } from "react";
 import { useSalesByCustomer, type CustomerSalesPoint } from "./useSalesByCustomer";
 import { formatInr } from "@/lib/formatInr";
 import { usePrimaryColor } from "@/lib/usePrimaryColor";
@@ -59,6 +60,7 @@ function truncateLabel(name: string, max = 12) {
 export function SalesByCustomerChart() {
   const { data, isLoading, error } = useSalesByCustomer();
   const primary = usePrimaryColor();
+  const animateChart = useRef(data == null);
   const palette = generatePalette(primary, 8);
 
   if (error) {
@@ -116,6 +118,7 @@ export function SalesByCustomerChart() {
           <Bar
             dataKey="total"
             radius={[6, 6, 0, 0]}
+            isAnimationActive={animateChart.current}
             animationDuration={800}
             animationEasing="ease-out"
           >

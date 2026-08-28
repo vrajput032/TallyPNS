@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { useValueQuery } from "@/store/hooks/useReduxData";
+import { fetchMonthlySales } from "@/store/slices/dashboardSlice";
 
 export interface MonthlySalesPoint {
   month: string;
@@ -7,11 +7,5 @@ export interface MonthlySalesPoint {
 }
 
 export function useMonthlySales() {
-  return useQuery({
-    queryKey: ["dashboard", "sales-monthly"],
-    queryFn: async () => {
-      const { data } = await api.get<MonthlySalesPoint[]>("/dashboard/sales/monthly");
-      return data;
-    },
-  });
+  return useValueQuery<MonthlySalesPoint[]>((s) => s.dashboard.monthlySales, fetchMonthlySales);
 }

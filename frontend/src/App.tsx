@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Provider } from "react-redux";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { AppShell } from "@/components/layout/AppShell";
@@ -26,14 +26,15 @@ import { UsersPage } from "@/features/users/UsersPage";
 import { RawMaterialBillsPage } from "@/features/raw-material/RawMaterialBillsPage";
 import { RawMaterialBillFormPage } from "@/features/raw-material/RawMaterialBillFormPage";
 import { RawMaterialBillDetailPage } from "@/features/raw-material/RawMaterialBillDetailPage";
+import { SlowApiOverlay } from "@/components/loading/SlowApiOverlay";
+import { store } from "@/store/store";
 import { ThemeProvider } from "@/lib/theme";
 
-const queryClient = new QueryClient();
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <QueryClientProvider client={queryClient}>
+    <Provider store={store}>
+      <ThemeProvider>
         <BrowserRouter>
           <LoginBackGuard />
           <Routes>
@@ -69,8 +70,9 @@ export default function App() {
             </Route>
           </Routes>
         </BrowserRouter>
+        <SlowApiOverlay />
         <Toaster />
-      </QueryClientProvider>
-    </ThemeProvider>
+      </ThemeProvider>
+    </Provider>
   );
 }

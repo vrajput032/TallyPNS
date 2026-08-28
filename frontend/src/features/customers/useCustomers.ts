@@ -1,53 +1,24 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
-import type { Customer, CustomerInput } from "./types";
-
-const CUSTOMERS_KEY = ["customers"];
+import { useListQuery, useAsyncMutation } from "@/store/hooks/useReduxData";
+import type { Customer, CustomerInput } from "@/features/customers/types";
+import {
+  createCustomer,
+  deleteCustomer,
+  fetchCustomers,
+  updateCustomer,
+} from "@/store/slices/customersSlice";
 
 export function useCustomers() {
-  return useQuery({
-    queryKey: CUSTOMERS_KEY,
-    queryFn: async () => {
-      const { data } = await api.get<Customer[]>("/customers");
-      return data;
-    },
-  });
+  return useListQuery<Customer>((s) => s.customers, fetchCustomers);
 }
 
 export function useCreateCustomer() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: CustomerInput) => {
-      const { data } = await api.post<Customer>("/customers", input);
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: CUSTOMERS_KEY });
-    },
-  });
+  return useAsyncMutation<CustomerInput, Customer>(createCustomer);
 }
 
 export function useUpdateCustomer() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, input }: { id: string; input: CustomerInput }) => {
-      const { data } = await api.put<Customer>(`/customers/${id}`, input);
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: CUSTOMERS_KEY });
-    },
-  });
+  return useAsyncMutation<{ id: string; input: CustomerInput }, Customer>(updateCustomer);
 }
 
 export function useDeleteCustomer() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      await api.delete(`/customers/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: CUSTOMERS_KEY });
-    },
-  });
+  return useAsyncMutation<string, string>(deleteCustomer);
 }

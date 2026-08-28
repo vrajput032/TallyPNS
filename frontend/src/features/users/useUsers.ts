@@ -1,45 +1,18 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
-import type { AppUser, UserRole } from "./types";
-
-const USERS_KEY = ["users"];
+import { useListQuery, useAsyncMutation } from "@/store/hooks/useReduxData";
+import type { AppUser, UserRole } from "@/features/users/types";
+import { createUser, deleteUser, fetchUsers } from "@/store/slices/usersSlice";
 
 export function useUsers() {
-  return useQuery({
-    queryKey: USERS_KEY,
-    queryFn: async () => {
-      const { data } = await api.get<AppUser[]>("/auth/users");
-      return data;
-    },
-  });
+  return useListQuery<AppUser>((s) => s.users, fetchUsers);
 }
 
 export function useCreateUser() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: {
-      username: string;
-      password: string;
-      name: string;
-      role: UserRole;
-    }) => {
-      const { data } = await api.post<AppUser>("/auth/users", input);
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: USERS_KEY });
-    },
-  });
+  return useAsyncMutation<
+    { username: string; password: string; name: string; role: UserRole },
+    AppUser
+  >(createUser);
 }
 
 export function useDeleteUser() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      await api.delete(`/auth/users/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: USERS_KEY });
-    },
-  });
+  return useAsyncMutation<string, string>(deleteUser);
 }

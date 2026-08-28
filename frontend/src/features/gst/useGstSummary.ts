@@ -1,5 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { useCallback, useEffect } from "react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { isValueLoading } from "@/store/slices/helpers";
+import { fetchGstSummary, gstPeriodKey } from "@/store/slices/gstSlice";
 
 export interface GstRateBreakdown {
   gstRate: number;
@@ -47,13 +49,26 @@ export interface GstSummary {
 }
 
 export function useGstSummary(month: number, year: number) {
-  return useQuery({
-    queryKey: ["gst", "summary", month, year],
-    queryFn: async () => {
-      const { data } = await api.get<GstSummary>("/gst/summary", {
-        params: { month, year },
-      });
-      return data;
-    },
-  });
+  const dispatch = useAppDispatch();
+  const key = gstPeriodKey(month, year);
+  const slot = useAppSelector((s) => s.gst.byPeriod[key]);
+
+  useEffect(() => {
+    if (!slot || slot.status === "idle") {
+      dispatch(fetchGstSummary({ month, year }));
+    }
+  }, [dispatch, month, year, slot?.status, key]);
+
+  const refetch = useCallback(() => {
+    dispatch(fetchGstSummary({ month, year, silent: true }));
+  }, [dispatch, month, year]);
+
+  return {
+    data: slot?.value ?? undefined,
+    isLoading: !slot || isValueLoading(slot),
+    isFetching: slot?.status === "loading",
+    isError: slot?.status === "failed",
+    error: slot?.error ?? null,
+    refetch,
+  };
 }

@@ -107,6 +107,55 @@ function DueStatus({ invoice }: { invoice: SalesInvoice }) {
   );
 }
 
+function DueBanner({ invoice, balance }: { invoice: SalesInvoice; balance: number }) {
+  const days = daysUntilDue(invoice);
+
+  let dayLabel: string | null = null;
+  let tone: "overdue" | "warn" | "ok" = "ok";
+  if (days !== null) {
+    if (days < 0) {
+      dayLabel = `${Math.abs(days)}d overdue`;
+      tone = "overdue";
+    } else if (days === 0) {
+      dayLabel = "Due today";
+      tone = "warn";
+    } else {
+      dayLabel = `${days}d left`;
+      tone = days <= 7 ? "warn" : "ok";
+    }
+  }
+
+  const toneClasses =
+    tone === "overdue"
+      ? "bg-red-600 text-white"
+      : tone === "warn"
+        ? "bg-amber-500 text-white"
+        : "bg-slate-800 text-white dark:bg-slate-700";
+
+  const badgeClasses =
+    tone === "overdue" || tone === "warn"
+      ? "bg-black/20 text-white"
+      : "bg-white/15 text-white";
+
+  return (
+    <div className={`flex items-center justify-between gap-2 px-4 py-3 pl-5 ${toneClasses}`}>
+      <div className="min-w-0">
+        <p className="text-[10px] font-semibold uppercase tracking-wider opacity-80">
+          Balance due
+        </p>
+        <p className="text-lg font-extrabold leading-tight tabular-nums">
+          ₹{formatInr(balance)}
+        </p>
+      </div>
+      {dayLabel && (
+        <span className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-bold ${badgeClasses}`}>
+          {dayLabel}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function SortableHeader({ label, sorted }: { label: string; sorted: false | "asc" | "desc" }) {
   const Icon = sorted === "asc" ? ArrowUp : sorted === "desc" ? ArrowDown : ArrowUpDown;
   return (
@@ -229,7 +278,7 @@ function MobileInvoiceCards({
             <div className="mx-4 border-t" />
 
             <div className="flex items-center justify-between gap-2 p-4 pl-5">
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-2">
                 {/* Pieces called out as its own stat pill, not buried in text. */}
                 <div className="flex flex-col items-center rounded-xl bg-muted px-3 py-1.5">
                   <span className="text-base font-bold leading-none tabular-nums">
@@ -239,24 +288,13 @@ function MobileInvoiceCards({
                     Pcs
                   </span>
                 </div>
-                <div>
-                  <p className="text-lg font-bold leading-tight tabular-nums">
+                <div className="min-w-0">
+                  <p className="truncate text-lg font-bold leading-tight tabular-nums">
                     ₹{formatInr(invoice.totalAmount)}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="truncate text-xs text-muted-foreground">
                     {new Date(invoice.invoiceDate).toLocaleDateString("en-GB")}
-                    {balance > 0 && (
-                      <span className="font-medium text-red-600">
-                        {" "}
-                        · ₹{formatInr(balance)} due
-                      </span>
-                    )}
                   </p>
-                  {daysUntilDue(invoice) !== null && balance > 0 && (
-                    <p className="text-xs">
-                      <DueStatus invoice={invoice} />
-                    </p>
-                  )}
                 </div>
               </div>
 
@@ -277,6 +315,8 @@ function MobileInvoiceCards({
                 <ChevronRight className="size-4 text-muted-foreground" />
               </div>
             </div>
+
+            {balance > 0 && <DueBanner invoice={invoice} balance={balance} />}
           </div>
         );
       })}

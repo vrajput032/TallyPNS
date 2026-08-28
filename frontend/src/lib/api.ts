@@ -1,8 +1,14 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { useAuthStore } from "@/store/authStore";
+import { markApiSuccess, registerColdStartRequest } from "@/store/coldStartStore";
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
 
 const apiBaseUrl = getApiBaseUrl();
+
+type ApiRequestConfig = InternalAxiosRequestConfig & {
+  _retry?: boolean;
+  _releaseColdStart?: () => void;
+};
 
 export const api = axios.create({
   baseURL: apiBaseUrl,
@@ -12,11 +18,18 @@ export const api = axios.create({
   },
 });
 
+function releaseColdStart(config: InternalAxiosRequestConfig | undefined) {
+  const release = (config as ApiRequestConfig | undefined)?._releaseColdStart;
+  release?.();
+}
+
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  const release = registerColdStartRequest();
+  (config as ApiRequestConfig)._releaseColdStart = release;
   return config;
 });
 
@@ -37,11 +50,15 @@ async function refreshAccessToken(): Promise<string> {
 }
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    releaseColdStart(response.config);
+    markApiSuccess();
+    return response;
+  },
   async (error: AxiosError) => {
-    const originalRequest = error.config as
-      | (InternalAxiosRequestConfig & { _retry?: boolean })
-      | undefined;
+    releaseColdStart(error.config);
+
+    const originalRequest = error.config as ApiRequestConfig | undefined;
 
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
       const requestUrl = originalRequest.url ?? "";

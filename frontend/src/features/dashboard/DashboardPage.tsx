@@ -99,12 +99,12 @@ function ParallaxHeader() {
 
       <div className="relative flex flex-col gap-3 px-3 pt-4 pb-4 sm:px-6 sm:pt-7 sm:pb-6">
         <div className="flex items-center justify-between gap-2">
-          <h1 className="min-w-0 truncate bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-xl font-bold tracking-tight sm:text-2xl">
+          <h1 className="hidden min-w-0 truncate bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-xl font-bold tracking-tight sm:text-2xl md:block">
             Dashboard
           </h1>
           <ThemeSelector />
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
+        <div className="hidden gap-2 md:flex md:justify-end">
           <Button
             variant="ghost"
             type="button"
@@ -129,10 +129,25 @@ function ParallaxHeader() {
   );
 }
 
-function AnimatedCount({ target, prefix = "", suffix = "" }: { target: number; prefix?: string; suffix?: string }) {
-  const [display, setDisplay] = useState(0);
+function AnimatedCount({
+  target,
+  prefix = "",
+  suffix = "",
+  skipAnimation = false,
+}: {
+  target: number;
+  prefix?: string;
+  suffix?: string;
+  skipAnimation?: boolean;
+}) {
+  const [display, setDisplay] = useState(() => (skipAnimation ? target : 0));
 
   useEffect(() => {
+    if (skipAnimation) {
+      setDisplay(target);
+      return;
+    }
+
     const duration = 900;
     const start = performance.now();
     const from = display;
@@ -145,7 +160,7 @@ function AnimatedCount({ target, prefix = "", suffix = "" }: { target: number; p
       if (progress < 1) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
-  }, [target]);
+  }, [target, skipAnimation]);
 
   return (
     <span>
@@ -161,6 +176,12 @@ export function DashboardPage() {
   const totalSales = data?.totalSales ?? 0;
   const totalReceived = data?.totalReceived ?? 0;
   const stockBySize = data?.stockBySize ?? PIPE_SIZES_MM.map((sizeMm) => ({ sizeMm, quantity: 0 }));
+  const skipCountAnimation = data != null;
+
+  useEffect(() => {
+    document.documentElement.classList.add("hide-scrollbar");
+    return () => document.documentElement.classList.remove("hide-scrollbar");
+  }, []);
 
   return (
     <div className="grid min-w-0 max-w-full gap-4 overflow-x-hidden sm:gap-5">
@@ -172,6 +193,7 @@ export function DashboardPage() {
             <AnimatedCount
               target={totalSales}
               prefix="₹"
+              skipAnimation={skipCountAnimation}
             />
           }
           icon={TrendingUp}
@@ -183,6 +205,7 @@ export function DashboardPage() {
             <AnimatedCount
               target={totalReceived}
               prefix="₹"
+              skipAnimation={skipCountAnimation}
             />
           }
           icon={CircleDollarSign}
@@ -202,7 +225,7 @@ export function DashboardPage() {
             <StatCard
               key={row.sizeMm}
               label={formatPipeSize(row.sizeMm)}
-              value={<AnimatedCount target={Math.round(row.quantity)} />}
+              value={<AnimatedCount target={Math.round(row.quantity)} skipAnimation={skipCountAnimation} />}
               icon={Package}
               isLoading={isLoading}
               valueClassName={row.quantity < LOW_STOCK_QTY ? "text-red-600" : undefined}
@@ -215,7 +238,7 @@ export function DashboardPage() {
         <RawMaterialPaymentCard data={data?.rawMaterial} isLoading={isLoading} />
       </RevealCard>
 
-      <RevealCard className="min-w-0">
+      <div className="min-w-0">
         <Card className="relative min-w-0 overflow-hidden border-border/40 bg-card/60 shadow-[0_4px_30px_rgba(0,0,0,0.04)] backdrop-blur-xl">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent dark:via-white/20" />
           <CardHeader>
@@ -225,9 +248,9 @@ export function DashboardPage() {
             <SalesChart />
           </CardContent>
         </Card>
-      </RevealCard>
+      </div>
 
-      <RevealCard className="min-w-0">
+      <div className="min-w-0">
         <Card className="relative min-w-0 overflow-hidden border-border/40 bg-card/60 shadow-[0_4px_30px_rgba(0,0,0,0.04)] backdrop-blur-xl">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent dark:via-white/20" />
           <CardHeader>
@@ -237,7 +260,7 @@ export function DashboardPage() {
             <SalesByCustomerChart />
           </CardContent>
         </Card>
-      </RevealCard>
+      </div>
     </div>
   );
 }

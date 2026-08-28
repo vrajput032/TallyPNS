@@ -1,11 +1,11 @@
 import { Loader2 } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { z } from "zod";
+import { ColdStartLoader } from "@/components/loading/ColdStartLoader";
 import { AuthSplash } from "@/components/loading/AuthSplash";
 import { Button } from "@/components/ui/button";
 import {
@@ -60,28 +60,29 @@ export function LoginPage() {
     defaultValues: { username: "", password: "" },
   });
 
-  const loginMutation = useMutation({
-    mutationFn: async (values: LoginValues) => {
+  const [loginPending, setLoginPending] = useState(false);
+
+  async function onLogin(values: LoginValues) {
+    setLoginPending(true);
+    try {
       const { data } = await api.post("/auth/login", {
         username: values.username.trim().toLowerCase(),
         password: values.password,
       });
-      return data;
-    },
-    onSuccess: (data) => {
       setAuth(data.user, data.accessToken, data.refreshToken);
       toast.success("Logged in successfully");
       navigate("/", { replace: true });
-    },
-    onError: (error: unknown) => {
+    } catch (error: unknown) {
       const status = (error as { response?: { status?: number } })?.response?.status;
       if (!status) {
         toast.error("Cannot reach the server. Check your connection.");
-        return;
+      } else {
+        toast.error("Invalid username or password");
       }
-      toast.error("Invalid username or password");
-    },
-  });
+    } finally {
+      setLoginPending(false);
+    }
+  }
 
   if (!hydrated) {
     return <AuthSplash message="Loading..." />;
@@ -94,18 +95,17 @@ export function LoginPage() {
   return (
     <div className="relative min-h-screen w-full bg-muted/40">
       <GlobalBackground />
+      {loginPending ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-background/75 p-4 backdrop-blur-md sm:p-6">
+          <ColdStartLoader headline="Signing you in" variant="overlay" size="large" className="w-full" />
+        </div>
+      ) : null}
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center gap-6 px-4">
         <div className="relative h-[40vh] w-full max-w-3xl flex-shrink-0">
           <MoneyTree maxHeight="100%" />
         </div>
         <TiltCard maxTilt={8} scale={1.01} speed={350}>
-          <Card className="relative w-full max-w-md overflow-hidden border-border/60 shadow-xl shadow-primary/5 backdrop-blur-sm">
-            {loginMutation.isPending ? (
-              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-card/80 backdrop-blur-sm">
-                <Loader2 className="size-8 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">Signing in...</p>
-              </div>
-            ) : null}
+          <Card className="relative w-full max-w-md border-border/60 shadow-xl shadow-primary/5 backdrop-blur-sm">
             <CardHeader>
               <CardTitle>PNS ERP</CardTitle>
               <CardDescription>Sign in to your account</CardDescription>
@@ -114,7 +114,7 @@ export function LoginPage() {
               <Form {...form}>
                 <form
                   className="grid gap-4"
-                  onSubmit={form.handleSubmit((values) => loginMutation.mutate(values))}
+                  onSubmit={form.handleSubmit(onLogin)}
                 >
                   <FormField
                     control={form.control}
@@ -142,8 +142,8 @@ export function LoginPage() {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" disabled={loginMutation.isPending}>
-                    {loginMutation.isPending ? (
+                  <Button type="submit" disabled={loginPending}>
+                    {loginPending ? (
                       <>
                         <Loader2 className="size-4 animate-spin" />
                         Signing in...

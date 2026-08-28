@@ -1,98 +1,66 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
-import type { SalesInvoice, SalesInvoiceInput } from "./types";
-
-const SALES_KEY = ["sales"];
+import { useCallback, useEffect } from "react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import {
+  useListQuery,
+  useEntityQuery,
+  useAsyncMutation,
+} from "@/store/hooks/useReduxData";
+import { isValueLoading } from "@/store/slices/helpers";
+import type { SalesInvoice, SalesInvoiceInput } from "@/features/sales/types";
+import {
+  createSalesInvoice,
+  deleteSalesInvoice,
+  fetchNextInvoiceNo,
+  fetchSalesInvoice,
+  fetchSalesInvoices,
+  updateSalesInvoice,
+} from "@/store/slices/salesSlice";
 
 export function useSalesInvoices() {
-  return useQuery({
-    queryKey: SALES_KEY,
-    queryFn: async () => {
-      const { data } = await api.get<SalesInvoice[]>("/sales");
-      return data;
-    },
-  });
+  return useListQuery<SalesInvoice>((s) => s.sales.list, fetchSalesInvoices);
 }
 
 export function useSalesInvoice(id: string | undefined) {
-  return useQuery({
-    queryKey: [...SALES_KEY, id],
-    queryFn: async () => {
-      const { data } = await api.get<SalesInvoice>(`/sales/${id}`);
-      return data;
-    },
-    enabled: !!id,
-  });
+  return useEntityQuery<SalesInvoice>(
+    (s) => (id ? s.sales.byId[id] : undefined),
+    fetchSalesInvoice,
+    id
+  );
 }
 
 export function useNextInvoiceNo() {
-  return useQuery({
-    queryKey: [...SALES_KEY, "next-invoice-no"],
-    queryFn: async () => {
-      const { data } = await api.get<{ invoiceNo: string }>("/sales/next-invoice-no");
-      return data.invoiceNo;
-    },
-    staleTime: 0,
-  });
+  const dispatch = useAppDispatch();
+  const slot = useAppSelector((s) => s.sales.nextInvoiceNo);
+
+  useEffect(() => {
+    dispatch(fetchNextInvoiceNo());
+  }, [dispatch]);
+
+  const refetch = useCallback(() => {
+    dispatch(fetchNextInvoiceNo());
+  }, [dispatch]);
+
+  return {
+    data: slot.value ?? undefined,
+    isLoading: isValueLoading(slot),
+    isFetching: slot.status === "loading",
+    isError: slot.status === "failed",
+    error: slot.error,
+    refetch,
+  };
 }
 
 export function useCreateSalesInvoice() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: SalesInvoiceInput) => {
-      const { data } = await api.post<SalesInvoice>("/sales", input);
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: SALES_KEY });
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    },
-  });
+  return useAsyncMutation<SalesInvoiceInput, SalesInvoice>(createSalesInvoice);
 }
 
 export function useUpdateSalesInvoice() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({
-      id,
-      pin,
-      input,
-    }: {
-      id: string;
-      pin: string;
-      input: SalesInvoiceInput;
-    }) => {
-      const { data } = await api.put<SalesInvoice>(`/sales/${id}`, input, {
-        headers: { "X-Delete-Pin": pin },
-      });
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: SALES_KEY });
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.invalidateQueries({ queryKey: ["inventory"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["gst"] });
-      queryClient.invalidateQueries({ queryKey: ["reports"] });
-    },
-  });
+  return useAsyncMutation<
+    { id: string; pin: string; input: SalesInvoiceInput },
+    SalesInvoice
+  >(updateSalesInvoice);
 }
 
 export function useDeleteSalesInvoice() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, pin }: { id: string; pin: string }) => {
-      await api.delete(`/sales/${id}`, { headers: { "X-Delete-Pin": pin } });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: SALES_KEY });
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.invalidateQueries({ queryKey: ["inventory"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["gst"] });
-      queryClient.invalidateQueries({ queryKey: ["reports"] });
-      queryClient.invalidateQueries({ queryKey: ["recycle-bin"] });
-    },
-  });
+  return useAsyncMutation<{ id: string; pin: string }, string>(deleteSalesInvoice);
 }

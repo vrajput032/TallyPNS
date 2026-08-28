@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { useValueQuery } from "@/store/hooks/useReduxData";
+import { fetchSalesByCustomer } from "@/store/slices/dashboardSlice";
 
 export interface CustomerSalesPoint {
   customer: string;
@@ -7,11 +7,8 @@ export interface CustomerSalesPoint {
 }
 
 export function useSalesByCustomer() {
-  return useQuery({
-    queryKey: ["dashboard", "sales-by-customer"],
-    queryFn: async () => {
-      const { data } = await api.get<CustomerSalesPoint[]>("dashboard/sales/by-customer");
-      return data;
-    },
-  });
+  return useValueQuery<CustomerSalesPoint[]>(
+    (s) => s.dashboard.salesByCustomer,
+    fetchSalesByCustomer
+  );
 }

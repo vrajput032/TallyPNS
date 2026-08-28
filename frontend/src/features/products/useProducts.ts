@@ -1,69 +1,29 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
-import type { Product, ProductInput } from "./types";
-
-const PRODUCTS_KEY = ["products"];
+import { useListQuery, useAsyncMutation } from "@/store/hooks/useReduxData";
+import type { Product, ProductInput } from "@/features/products/types";
+import {
+  createProduct,
+  deleteProduct,
+  fetchProducts,
+  updateProduct,
+  uploadProductImage,
+} from "@/store/slices/productsSlice";
 
 export function useProducts() {
-  return useQuery({
-    queryKey: PRODUCTS_KEY,
-    queryFn: async () => {
-      const { data } = await api.get<Product[]>("/products");
-      return data;
-    },
-  });
+  return useListQuery<Product>((s) => s.products, fetchProducts);
 }
 
 export function useCreateProduct() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: ProductInput) => {
-      const { data } = await api.post<Product>("/products", input);
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: PRODUCTS_KEY });
-    },
-  });
+  return useAsyncMutation<ProductInput, Product>(createProduct);
 }
 
 export function useUpdateProduct() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, input }: { id: string; input: ProductInput }) => {
-      const { data } = await api.put<Product>(`/products/${id}`, input);
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: PRODUCTS_KEY });
-    },
-  });
+  return useAsyncMutation<{ id: string; input: ProductInput }, Product>(updateProduct);
 }
 
 export function useDeleteProduct() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      await api.delete(`/products/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: PRODUCTS_KEY });
-    },
-  });
+  return useAsyncMutation<string, string>(deleteProduct);
 }
 
 export function useUploadProductImage() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, file }: { id: string; file: File }) => {
-      const formData = new FormData();
-      formData.append("file", file);
-      const { data } = await api.post<Product>(`/products/${id}/image`, formData);
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: PRODUCTS_KEY });
-      queryClient.invalidateQueries({ queryKey: ["inventory"] });
-    },
-  });
+  return useAsyncMutation<{ id: string; file: File }, Product>(uploadProductImage);
 }

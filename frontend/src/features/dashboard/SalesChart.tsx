@@ -8,6 +8,7 @@ import {
   YAxis,
 } from "recharts";
 import { Loader2 } from "lucide-react";
+import { useRef } from "react";
 import { useMonthlySales, type MonthlySalesPoint } from "./useMonthlySales";
 import { formatInr } from "@/lib/formatInr";
 import { usePrimaryColor } from "@/lib/usePrimaryColor";
@@ -25,6 +26,7 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
 export function SalesChart({ months }: { months?: number }) {
   const { data, isLoading, error } = useMonthlySales();
   const primary = usePrimaryColor();
+  const animateChart = useRef(data == null);
 
   if (error) {
     return (
@@ -46,7 +48,7 @@ export function SalesChart({ months }: { months?: number }) {
         }));
 
   return (
-    <div className="h-64 w-full min-w-0 overflow-hidden sm:h-72">
+    <div className="relative h-64 w-full min-w-0 overflow-hidden sm:h-72">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={chartData} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
           <defs>
@@ -83,6 +85,7 @@ export function SalesChart({ months }: { months?: number }) {
             stroke={primary}
             strokeWidth={2.5}
             fill="url(#salesGrad)"
+            isAnimationActive={animateChart.current}
             animationDuration={800}
             animationEasing="ease-out"
             dot={false}

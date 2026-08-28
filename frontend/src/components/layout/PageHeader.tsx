@@ -34,7 +34,7 @@ export function PageHeader({
         className
       )}
     >
-      <div className="flex min-w-0 items-center gap-1.5">
+      <div className="hidden min-w-0 items-center gap-1.5 md:flex">
         {backTo ? (
           <Button
             type="button"

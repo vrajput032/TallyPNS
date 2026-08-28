@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { useValueQuery } from "@/store/hooks/useReduxData";
+import { fetchDashboardSummary } from "@/store/slices/dashboardSlice";
 
 export interface RawMaterialSummary {
   totalBilled: number;
@@ -20,11 +20,5 @@ export interface DashboardSummary {
 }
 
 export function useDashboardSummary() {
-  return useQuery({
-    queryKey: ["dashboard", "summary"],
-    queryFn: async () => {
-      const { data } = await api.get<DashboardSummary>("/dashboard/summary");
-      return data;
-    },
-  });
+  return useValueQuery<DashboardSummary>((s) => s.dashboard.summary, fetchDashboardSummary);
 }

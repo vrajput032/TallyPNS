@@ -1,53 +1,24 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
-import type { Vendor, VendorInput } from "./types";
-
-const VENDORS_KEY = ["vendors"];
+import { useListQuery, useAsyncMutation } from "@/store/hooks/useReduxData";
+import type { Vendor, VendorInput } from "@/features/vendors/types";
+import {
+  createVendor,
+  deleteVendor,
+  fetchVendors,
+  updateVendor,
+} from "@/store/slices/vendorsSlice";
 
 export function useVendors() {
-  return useQuery({
-    queryKey: VENDORS_KEY,
-    queryFn: async () => {
-      const { data } = await api.get<Vendor[]>("/vendors");
-      return data;
-    },
-  });
+  return useListQuery<Vendor>((s) => s.vendors, fetchVendors);
 }
 
 export function useCreateVendor() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: VendorInput) => {
-      const { data } = await api.post<Vendor>("/vendors", input);
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: VENDORS_KEY });
-    },
-  });
+  return useAsyncMutation<VendorInput, Vendor>(createVendor);
 }
 
 export function useUpdateVendor() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, input }: { id: string; input: VendorInput }) => {
-      const { data } = await api.put<Vendor>(`/vendors/${id}`, input);
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: VENDORS_KEY });
-    },
-  });
+  return useAsyncMutation<{ id: string; input: VendorInput }, Vendor>(updateVendor);
 }
 
 export function useDeleteVendor() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      await api.delete(`/vendors/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: VENDORS_KEY });
-    },
-  });
+  return useAsyncMutation<string, string>(deleteVendor);
 }
