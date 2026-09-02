@@ -1,0 +1,47 @@
+{
+  "display_information": {
+    "name": "Telly Quick Bill",
+    "description": "Create GST sales invoices in Telly from Slack",
+    "background_color": "#0f172a"
+  },
+  "features": {
+    "bot_user": {
+      "display_name": "Telly Bill",
+      "always_online": false
+    },
+    "slash_commands": [
+      {
+        "command": "/bill",
+        "url": "https://ester-unamortized-nonprofessorially.ngrok-free.dev/api/slack/events",
+        "description": "Create a sales invoice in Telly",
+        "should_escape": false
+      },
+      {
+        "command": "/stock",
+        "url": "https://ester-unamortized-nonprofessorially.ngrok-free.dev/api/slack/events",
+        "description": "Adjust inventory stock in Telly",
+        "should_escape": false
+      },
+      {
+        "command": "/rawmat",
+        "url": "https://ester-unamortized-nonprofessorially.ngrok-free.dev/api/slack/events",
+        "description": "Create a raw material bill in Telly",
+        "should_escape": false
+      }
+    ]
+  },
+  "oauth_config": {
+    "scopes": {
+      "bot": ["chat:write", "commands", "im:write"]
+    }
+  },
+  "settings": {
+    "interactivity": {
+      "is_enabled": true,
+      "request_url": "https://ester-unamortized-nonprofessorially.ngrok-free.dev/api/slack/events"
+    },
+    "org_deploy_enabled": false,
+    "socket_mode_enabled": false,
+    "token_rotation_enabled": false
+  }
+}

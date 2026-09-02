@@ -3,12 +3,17 @@ import express from "express";
 import helmet from "helmet";
 import { isAllowedOrigin } from "./config/cors.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+import { registerSlack } from "./modules/slack/registerSlack.js";
 import { apiRouter } from "./routes/index.js";
 
 export const app = express();
 
 app.disable("x-powered-by");
 app.use(helmet());
+
+// Slack signing verification needs the raw body — register before express.json().
+registerSlack(app);
+
 app.use(
   cors({
     origin(origin, callback) {

@@ -16,7 +16,8 @@
     "db:backup:push": "bash scripts/db-backup-push.sh",
     "db:restore": "bash scripts/db-restore.sh",
     "db:export:sheets": "npm run export:sheets -w backend",
-    "demo:purchase-sales-gst": "node scripts/demo-purchase-sales-gst.mjs"
+    "demo:purchase-sales-gst": "node scripts/demo-purchase-sales-gst.mjs",
+    "slack:dev": "bash scripts/slack-dev.sh"
   },
   "devDependencies": {
     "concurrently": "^9.1.0",

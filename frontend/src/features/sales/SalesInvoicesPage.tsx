@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
+  MessageSquarePlus,
   Pencil,
   Plus,
   Trash2,
@@ -41,7 +42,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useIsMobile } from "@/hooks/useIsMobile";
+import { useIsCompactNav, useIsMobile } from "@/hooks/useIsMobile";
+import { SalesInvoiceChatSheet } from "./SalesInvoiceChatSheet";
 import { useDeleteSalesInvoice, useSalesInvoices } from "./useSales";
 import { daysUntilDue, type SalesInvoice } from "./types";
 import { PaymentStatusBadge } from "@/features/payments/PaymentStatusBadge";
@@ -328,8 +330,10 @@ export function SalesInvoicesPage() {
   const { data: invoices, isLoading } = useSalesInvoices();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const isCompactNav = useIsCompactNav();
   const allowDelete = canDelete(useAuthStore((state) => state.user));
   const deleteInvoice = useDeleteSalesInvoice();
+  const [chatOpen, setChatOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<SalesInvoice | null>(null);
   const [sorting, setSorting] = useState<SortingState>([{ id: "invoiceDate", desc: true }]);
   const now = new Date();
@@ -405,10 +409,16 @@ export function SalesInvoicesPage() {
         backTo="/"
         backLabel="Back to Dashboard"
         actions={
-          <Button onClick={() => navigate("/sales/new")}>
-            <Plus className="size-4" />
-            New Invoice
-          </Button>
+          <>
+            <Button variant="outline" onClick={() => setChatOpen(true)}>
+              <MessageSquarePlus className="size-4" />
+              Quick bill
+            </Button>
+            <Button onClick={() => navigate("/sales/new")}>
+              <Plus className="size-4" />
+              New Invoice
+            </Button>
+          </>
         }
       />
 
@@ -676,6 +686,19 @@ export function SalesInvoicesPage() {
         isPending={deleteInvoice.isPending}
         onConfirm={confirmDelete}
       />
+
+      {isCompactNav ? (
+        <Button
+          size="icon"
+          className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-40 size-14 rounded-full shadow-lg md:hidden"
+          onClick={() => setChatOpen(true)}
+          aria-label="Quick bill"
+        >
+          <MessageSquarePlus className="size-6" />
+        </Button>
+      ) : null}
+
+      <SalesInvoiceChatSheet open={chatOpen} onOpenChange={setChatOpen} />
     </div>
   );
 }
