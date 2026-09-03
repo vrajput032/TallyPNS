@@ -13,6 +13,7 @@ import { VendorsPage } from "@/features/vendors/VendorsPage";
 import { SalesInvoicesPage } from "@/features/sales/SalesInvoicesPage";
 import { SalesInvoiceFormPage } from "@/features/sales/SalesInvoiceFormPage";
 import { SalesInvoiceDetailPage } from "@/features/sales/SalesInvoiceDetailPage";
+import { SalesInvoicesMonthPrintPage } from "@/features/sales/SalesInvoicesMonthPrintPage";
 import { PurchaseBillsPage } from "@/features/purchase/PurchaseBillsPage";
 import { PurchaseBillFormPage } from "@/features/purchase/PurchaseBillFormPage";
 import { PurchaseBillDetailPage } from "@/features/purchase/PurchaseBillDetailPage";
@@ -44,6 +45,7 @@ export default function App() {
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/sales" element={<SalesInvoicesPage />} />
                 <Route path="/sales/new" element={<SalesInvoiceFormPage />} />
+                <Route path="/sales/print-month" element={<SalesInvoicesMonthPrintPage />} />
                 <Route path="/sales/:id/edit" element={<SalesInvoiceFormPage />} />
                 <Route path="/sales/:id" element={<SalesInvoiceDetailPage />} />
                 <Route path="/purchase" element={<PurchaseBillsPage />} />

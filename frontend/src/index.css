@@ -246,4 +246,14 @@
   .invoice-items-spacer {
     height: 0.4rem !important;
   }
+
+  .invoice-print-page-break {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .invoice-print-page-break:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
 }

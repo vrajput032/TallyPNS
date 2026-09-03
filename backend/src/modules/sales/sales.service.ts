@@ -26,7 +26,7 @@ const invoiceInclude = {
 export async function listSalesInvoices() {
   const invoices = await prisma.salesInvoice.findMany({
     where: activeOnly,
-    include: { customer: true, items: true, receipts: true },
+    include: { customer: true, items: { include: { product: true } }, receipts: true },
     orderBy: { invoiceDate: "desc" },
   });
   return invoices.map(withPaymentSummary);
@@ -35,7 +35,7 @@ export async function listSalesInvoices() {
 export async function listDeletedSalesInvoices() {
   const invoices = await prisma.salesInvoice.findMany({
     where: deletedOnly,
-    include: { customer: true, items: true, receipts: true },
+    include: { customer: true, items: { include: { product: true } }, receipts: true },
     orderBy: { deletedAt: "desc" },
   });
   return invoices.map(withPaymentSummary);

@@ -50,8 +50,20 @@ Restart backend after saving `.env`.
 
 ## Production (Render)
 
-Replace ngrok URLs with:
+1. Sync Slack env vars to Render (one-time, or after token rotation):
+   ```bash
+   # Add RENDER_API_KEY=rnd_... to backend/.env (Account Settings → API Keys)
+   npm run render:sync-slack-env
+   ```
+   Or add manually in [Render → tallypns-api → Environment](https://dashboard.render.com/web/srv-d9herf6q1p3s739q1280):
+   - `SLACK_BOT_TOKEN`
+   - `SLACK_SIGNING_SECRET`
+   - `SLACK_ALLOWED_USER_IDS`
+   - `FRONTEND_URL` = `https://tallypns.pages.dev`
 
-`https://tallypns-api.onrender.com/api/slack/events`
+2. Update Slack app URLs (slash commands + Interactivity) to:
+   `https://tallypns-api.onrender.com/api/slack/events`
+   (see `scripts/telly-slack-manifest.json` for all three commands)
 
-Add the same env vars in Render dashboard.
+3. After Render redeploy, backend logs should show:
+   `[slack] Bill, stock, and raw material bots enabled at POST /api/slack/events`

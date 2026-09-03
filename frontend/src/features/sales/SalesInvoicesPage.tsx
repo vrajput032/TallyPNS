@@ -12,6 +12,7 @@ import {
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
+  Download,
   Eye,
   MessageSquarePlus,
   Pencil,
@@ -44,6 +45,12 @@ import {
 } from "@/components/ui/table";
 import { useIsCompactNav, useIsMobile } from "@/hooks/useIsMobile";
 import { SalesInvoiceChatSheet } from "./SalesInvoiceChatSheet";
+import {
+  isInMonth,
+  monthInputValue,
+  monthLabel,
+  parseMonthInput,
+} from "./salesMonthUtils";
 import { useDeleteSalesInvoice, useSalesInvoices } from "./useSales";
 import { daysUntilDue, type SalesInvoice } from "./types";
 import { PaymentStatusBadge } from "@/features/payments/PaymentStatusBadge";
@@ -53,31 +60,6 @@ import { useAuthStore } from "@/store/authStore";
 
 function invoicePieces(invoice: SalesInvoice) {
   return invoice.items.reduce((sum, item) => sum + Number(item.quantity), 0);
-}
-
-function monthInputValue(year: number, month: number) {
-  return `${year}-${String(month).padStart(2, "0")}`;
-}
-
-function parseMonthInput(value: string): { year: number; month: number } | null {
-  const match = /^(\d{4})-(\d{2})$/.exec(value);
-  if (!match) return null;
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  if (month < 1 || month > 12) return null;
-  return { year, month };
-}
-
-function monthLabel(year: number, month: number) {
-  return new Date(year, month - 1, 1).toLocaleDateString("en-GB", {
-    month: "long",
-    year: "numeric",
-  });
-}
-
-function isInMonth(iso: string, year: number, month: number) {
-  const date = new Date(iso);
-  return date.getFullYear() === year && date.getMonth() + 1 === month;
 }
 
 const SORT_OPTIONS: { value: string; label: string; id: string; desc: boolean }[] = [
@@ -402,6 +384,10 @@ export function SalesInvoicesPage() {
     );
   }
 
+  function openMonthDownload() {
+    navigate(`/sales/print-month?year=${year}&month=${month}`);
+  }
+
   return (
     <div className="grid gap-4">
       <PageHeader
@@ -501,6 +487,17 @@ export function SalesInvoicesPage() {
               >
                 <ChevronRight className="size-4" />
               </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="shrink-0"
+                onClick={openMonthDownload}
+                aria-label="Download month bills"
+                disabled={visibleRows.length === 0}
+              >
+                <Download className="size-4" />
+              </Button>
             </div>
           )}
 
@@ -547,6 +544,16 @@ export function SalesInvoicesPage() {
                 />
                 <Button type="button" variant="outline" size="sm" onClick={() => shiftMonth(1)}>
                   Next
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={openMonthDownload}
+                  disabled={visibleRows.length === 0}
+                >
+                  <Download className="size-4" />
+                  Download bills
                 </Button>
               </>
             )}

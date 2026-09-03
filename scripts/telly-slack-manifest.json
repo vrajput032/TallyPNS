@@ -1,30 +1,30 @@
 {
   "display_information": {
-    "name": "Telly Quick Bill",
-    "description": "Create GST sales invoices in Telly from Slack",
+    "name": "Telly",
+    "description": "Create bills, adjust stock, and record raw material in Telly from Slack",
     "background_color": "#0f172a"
   },
   "features": {
     "bot_user": {
-      "display_name": "Telly Bill",
+      "display_name": "Telly",
       "always_online": false
     },
     "slash_commands": [
       {
         "command": "/bill",
-        "url": "https://ester-unamortized-nonprofessorially.ngrok-free.dev/api/slack/events",
+        "url": "https://tallypns-api.onrender.com/api/slack/events",
         "description": "Create a sales invoice in Telly",
         "should_escape": false
       },
       {
         "command": "/stock",
-        "url": "https://ester-unamortized-nonprofessorially.ngrok-free.dev/api/slack/events",
+        "url": "https://tallypns-api.onrender.com/api/slack/events",
         "description": "Adjust inventory stock in Telly",
         "should_escape": false
       },
       {
         "command": "/rawmat",
-        "url": "https://ester-unamortized-nonprofessorially.ngrok-free.dev/api/slack/events",
+        "url": "https://tallypns-api.onrender.com/api/slack/events",
         "description": "Create a raw material bill in Telly",
         "should_escape": false
       }
@@ -38,7 +38,7 @@
   "settings": {
     "interactivity": {
       "is_enabled": true,
-      "request_url": "https://ester-unamortized-nonprofessorially.ngrok-free.dev/api/slack/events"
+      "request_url": "https://tallypns-api.onrender.com/api/slack/events"
     },
     "org_deploy_enabled": false,
     "socket_mode_enabled": false,
