@@ -111,8 +111,8 @@ export function SectionDataSync() {
         const now = new Date();
         const month = now.getMonth() + 1;
         const year = now.getFullYear();
-        dispatch(fetchMonthProfitLoss({ month, year, scrapGrade: "iron87", silent: true }));
-        dispatch(fetchPnlSummary({ scrapGrade: "iron87", silent: true }));
+        dispatch(fetchMonthProfitLoss({ month, year, silent: true }));
+        dispatch(fetchPnlSummary({ silent: true }));
         break;
       }
       case "investments":

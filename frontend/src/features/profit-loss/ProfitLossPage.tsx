@@ -21,18 +21,7 @@ import { formatInr } from "@/lib/formatInr";
 import { formatPipeSize } from "@/lib/pipeSizes";
 import { cn } from "@/lib/utils";
 import { useMonthProfitLoss, usePnlSummary } from "./useProfitLoss";
-import {
-  expenseKindLabel,
-  isScrapGrade,
-  readStoredScrapGrade,
-  scrapGradeLabel,
-  writeStoredScrapGrade,
-  type ExpenseEntry,
-  type MonthPnl,
-  type PartnerExpenseRow,
-  type PnlLine,
-  type ScrapGrade,
-} from "./types";
+import { expenseKindLabel, type ExpenseEntry, type MonthPnl, type PartnerExpenseRow, type PnlLine } from "./types";
 
 type ViewMode = "month" | "all";
 
@@ -51,11 +40,6 @@ function parseMonthInput(value: string): { year: number; month: number } | null 
 
 function parseView(value: string | null): ViewMode {
   return value === "all" ? "all" : "month";
-}
-
-function parseGradeParam(value: string | null, year: number, month: number): ScrapGrade {
-  if (value && isScrapGrade(value)) return value;
-  return readStoredScrapGrade(year, month);
 }
 
 function formatQty(value: number) {
@@ -321,7 +305,7 @@ function MonthDetail({ data, isLoading }: { data: MonthPnl | undefined; isLoadin
       />
       <p className="text-sm text-muted-foreground">
         {data
-          ? `${data.monthLabel} · scrap ${scrapGradeLabel(data.scrapGrade)} · 12% of ${formatQty(data.rmKg)} kg RM = ${formatQty(data.scrapKg)} kg scrap · ${formatQty(data.piecesSold)} pcs sold × ₹1.50 thekedar`
+          ? `${data.monthLabel} · scrap ₹${data.scrapRatePerKg}/kg · 12% of ${formatQty(data.rmKg)} kg RM = ${formatQty(data.scrapKg)} kg scrap · ${formatQty(data.piecesSold)} pcs sold × ₹1.50 thekedar`
           : "Factory costing for the selected month."}
       </p>
       <div className="grid gap-4 lg:grid-cols-2">
@@ -406,21 +390,18 @@ export function ProfitLossPage() {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const view = parseView(searchParams.get("view"));
-  const scrapGrade = parseGradeParam(searchParams.get("scrapGrade"), year, month);
 
-  const monthQuery = useMonthProfitLoss(month, year, scrapGrade);
-  const summaryQuery = usePnlSummary(scrapGrade, view === "all");
+  const monthQuery = useMonthProfitLoss(month, year);
+  const summaryQuery = usePnlSummary(view === "all");
 
-  function updateParams(next: { view?: ViewMode; scrapGrade?: ScrapGrade }) {
+  function updateParams(next: { view?: ViewMode }) {
     setSearchParams(
       (prev) => {
         const params = new URLSearchParams(prev);
         const nextView = next.view ?? parseView(params.get("view"));
         if (nextView === "all") params.set("view", "all");
         else params.delete("view");
-        const nextGrade = next.scrapGrade ?? scrapGrade;
-        if (nextGrade === "iron87") params.delete("scrapGrade");
-        else params.set("scrapGrade", nextGrade);
+        params.delete("scrapGrade");
         return params;
       },
       { replace: true }
@@ -431,19 +412,10 @@ export function ProfitLossPage() {
     updateParams({ view: next === "all" ? "all" : "month" });
   }
 
-  function setScrapGrade(grade: ScrapGrade) {
-    writeStoredScrapGrade(year, month, grade);
-    updateParams({ scrapGrade: grade });
-  }
-
   function shiftMonth(delta: number) {
     const date = new Date(year, month - 1 + delta, 1);
-    const nextYear = date.getFullYear();
-    const nextMonth = date.getMonth() + 1;
-    setYear(nextYear);
-    setMonth(nextMonth);
-    const stored = readStoredScrapGrade(nextYear, nextMonth);
-    updateParams({ scrapGrade: stored });
+    setYear(date.getFullYear());
+    setMonth(date.getMonth() + 1);
   }
 
   const isRefreshing =
@@ -476,7 +448,6 @@ export function ProfitLossPage() {
                     if (parsed) {
                       setYear(parsed.year);
                       setMonth(parsed.month);
-                      updateParams({ scrapGrade: readStoredScrapGrade(parsed.year, parsed.month) });
                     }
                   }}
                 />
@@ -485,24 +456,6 @@ export function ProfitLossPage() {
                 </Button>
               </>
             ) : null}
-            <div className="flex rounded-lg border p-0.5">
-              <Button
-                type="button"
-                size="sm"
-                variant={scrapGrade === "iron87" ? "default" : "ghost"}
-                onClick={() => setScrapGrade("iron87")}
-              >
-                87 iron
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={scrapGrade === "iron95" ? "default" : "ghost"}
-                onClick={() => setScrapGrade("iron95")}
-              >
-                95+ iron
-              </Button>
-            </div>
             <Button
               type="button"
               variant="outline"
@@ -538,7 +491,7 @@ export function ProfitLossPage() {
               isLoading={summaryQuery.isLoading}
             />
             <p className="text-sm text-muted-foreground">
-              From July 2026. Scrap is 12% of each month&apos;s RM kg at {scrapGradeLabel(scrapGrade)}.
+              From July 2026. Scrap is 12% of each month&apos;s RM kg at ₹30/kg.
             </p>
             <div className="min-w-0 rounded-md border bg-card">
               <Table>

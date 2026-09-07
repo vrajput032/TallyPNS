@@ -1,6 +1,3 @@
-export const SCRAP_GRADES = ["iron87", "iron95"] as const;
-export type ScrapGrade = (typeof SCRAP_GRADES)[number];
-
 export type PnlLine = {
   id: string;
   label: string;
@@ -42,7 +39,6 @@ export type MonthPnl = {
   year: number;
   month: number;
   monthLabel: string;
-  scrapGrade: ScrapGrade;
   scrapRatePerKg: number;
   rmKg: number;
   scrapKg: number;
@@ -61,16 +57,11 @@ export type MonthPnl = {
 };
 
 export type PnlSummary = {
-  scrapGrade: ScrapGrade;
   months: MonthPnl[];
   totalIncome: number;
   totalCosts: number;
   net: number;
 };
-
-export function isScrapGrade(value: string): value is ScrapGrade {
-  return (SCRAP_GRADES as readonly string[]).includes(value);
-}
 
 export function expenseKindLabel(kind: ExpenseEntryKind): string {
   switch (kind) {
@@ -86,42 +77,5 @@ export function expenseKindLabel(kind: ExpenseEntryKind): string {
       const _exhaustive: never = kind;
       return _exhaustive;
     }
-  }
-}
-
-export function scrapGradeLabel(grade: ScrapGrade): string {
-  switch (grade) {
-    case "iron87":
-      return "87 iron · ₹30/kg";
-    case "iron95":
-      return "95+ iron · ₹39/kg";
-    default: {
-      const _exhaustive: never = grade;
-      return _exhaustive;
-    }
-  }
-}
-
-const STORAGE_PREFIX = "pnl.scrapGrade.";
-
-export function scrapGradeStorageKey(year: number, month: number) {
-  return `${STORAGE_PREFIX}${year}-${String(month).padStart(2, "0")}`;
-}
-
-export function readStoredScrapGrade(year: number, month: number): ScrapGrade {
-  try {
-    const value = window.localStorage.getItem(scrapGradeStorageKey(year, month));
-    if (value && isScrapGrade(value)) return value;
-  } catch {
-    // ignore quota / private mode
-  }
-  return "iron87";
-}
-
-export function writeStoredScrapGrade(year: number, month: number, grade: ScrapGrade) {
-  try {
-    window.localStorage.setItem(scrapGradeStorageKey(year, month), grade);
-  } catch {
-    // ignore quota / private mode
   }
 }

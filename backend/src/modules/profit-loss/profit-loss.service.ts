@@ -11,7 +11,6 @@ import {
   monthLabel,
   type MonthPnl,
   type MonthPnlInput,
-  type ScrapGrade,
 } from "../../lib/manufacturingPnl.js";
 
 type InvoiceRow = {
@@ -100,23 +99,17 @@ function newAgg(year: number, month: number): MonthPnlInput {
   return {
     ...emptyMonthAggregates(year, month),
     monthLabel: monthLabel(year, month),
-    scrapGrade: "iron87",
     piecesSoldBySize: emptySizeRows(),
   };
 }
 
-export async function getMonthProfitLoss(
-  month: number,
-  year: number,
-  scrapGrade: ScrapGrade
-): Promise<MonthPnl> {
+export async function getMonthProfitLoss(month: number, year: number): Promise<MonthPnl> {
   const period = resolveTaxPeriod(month, year);
   const [{ invoices, bills }, expenses] = await Promise.all([
     loadVouchers(period.periodGte, period.periodLt),
     loadPartnerExpensesSnapshot(),
   ]);
   const agg = newAgg(year, month);
-  agg.scrapGrade = scrapGrade;
   agg.monthLabel = period.monthLabel;
   const monthExpenses = expenses.byMonth[monthKey(year, month)];
   agg.delivery = monthExpenses?.delivery ?? 0;
@@ -131,8 +124,7 @@ export async function getMonthProfitLoss(
   return buildMonthPnl(agg);
 }
 
-export async function getProfitLossSummary(scrapGrade: ScrapGrade): Promise<{
-  scrapGrade: ScrapGrade;
+export async function getProfitLossSummary(): Promise<{
   months: MonthPnl[];
   totalIncome: number;
   totalCosts: number;
@@ -140,7 +132,7 @@ export async function getProfitLossSummary(scrapGrade: ScrapGrade): Promise<{
 }> {
   const months = businessMonthsThrough();
   if (months.length === 0) {
-    return { scrapGrade, months: [], totalIncome: 0, totalCosts: 0, net: 0 };
+    return { months: [], totalIncome: 0, totalCosts: 0, net: 0 };
   }
 
   const first = resolveTaxPeriod(months[0].month, months[0].year);
@@ -155,7 +147,6 @@ export async function getProfitLossSummary(scrapGrade: ScrapGrade): Promise<{
   const buckets = new Map<string, MonthPnlInput>();
   for (const { year, month } of months) {
     const agg = newAgg(year, month);
-    agg.scrapGrade = scrapGrade;
     const key = monthKey(year, month);
     const monthExpenses = expenses.byMonth[key];
     agg.delivery = monthExpenses?.delivery ?? 0;
@@ -182,7 +173,6 @@ export async function getProfitLossSummary(scrapGrade: ScrapGrade): Promise<{
 
   const monthReports = months.map(({ year, month }) => {
     const agg = buckets.get(monthKey(year, month)) ?? newAgg(year, month);
-    agg.scrapGrade = scrapGrade;
     const monthExpenses = expenses.byMonth[monthKey(year, month)];
     agg.delivery = agg.delivery ?? monthExpenses?.delivery ?? 0;
     agg.otherExpenses = agg.otherExpenses ?? monthExpenses?.other ?? 0;
@@ -198,7 +188,6 @@ export async function getProfitLossSummary(scrapGrade: ScrapGrade): Promise<{
   const totalCosts = monthReports.reduce((sum, row) => sum + row.totalCosts, 0);
 
   return {
-    scrapGrade,
     months: monthReports,
     totalIncome: Math.round((totalIncome + Number.EPSILON) * 100) / 100,
     totalCosts: Math.round((totalCosts + Number.EPSILON) * 100) / 100,

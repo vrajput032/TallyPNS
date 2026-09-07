@@ -2,7 +2,6 @@ import { Router } from "express";
 import { asyncHandler } from "../../middleware/asyncHandler.js";
 import { requireAuth } from "../../middleware/auth.js";
 import { ApiError } from "../../middleware/errorHandler.js";
-import { isScrapGrade, type ScrapGrade } from "../../lib/manufacturingPnl.js";
 import { getMonthProfitLoss, getProfitLossSummary } from "./profit-loss.service.js";
 
 export const profitLossRouter = Router();
@@ -26,20 +25,10 @@ function parseMonthYear(req: { query: Record<string, unknown> }) {
   return { month, year };
 }
 
-function parseScrapGrade(req: { query: Record<string, unknown> }): ScrapGrade {
-  const raw = req.query.scrapGrade;
-  if (raw === undefined || raw === "") return "iron87";
-  if (typeof raw !== "string" || !isScrapGrade(raw)) {
-    throw new ApiError(400, "scrapGrade must be iron87 or iron95");
-  }
-  return raw;
-}
-
 profitLossRouter.get(
   "/summary",
-  asyncHandler(async (req, res) => {
-    const scrapGrade = parseScrapGrade(req);
-    res.json(await getProfitLossSummary(scrapGrade));
+  asyncHandler(async (_req, res) => {
+    res.json(await getProfitLossSummary());
   })
 );
 
@@ -47,13 +36,8 @@ profitLossRouter.get(
   "/",
   asyncHandler(async (req, res) => {
     const { month, year } = parseMonthYear(req);
-    const scrapGrade = parseScrapGrade(req);
     const now = new Date();
-    const report = await getMonthProfitLoss(
-      month ?? now.getMonth() + 1,
-      year ?? now.getFullYear(),
-      scrapGrade
-    );
+    const report = await getMonthProfitLoss(month ?? now.getMonth() + 1, year ?? now.getFullYear());
     res.json(report);
   })
 );

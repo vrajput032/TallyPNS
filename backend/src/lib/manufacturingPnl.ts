@@ -1,16 +1,14 @@
 /** Factory costing rates. Add a new monthly expense here when it comes up. */
 
-export const SCRAP_GRADES = ["iron87", "iron95"] as const;
-export type ScrapGrade = (typeof SCRAP_GRADES)[number];
-
 export const PNL_YIELD = [
   { sizeMm: 95, grams: 106, piecesPerKg: 9 },
   { sizeMm: 85, grams: 90, piecesPerKg: 11 },
   { sizeMm: 110, grams: 126, piecesPerKg: 7 },
 ] as const;
 
-/** Scrap kg is 12% of raw-material kg. */
+/** Scrap kg is 12% of raw-material kg, valued at a flat ₹30/kg. */
 export const SCRAP_PERCENT_OF_RM = 12;
+export const SCRAP_RATE_PER_KG = 30;
 export const THEKEDAR_PER_PIECE = 1.5;
 export const MONTHLY_RENT = 20_000;
 export const MONTHLY_AKSHAY_SALARY = 20_000;
@@ -47,7 +45,6 @@ export type MonthPnlInput = {
   year: number;
   month: number;
   monthLabel: string;
-  scrapGrade: ScrapGrade;
   pipeSalesTaxable: number;
   otherSalesTaxable: number;
   rmTaxable: number;
@@ -83,7 +80,6 @@ export type MonthPnl = {
   year: number;
   month: number;
   monthLabel: string;
-  scrapGrade: ScrapGrade;
   scrapRatePerKg: number;
   rmKg: number;
   scrapKg: number;
@@ -114,29 +110,12 @@ export type MonthPnl = {
   net: number;
 };
 
-export function isScrapGrade(value: string): value is ScrapGrade {
-  return (SCRAP_GRADES as readonly string[]).includes(value);
-}
-
 export function monthKey(year: number, month: number): string {
   return `${year}-${String(month).padStart(2, "0")}`;
 }
 
 export function round2(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
-}
-
-export function scrapRateForGrade(grade: ScrapGrade): number {
-  switch (grade) {
-    case "iron87":
-      return 30;
-    case "iron95":
-      return 39;
-    default: {
-      const _exhaustive: never = grade;
-      return _exhaustive;
-    }
-  }
 }
 
 export function electricityForMonth(year: number, month: number): number {
@@ -189,7 +168,7 @@ export function businessMonthsThrough(now = new Date()): { year: number; month: 
 }
 
 export function buildMonthPnl(input: MonthPnlInput): MonthPnl {
-  const scrapRatePerKg = scrapRateForGrade(input.scrapGrade);
+  const scrapRatePerKg = SCRAP_RATE_PER_KG;
   const scrapKg = scrapKgFromRmKg(input.rmKg);
   const scrapIncome = round2(scrapKg * scrapRatePerKg);
   const thekedar = round2(input.piecesSold * THEKEDAR_PER_PIECE);
@@ -209,7 +188,11 @@ export function buildMonthPnl(input: MonthPnlInput): MonthPnl {
   const income: PnlLine[] = [
     { id: "pipe-sales", label: "Pipe sales", amount: pipeSales },
     { id: "other-sales", label: "Other invoiced sales", amount: otherSales },
-    { id: "scrap", label: `Scrap / wastage (${SCRAP_PERCENT_OF_RM}% of RM)`, amount: scrapIncome },
+    {
+      id: "scrap",
+      label: `Scrap / wastage (${SCRAP_PERCENT_OF_RM}% of RM · ₹${SCRAP_RATE_PER_KG}/kg)`,
+      amount: scrapIncome,
+    },
   ];
   const costs: PnlLine[] = [
     { id: "raw-material", label: "Raw material", amount: rmTaxable },
@@ -228,7 +211,6 @@ export function buildMonthPnl(input: MonthPnlInput): MonthPnl {
     year: input.year,
     month: input.month,
     monthLabel: input.monthLabel,
-    scrapGrade: input.scrapGrade,
     scrapRatePerKg,
     rmKg: round2(input.rmKg),
     scrapKg,
@@ -250,10 +232,7 @@ export function buildMonthPnl(input: MonthPnlInput): MonthPnl {
   };
 }
 
-export function emptyMonthAggregates(year: number, month: number): Omit<
-  MonthPnlInput,
-  "scrapGrade" | "monthLabel"
-> {
+export function emptyMonthAggregates(year: number, month: number): Omit<MonthPnlInput, "monthLabel"> {
   return {
     year,
     month,
