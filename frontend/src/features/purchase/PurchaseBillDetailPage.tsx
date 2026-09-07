@@ -20,7 +20,7 @@ import { RecordPaymentDialog } from "@/features/payments/RecordPaymentDialog";
 import { useDeleteVendorPayment } from "@/features/payments/usePayments";
 import { PurchaseAttachmentsPanel } from "./PurchaseAttachmentsPanel";
 import { useDeletePurchaseBill, usePurchaseBill } from "./usePurchase";
-import { purchaseLineLabel } from "./types";
+import { purchaseLineLabel, purchaseBillTitle } from "./types";
 import { formatInr } from "@/lib/formatInr";
 import { canDelete } from "@/lib/permissions";
 import { useAuthStore } from "@/store/authStore";
@@ -62,7 +62,7 @@ export function PurchaseBillDetailPage() {
   return (
     <div className="grid gap-4">
       <PageHeader
-        title={bill.supplierInvoiceNo?.trim() || bill.billNo}
+        title={purchaseBillTitle(bill)}
         backTo="/purchase"
         backLabel="Back to Purchase"
         actions={
@@ -187,6 +187,12 @@ export function PurchaseBillDetailPage() {
         </CardHeader>
         <CardContent className="grid gap-3 text-sm">
           <div className="flex flex-wrap gap-x-6 gap-y-1">
+            {bill.title?.trim() ? (
+              <span>
+                <span className="text-muted-foreground">Title: </span>
+                {bill.title}
+              </span>
+            ) : null}
             <span>
               <span className="text-muted-foreground">Ref: </span>
               {bill.billNo}

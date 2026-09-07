@@ -148,6 +148,8 @@ model PurchaseBill {
   supplierInvoiceNo String?
   /** Seller GSTIN when not linked to a vendor record */
   supplierGstin     String?
+  /** Short name for the bill (CNC, Traub, caliper, …) */
+  title             String?
   notes             String?
   totalAmount       Decimal          @default(0) @db.Decimal(14, 2)
   deletedAt         DateTime?

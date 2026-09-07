@@ -147,7 +147,7 @@ export async function getGstSummary(month?: number, year?: number) {
     return {
       id: bill.id,
       date: bill.billDate.toISOString().slice(0, 10),
-      particulars: bill.vendor?.name ?? bill.billNo,
+      particulars: bill.title?.trim() || bill.vendor?.name || bill.billNo,
       vchType: "Purchase",
       vchNo: bill.billNo,
       taxableAmount: taxable,

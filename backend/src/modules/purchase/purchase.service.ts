@@ -154,6 +154,7 @@ export async function createPurchaseBill(data: BillInput) {
         vehicleNo: data.vehicleNo?.trim() || null,
         supplierInvoiceNo: data.supplierInvoiceNo?.trim() || null,
         supplierGstin: data.supplierGstin?.trim() || null,
+        title: data.title?.trim() || null,
         notes: data.notes?.trim() || null,
         totalAmount,
         items: {
@@ -238,6 +239,7 @@ export async function updatePurchaseBill(id: string, data: BillInput) {
         vehicleNo: data.vehicleNo?.trim() || null,
         supplierInvoiceNo: data.supplierInvoiceNo?.trim() || null,
         supplierGstin: data.supplierGstin?.trim() || null,
+        title: data.title?.trim() || null,
         notes: data.notes?.trim() || null,
         totalAmount,
         items: {

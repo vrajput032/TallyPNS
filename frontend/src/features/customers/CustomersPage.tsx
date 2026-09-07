@@ -5,8 +5,9 @@ import {
   useReactTable,
   type ColumnDef,
 } from "@tanstack/react-table";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { BookOpen, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,7 @@ const columns: ColumnDef<Customer>[] = [
 ];
 
 export function CustomersPage() {
+  const navigate = useNavigate();
   const { data: customers, isLoading } = useCustomers();
   const allowDelete = canDelete(useAuthStore((state) => state.user));
   const deleteCustomer = useDeleteCustomer();
@@ -120,7 +122,7 @@ export function CustomersPage() {
                       : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
-                <TableHead className="w-24 text-right">Actions</TableHead>
+                <TableHead className="w-32 text-right">Actions</TableHead>
               </TableRow>
             ))}
           </TableHeader>
@@ -142,6 +144,14 @@ export function CustomersPage() {
                     </TableCell>
                   ))}
                   <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`View ledger for ${row.original.name}`}
+                      onClick={() => navigate(`/ledger/${row.original.id}`)}
+                    >
+                      <BookOpen className="size-4" />
+                    </Button>
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(row.original)}>
                       <Pencil className="size-4" />
                     </Button>

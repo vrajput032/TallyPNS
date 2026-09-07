@@ -3,6 +3,7 @@ import type { SalesInvoice, SalesInvoiceInput } from "@/features/sales/types";
 import { api } from "@/lib/api";
 import { fetchProducts } from "./productsSlice";
 import { fetchDashboardSummary } from "./dashboardSlice";
+import { fetchCustomerLedger, fetchLedgerList } from "./ledgerSlice";
 import {
   apiErrorMessage,
   initialListState,
@@ -70,6 +71,8 @@ export const createSalesInvoice = createAsyncThunk(
       dispatch(fetchSalesInvoices({ silent: true }));
       dispatch(fetchProducts({ silent: true }));
       dispatch(fetchDashboardSummary({ silent: true }));
+      dispatch(fetchLedgerList({ silent: true }));
+      dispatch(fetchCustomerLedger({ id: data.customerId, silent: true }));
       return data;
     } catch (error) {
       return rejectWithValue(apiErrorMessage(error));
@@ -90,6 +93,8 @@ export const updateSalesInvoice = createAsyncThunk(
       dispatch(fetchSalesInvoices({ silent: true }));
       dispatch(fetchProducts({ silent: true }));
       dispatch(fetchDashboardSummary({ silent: true }));
+      dispatch(fetchLedgerList({ silent: true }));
+      dispatch(fetchCustomerLedger({ id: data.customerId, silent: true }));
       return data;
     } catch (error) {
       return rejectWithValue(apiErrorMessage(error));
@@ -105,6 +110,7 @@ export const deleteSalesInvoice = createAsyncThunk(
       dispatch(fetchSalesInvoices({ silent: true }));
       dispatch(fetchProducts({ silent: true }));
       dispatch(fetchDashboardSummary({ silent: true }));
+      dispatch(fetchLedgerList({ silent: true }));
       return id;
     } catch (error) {
       return rejectWithValue(apiErrorMessage(error));

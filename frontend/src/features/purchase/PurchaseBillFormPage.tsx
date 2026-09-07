@@ -38,6 +38,7 @@ const lineItemSchema = z.object({
 });
 
 const billFormSchema = z.object({
+  title: z.string().trim().min(1, "Enter a bill title").max(120),
   supplierInvoiceNo: z.string().trim().max(80).optional(),
   supplierGstin: z.string().trim().max(15).optional(),
   notes: z.string().trim().max(2000).optional(),
@@ -71,6 +72,7 @@ export function PurchaseBillFormPage() {
   const form = useForm<BillFormValues>({
     resolver: zodResolver(billFormSchema),
     defaultValues: {
+      title: "",
       supplierInvoiceNo: "",
       supplierGstin: "",
       notes: "",
@@ -81,6 +83,7 @@ export function PurchaseBillFormPage() {
   useEffect(() => {
     if (!existingBill) return;
     form.reset({
+      title: existingBill.title ?? "",
       supplierInvoiceNo: existingBill.supplierInvoiceNo ?? "",
       supplierGstin: existingBill.supplierGstin ?? existingBill.vendor?.gstin ?? "",
       notes: existingBill.notes ?? "",
@@ -112,6 +115,7 @@ export function PurchaseBillFormPage() {
     return {
       vendorId: null,
       kind: "EQUIPMENT" as const,
+      title: values.title.trim(),
       supplierInvoiceNo: values.supplierInvoiceNo?.trim() || null,
       supplierGstin: values.supplierGstin?.trim() || null,
       notes: values.notes?.trim() || null,
@@ -199,6 +203,19 @@ export function PurchaseBillFormPage() {
               <CardTitle>Bill details</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem className="sm:col-span-2">
+                    <FormLabel>Bill title</FormLabel>
+                    <FormControl>
+                      <Input placeholder="CNC, Traub, caliper…" {...field} value={field.value ?? ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="supplierInvoiceNo"

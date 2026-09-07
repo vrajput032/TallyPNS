@@ -33,7 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useDeletePurchaseBill, usePurchaseBills } from "./usePurchase";
-import type { PurchaseBill } from "./types";
+import { purchaseBillTitle, type PurchaseBill } from "./types";
 import { PaymentStatusBadge } from "@/features/payments/PaymentStatusBadge";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { formatInr } from "@/lib/formatInr";
@@ -51,7 +51,7 @@ function SortableHeader({ label, sorted }: { label: string; sorted: false | "asc
 }
 
 function billTitle(bill: PurchaseBill) {
-  return bill.supplierInvoiceNo?.trim() || bill.billNo;
+  return purchaseBillTitle(bill);
 }
 
 function MobilePurchaseBillCards({
@@ -157,6 +157,11 @@ const columns: ColumnDef<PurchaseBill>[] = [
     accessorKey: "billDate",
     header: ({ column }) => <SortableHeader label="Date" sorted={column.getIsSorted()} />,
     cell: ({ row }) => new Date(row.original.billDate).toLocaleDateString("en-GB"),
+  },
+  {
+    id: "title",
+    header: "Title",
+    cell: ({ row }) => purchaseBillTitle(row.original),
   },
   {
     id: "invoice",

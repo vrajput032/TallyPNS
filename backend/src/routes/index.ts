@@ -4,6 +4,7 @@ import { customerRouter } from "../modules/customers/customer.routes.js";
 import { dashboardRouter } from "../modules/dashboard/dashboard.routes.js";
 import { gstRouter } from "../modules/gst/gst.routes.js";
 import { inventoryRouter } from "../modules/inventory/inventory.routes.js";
+import { ledgerRouter } from "../modules/ledger/ledger.routes.js";
 import {
   bankRouter,
   cashRouter,
@@ -11,6 +12,8 @@ import {
 } from "../modules/payments/payment.routes.js";
 import { productRouter } from "../modules/products/product.routes.js";
 import { purchaseRouter } from "../modules/purchase/purchase.routes.js";
+import { profitLossRouter } from "../modules/profit-loss/profit-loss.routes.js";
+import { investmentsRouter } from "../modules/investments/investments.routes.js";
 import { reportsRouter } from "../modules/reports/reports.routes.js";
 import { salesRouter } from "../modules/sales/sales.routes.js";
 import { vendorRouter } from "../modules/vendors/vendor.routes.js";
@@ -29,6 +32,9 @@ apiRouter.use("/purchase", purchaseRouter);
 apiRouter.use("/inventory", inventoryRouter);
 apiRouter.use("/raw-material", rawMaterialRouter);
 apiRouter.use("/gst", gstRouter);
+apiRouter.use("/ledger", ledgerRouter);
+apiRouter.use("/profit-loss", profitLossRouter);
+apiRouter.use("/investments", investmentsRouter);
 apiRouter.use("/reports", reportsRouter);
 apiRouter.use("/payments", paymentRouter);
 apiRouter.use("/cash", cashRouter);

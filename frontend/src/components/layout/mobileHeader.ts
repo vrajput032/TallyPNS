@@ -95,12 +95,24 @@ const rules: RouteRule[] = [
     resolve: () => ({ title: "GST", backTo: "/", backLabel: "Back to Dashboard" }),
   },
   {
+    pattern: /^\/profit-loss$/,
+    resolve: () => ({ title: "Profit & Loss", backTo: "/", backLabel: "Back to Dashboard" }),
+  },
+  {
+    pattern: /^\/investments$/,
+    resolve: () => ({ title: "One-time investment", backTo: "/", backLabel: "Back to Dashboard" }),
+  },
+  {
     pattern: /^\/customers$/,
     resolve: () => ({ title: "Customers", backTo: "/", backLabel: "Back to Dashboard" }),
   },
   {
-    pattern: /^\/vendors$/,
-    resolve: () => ({ title: "Vendors", backTo: "/", backLabel: "Back to Dashboard" }),
+    pattern: /^\/ledger\/([^/]+)$/,
+    resolve: () => ({ title: "Ledger", backTo: "/ledger", backLabel: "Back to Ledger" }),
+  },
+  {
+    pattern: /^\/ledger$/,
+    resolve: () => ({ title: "Ledger", backTo: "/", backLabel: "Back to Dashboard" }),
   },
   {
     pattern: /^\/products$/,

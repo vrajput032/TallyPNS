@@ -11,6 +11,7 @@ import { api } from "@/lib/api";
 import { fetchSalesInvoices } from "./salesSlice";
 import { fetchPurchaseBills } from "./purchaseSlice";
 import { fetchDashboardSummary } from "./dashboardSlice";
+import { fetchCustomerLedger, fetchLedgerList } from "./ledgerSlice";
 import {
   apiErrorMessage,
   initialValueState,
@@ -78,6 +79,8 @@ export const createReceipt = createAsyncThunk(
       dispatch(fetchBankBook({ silent: true }));
       dispatch(fetchPartyOutstanding({ silent: true }));
       dispatch(fetchDashboardSummary({ silent: true }));
+      dispatch(fetchLedgerList({ silent: true }));
+      dispatch(fetchCustomerLedger({ id: data.customerId, silent: true }));
       return data;
     } catch (error) {
       return rejectWithValue(apiErrorMessage(error));
@@ -94,6 +97,7 @@ export const deleteReceipt = createAsyncThunk(
       dispatch(fetchCashBook({ silent: true }));
       dispatch(fetchBankBook({ silent: true }));
       dispatch(fetchPartyOutstanding({ silent: true }));
+      dispatch(fetchLedgerList({ silent: true }));
       return id;
     } catch (error) {
       return rejectWithValue(apiErrorMessage(error));

@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { useAppDispatch } from "@/store/hooks";
 import { fetchCustomers } from "@/store/slices/customersSlice";
 import { fetchProducts } from "@/store/slices/productsSlice";
-import { fetchVendors } from "@/store/slices/vendorsSlice";
+import { fetchCustomerLedger, fetchLedgerList } from "@/store/slices/ledgerSlice";
 import { fetchSalesInvoices, fetchSalesInvoice } from "@/store/slices/salesSlice";
 import { fetchPurchaseBills, fetchPurchaseBill } from "@/store/slices/purchaseSlice";
 import { fetchStock, fetchStockMovements } from "@/store/slices/inventorySlice";
@@ -21,6 +21,8 @@ import {
   fetchTrialBalance,
 } from "@/store/slices/reportsSlice";
 import { fetchRecycleBin } from "@/store/slices/recycleBinSlice";
+import { fetchMonthProfitLoss, fetchPnlSummary } from "@/store/slices/profitLossSlice";
+import { fetchInvestments } from "@/store/slices/investmentsSlice";
 import { fetchUsers } from "@/store/slices/usersSlice";
 
 const silent = { silent: true } as const;
@@ -94,11 +96,28 @@ export function SectionDataSync() {
       case "customers":
         dispatch(fetchCustomers(silent));
         break;
-      case "vendors":
-        dispatch(fetchVendors(silent));
+      case "ledger": {
+        dispatch(fetchLedgerList(silent));
+        const customerId = pathname.match(/^\/ledger\/([^/]+)/)?.[1];
+        if (customerId) {
+          dispatch(fetchCustomerLedger({ id: customerId, silent: true }));
+        }
         break;
+      }
       case "products":
         dispatch(fetchProducts(silent));
+        break;
+      case "profit-loss": {
+        const now = new Date();
+        const month = now.getMonth() + 1;
+        const year = now.getFullYear();
+        dispatch(fetchMonthProfitLoss({ month, year, scrapGrade: "iron87", silent: true }));
+        dispatch(fetchPnlSummary({ scrapGrade: "iron87", silent: true }));
+        break;
+      }
+      case "investments":
+        dispatch(fetchInvestments(silent));
+        dispatch(fetchPurchaseBills(silent));
         break;
       case "reports":
         dispatch(fetchProfitAndLoss(silent));

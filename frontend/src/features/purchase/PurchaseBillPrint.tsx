@@ -67,6 +67,12 @@ export function PurchaseBillPrint({ bill }: { bill: PurchaseBill }) {
                   <td className="py-0.5 font-semibold">Bill No.</td>
                   <td className="py-0.5">: {bill.billNo}</td>
                 </tr>
+                {bill.title?.trim() ? (
+                  <tr>
+                    <td className="py-0.5 font-semibold">Title</td>
+                    <td className="py-0.5">: {bill.title}</td>
+                  </tr>
+                ) : null}
                 <tr>
                   <td className="py-0.5 font-semibold">Date of Bill</td>
                   <td className="py-0.5">: {formatDate(bill.billDate)}</td>

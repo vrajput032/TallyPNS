@@ -207,7 +207,7 @@ export function RecycleBinPage() {
                   {purchase.map((bill) => (
                     <TableRow key={bill.id}>
                       <TableCell>{bill.billNo}</TableCell>
-                      <TableCell>{bill.notes?.trim() || bill.vendor?.name || "—"}</TableCell>
+                      <TableCell>{bill.title?.trim() || bill.notes?.trim() || bill.vendor?.name || "—"}</TableCell>
                       <TableCell>
                         {new Date(bill.billDate).toLocaleDateString("en-GB")}
                       </TableCell>

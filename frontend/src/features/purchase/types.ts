@@ -37,6 +37,7 @@ export interface PurchaseBill {
   vehicleNo: string | null;
   supplierInvoiceNo: string | null;
   supplierGstin: string | null;
+  title: string | null;
   notes: string | null;
   totalAmount: string;
   paidAmount: number;
@@ -70,12 +71,22 @@ export interface PurchaseBillItemInput {
 export interface PurchaseBillInput {
   vendorId?: string | null;
   kind?: PurchaseBillKind;
+  billDate?: string;
   transport?: string | null;
   vehicleNo?: string | null;
   supplierInvoiceNo?: string | null;
   supplierGstin?: string | null;
+  title?: string | null;
   notes?: string | null;
   items: PurchaseBillItemInput[];
+}
+
+export function purchaseBillTitle(bill: Pick<PurchaseBill, "title" | "supplierInvoiceNo" | "billNo">) {
+  const title = bill.title?.trim();
+  if (title) return title;
+  const invoice = bill.supplierInvoiceNo?.trim();
+  if (invoice) return invoice;
+  return bill.billNo;
 }
 
 export function purchaseLineLabel(item: PurchaseBillItem) {

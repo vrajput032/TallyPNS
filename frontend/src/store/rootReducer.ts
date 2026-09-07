@@ -9,6 +9,9 @@ import dashboardReducer from "./slices/dashboardSlice";
 import paymentsReducer from "./slices/paymentsSlice";
 import rawMaterialReducer from "./slices/rawMaterialSlice";
 import gstReducer from "./slices/gstSlice";
+import ledgerReducer from "./slices/ledgerSlice";
+import profitLossReducer from "./slices/profitLossSlice";
+import investmentsReducer from "./slices/investmentsSlice";
 import reportsReducer from "./slices/reportsSlice";
 import recycleBinReducer from "./slices/recycleBinSlice";
 import usersReducer from "./slices/usersSlice";
@@ -24,6 +27,9 @@ export const rootReducer = combineReducers({
   payments: paymentsReducer,
   rawMaterial: rawMaterialReducer,
   gst: gstReducer,
+  ledger: ledgerReducer,
+  profitLoss: profitLossReducer,
+  investments: investmentsReducer,
   reports: reportsReducer,
   recycleBin: recycleBinReducer,
   users: usersReducer,

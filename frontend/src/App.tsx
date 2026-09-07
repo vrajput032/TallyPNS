@@ -8,8 +8,9 @@ import { LoginPage } from "@/features/auth/LoginPage";
 import { ProtectedRoute } from "@/features/auth/ProtectedRoute";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { CustomersPage } from "@/features/customers/CustomersPage";
+import { LedgerPage } from "@/features/ledger/LedgerPage";
+import { LedgerDetailPage } from "@/features/ledger/LedgerDetailPage";
 import { ProductsPage } from "@/features/products/ProductsPage";
-import { VendorsPage } from "@/features/vendors/VendorsPage";
 import { SalesInvoicesPage } from "@/features/sales/SalesInvoicesPage";
 import { SalesInvoiceFormPage } from "@/features/sales/SalesInvoiceFormPage";
 import { SalesInvoiceDetailPage } from "@/features/sales/SalesInvoiceDetailPage";
@@ -21,6 +22,8 @@ import { InventoryPage } from "@/features/inventory/InventoryPage";
 import { CashPage } from "@/features/cash/CashPage";
 import { BankPage } from "@/features/bank/BankPage";
 import { GstPage } from "@/features/gst/GstPage";
+import { ProfitLossPage } from "@/features/profit-loss/ProfitLossPage";
+import { InvestmentsPage } from "@/features/investments/InvestmentsPage";
 import { ReportsPage } from "@/features/reports/ReportsPage";
 import { RecycleBinPage } from "@/features/recycle-bin/RecycleBinPage";
 import { UsersPage } from "@/features/users/UsersPage";
@@ -60,9 +63,12 @@ export default function App() {
                 <Route path="/cash" element={<CashPage />} />
                 <Route path="/bank" element={<BankPage />} />
                 <Route path="/gst" element={<GstPage />} />
+                <Route path="/profit-loss" element={<ProfitLossPage />} />
+                <Route path="/investments" element={<InvestmentsPage />} />
                 <Route path="/customers" element={<CustomersPage />} />
+                <Route path="/ledger" element={<LedgerPage />} />
+                <Route path="/ledger/:customerId" element={<LedgerDetailPage />} />
                 <Route path="/products" element={<ProductsPage />} />
-                <Route path="/vendors" element={<VendorsPage />} />
                 <Route path="/reports" element={<ReportsPage />} />
                 <Route element={<AdminRoute />}>
                   <Route path="/users" element={<UsersPage />} />

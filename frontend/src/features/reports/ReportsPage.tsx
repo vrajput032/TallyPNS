@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -271,7 +272,11 @@ function OutstandingTab() {
             ) : (
               data?.debtors.map((row) => (
                 <TableRow key={row.id}>
-                  <TableCell>{row.name}</TableCell>
+                  <TableCell>
+                    <Link to={`/ledger/${row.id}`} className="text-primary hover:underline">
+                      {row.name}
+                    </Link>
+                  </TableCell>
                   <TableCell className="text-right">{formatInr(row.balance)}</TableCell>
                 </TableRow>
               ))

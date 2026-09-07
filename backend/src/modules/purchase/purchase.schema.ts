@@ -18,6 +18,7 @@ export const createPurchaseBillSchema = z.object({
   vehicleNo: z.string().trim().max(40).optional().nullable(),
   supplierInvoiceNo: z.string().trim().max(80).optional().nullable(),
   supplierGstin: z.string().trim().max(15).optional().nullable(),
+  title: z.string().trim().max(120).optional().nullable(),
   notes: z.string().trim().max(2000).optional().nullable(),
   items: z.array(purchaseBillItemSchema).min(1, "At least one item is required"),
 });
