@@ -12,4 +12,4 @@ Finished-goods catalog (pipes and other stock items).
 - Used on sales (catalog lines) and purchase bills
 - Full list / create / edit; **delete is admin-only**
 
-Pipe sizes in the catalog: **95, 110, 90, 55, 85 mm** (`backend/src/lib/pipeSizes.ts`).
+Pipe sizes in the catalog: **95, 110, 90, 55, 85, 70 mm** (`backend/src/lib/pipeSizes.ts`).

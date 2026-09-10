@@ -142,7 +142,7 @@ Qty per pipe diameter. Unique `(productId, sizeMm)`. Index on `sizeMm`.
 |--------|------|--------|
 | `id` | String PK | |
 | `productId` | FK → Product | Cascade delete |
-| `sizeMm` | Decimal(10,2) | One of 95, 110, 90, 55, 85 |
+| `sizeMm` | Decimal(10,2) | One of 95, 110, 90, 55, 85, 70 |
 | `quantity` | Decimal(14,2) | Default 0 |
 
 Sales catalog lines and inventory adjustments change this table. Purchase bills currently update `Product.currentStock` only (not size rows).
@@ -390,7 +390,7 @@ Balance sheet cash/bank = receipts − vendor payments by `PaymentMode` (raw-mat
 
 Code (not DB lookup tables):
 
-- Sizes: `95, 110, 90, 55, 85` mm — `backend/src/lib/pipeSizes.ts`
+- Sizes: `95, 110, 90, 55, 85, 70` mm — `backend/src/lib/pipeSizes.ts`
 - Yield: 95 mm → 9.1 pcs/kg, 110 mm → 8.33 pcs/kg — `backend/src/lib/rawMaterialYield.ts`
 
 ---

@@ -8,7 +8,7 @@
 Home summary for the business (charts from July 2026 onwards):
 
 - Customer count, product count, total sales, stock value
-- **Current pieces** — stock on hand by pipe size (95 / 110 / 90 / 55 / 85 mm)
+- **Current pieces** — stock on hand by pipe size (95 / 110 / 90 / 55 / 85 / 70 mm)
 - Low-stock count (product `currentStock` ≤ 10)
 - Raw-material billed vs paid vs balance
 - Monthly sales chart

@@ -173,7 +173,7 @@ All require auth.
 }
 ```
 
-`lowStockCount` = products with `currentStock ≤ 10`. `stockBySize` always includes 95, 110, 90, 55, 85.
+`lowStockCount` = products with `currentStock ≤ 10`. `stockBySize` always includes 95, 110, 90, 55, 85, 70.
 
 ### `GET /dashboard/sales/monthly`
 
@@ -301,7 +301,7 @@ One invoice including relations and payment summary. Soft-deleted → 404 unless
 
 - `invoiceNo` optional (auto if omitted)
 - Each line needs **either** `productId` **or** `description`
-- Catalog `sizeMm` must be 95, 110, 90, 55, or 45
+- Catalog `sizeMm` must be 95, 110, 90, 55, 85, or 70
 - Creates stock OUT for catalog lines
 
 `201`. Duplicate `invoiceNo` → `409`.
