@@ -220,7 +220,7 @@ export function DashboardPage() {
             Pipe stock on hand right now, by size
           </p>
         </div>
-        <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
+        <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
           {stockBySize.map((row) => (
             <StatCard
               key={row.sizeMm}

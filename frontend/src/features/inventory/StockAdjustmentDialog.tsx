@@ -125,7 +125,7 @@ export function StockAdjustmentDialog({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Item size</FormLabel>
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
                 {PIPE_SIZES_MM.map((sizeMm) => (
                   <button
                     key={sizeMm}

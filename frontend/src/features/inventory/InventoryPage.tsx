@@ -98,8 +98,8 @@ function StockView({
     return (
       <div className="grid gap-3">
         <Skeleton className="h-24 w-full rounded-2xl" />
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          {[0, 1, 2, 3, 4].map((i) => (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
             <Skeleton key={i} className="h-36 w-full rounded-2xl" />
           ))}
         </div>
@@ -184,7 +184,7 @@ function StockView({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {visibleCards.map(({ sizeMm, qty }) => (
           <SizeStockCard
             key={sizeMm}
