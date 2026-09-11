@@ -3,6 +3,7 @@ import { activeOnly, deletedOnly } from "../../lib/activeRecords.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import { applySizeStockDelta } from "../../lib/sizeStock.js";
 import { withPaymentSummary } from "../payments/payment.utils.js";
+import { scheduleSheetsSync } from "../sheets/sheets.sync.js";
 import type { createSalesInvoiceSchema } from "./sales.schema.js";
 import type { z } from "zod";
 
@@ -125,8 +126,8 @@ export async function createSalesInvoice(data: z.infer<typeof createSalesInvoice
     throw new ApiError(409, `Invoice number ${invoiceNo} is already in use`);
   }
 
-  return prisma.$transaction(async (tx) => {
-    const invoice = await tx.salesInvoice.create({
+  const invoice = await prisma.$transaction(async (tx) => {
+    const created = await tx.salesInvoice.create({
       data: {
         invoiceNo,
         customerId: data.customerId,
@@ -191,8 +192,10 @@ export async function createSalesInvoice(data: z.infer<typeof createSalesInvoice
       });
     }
 
-    return invoice;
+    return created;
   });
+  scheduleSheetsSync("sales create");
+  return invoice;
 }
 
 /** Full edit of an existing invoice: reverses old stock effects, validates and applies new ones. */
@@ -263,7 +266,7 @@ export async function updateSalesInvoice(
     0
   );
 
-  return prisma.$transaction(async (tx) => {
+  const updated = await prisma.$transaction(async (tx) => {
     for (const item of existingInvoice.items) {
       if (!item.productId) continue;
       const sizeMm = item.sizeMm != null && Number(item.sizeMm) > 0 ? Number(item.sizeMm) : null;
@@ -350,6 +353,8 @@ export async function updateSalesInvoice(
 
     return invoice;
   });
+  scheduleSheetsSync("sales update");
+  return updated;
 }
 
 export async function updateInvoiceNo(id: string, invoiceNo: string) {
@@ -358,11 +363,13 @@ export async function updateInvoiceNo(id: string, invoiceNo: string) {
   if (existing && existing.id !== id) {
     throw new ApiError(409, `Invoice number ${invoiceNo} is already in use`);
   }
-  return prisma.salesInvoice.update({
+  const updated = await prisma.salesInvoice.update({
     where: { id },
     data: { invoiceNo },
     include: { customer: true, items: { include: { product: true } } },
   });
+  scheduleSheetsSync("sales invoiceNo");
+  return updated;
 }
 
 /** Move invoice to recycle bin (soft delete) and reverse stock. */
@@ -404,6 +411,7 @@ export async function deleteSalesInvoice(id: string) {
       data: { deletedAt: new Date() },
     });
   });
+  scheduleSheetsSync("sales delete");
 }
 
 /** Restore invoice from recycle bin and re-apply stock. */
@@ -457,6 +465,7 @@ export async function restoreSalesInvoice(id: string) {
       data: { deletedAt: null },
     });
   });
+  scheduleSheetsSync("sales restore");
 }
 
 /** Permanently delete an invoice already in the recycle bin. */
@@ -473,4 +482,5 @@ export async function permanentlyDeleteSalesInvoice(id: string) {
   }
 
   await prisma.salesInvoice.delete({ where: { id } });
+  scheduleSheetsSync("sales permanent delete");
 }

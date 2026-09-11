@@ -1,6 +1,7 @@
 import { prisma } from "../../lib/prisma.js";
 import { activeOnly } from "../../lib/activeRecords.js";
 import { ApiError } from "../../middleware/errorHandler.js";
+import { scheduleSheetsSync } from "../sheets/sheets.sync.js";
 import type { createCustomerSchema, updateCustomerSchema } from "./customer.schema.js";
 import type { z } from "zod";
 
@@ -36,16 +37,21 @@ export async function getCustomer(id: string) {
   return customer;
 }
 
-export function createCustomer(data: z.infer<typeof createCustomerSchema>) {
-  return prisma.customer.create({ data });
+export async function createCustomer(data: z.infer<typeof createCustomerSchema>) {
+  const customer = await prisma.customer.create({ data });
+  scheduleSheetsSync("customer create");
+  return customer;
 }
 
 export async function updateCustomer(id: string, data: z.infer<typeof updateCustomerSchema>) {
   await getCustomer(id);
-  return prisma.customer.update({ where: { id }, data });
+  const customer = await prisma.customer.update({ where: { id }, data });
+  scheduleSheetsSync("customer update");
+  return customer;
 }
 
 export async function deleteCustomer(id: string) {
   await getCustomer(id);
   await prisma.customer.delete({ where: { id } });
+  scheduleSheetsSync("customer delete");
 }

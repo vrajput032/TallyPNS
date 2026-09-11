@@ -11,3 +11,4 @@ Shared rules that apply across modules. Update this file if numbering, GST math,
 | Print | GST tax invoice / purchase bill with company, HSN, CGST/SGST, amount in words |
 | Mobile | Card layouts, search, PIN confirm dialog for destructive actions |
 | Auth rate limit | Login/register: 20 attempts / 15 minutes per IP |
+| Google Sheets backup | Optional one-way DB → sheet mirror; see [google-sheets.md](./google-sheets.md) |

@@ -19,7 +19,10 @@ npm run db:backup                   # full .dump → backups/
 npm run db:backup:push              # dump + push to private DBDumps repo
 npm run db:restore -- backups/tallypns-latest.dump
 npm run db:export:sheets            # CSV/Excel copy — not a full restore
+npm run sheets:sync                 # push Sales/Purchase/RM/customer → Google Sheet (optional env)
 ```
+
+Live Google Sheets mirror is **read-only from the app’s perspective** (no DB writes, no schema). See [`features/google-sheets.md`](./features/google-sheets.md).
 
 IDs are **cuid** strings. Money is `Decimal(14, 2)` unless noted. Prisma `Decimal` values are serialized as **strings** in JSON.
 

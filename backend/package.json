@@ -11,7 +11,8 @@
     "prisma:studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",
     "set-admin-password": "tsx scripts/set-admin-password.ts",
-    "export:sheets": "tsx prisma/export-sheets.ts"
+    "export:sheets": "tsx prisma/export-sheets.ts",
+    "sheets:sync": "tsx scripts/sync-sheets.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.1.0",
@@ -22,6 +23,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "express-rate-limit": "^8.6.2",
+    "googleapis": "^180.0.0",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.2.0",

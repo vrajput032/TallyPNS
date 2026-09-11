@@ -690,6 +690,24 @@ Restore and permanent delete use the sales/purchase routes above. Raw-material d
 
 ---
 
+## Google Sheets — `/api/sheets`
+
+Optional one-way backup to Google Sheets. Disabled when env vars are missing. Does not change database data.
+
+### `GET /sheets/status`
+
+**Auth:** admin. Returns `{ enabled, spreadsheetId, clientEmail }`.
+
+### `POST /sheets/sync`
+
+**Auth:** admin. Full refresh of Sales / Purchase / raw material / customer tabs. `503` if not configured.
+
+### `POST /sheets/cron`
+
+**Auth:** header `X-Sheets-Cron-Secret` = `GOOGLE_SHEETS_CRON_SECRET`. Same full refresh for external schedulers. `401` if secret missing/wrong.
+
+---
+
 ## Route index
 
 | Prefix | Module |
@@ -710,5 +728,6 @@ Restore and permanent delete use the sales/purchase routes above. Raw-material d
 | `/api/gst` | Summary + GSTR-1 JSON |
 | `/api/reports` | P&L, stock, BS, TB |
 | `/api/recycle-bin` | Admin deleted list |
+| `/api/sheets` | Google Sheets backup sync |
 
 Frontend client: `frontend/src/lib/api.ts` (Axios + refresh interceptor). Production API URL is locked in `frontend/.env.production`, `scripts/deploy.sh`, and `frontend/src/lib/apiBaseUrl.ts`.

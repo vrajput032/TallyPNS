@@ -17,6 +17,7 @@
     "db:restore": "bash scripts/db-restore.sh",
     "render:sync-slack-env": "bash scripts/render-sync-slack-env.sh",
     "db:export:sheets": "npm run export:sheets -w backend",
+    "sheets:sync": "npm run sheets:sync -w backend",
     "demo:purchase-sales-gst": "node scripts/demo-purchase-sales-gst.mjs",
     "slack:dev": "bash scripts/slack-dev.sh"
   },

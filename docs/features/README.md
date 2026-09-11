@@ -20,6 +20,7 @@ Schema: [`../DATABASE.md`](../DATABASE.md) · HTTP API: [`../APIS.md`](../APIS.m
 | [gst.md](./gst.md) | GST summary and GSTR-1 JSON |
 | [reports.md](./reports.md) | P&L, stock, outstanding, BS, TB |
 | [users.md](./users.md) | User management (admin) |
+| [google-sheets.md](./google-sheets.md) | Live Google Sheets backup |
 | [recycle-bin.md](./recycle-bin.md) | Soft-deleted sales and purchase |
 | [cross-cutting.md](./cross-cutting.md) | Numbering, GST math, print, mobile |
 | [not-built-yet.md](./not-built-yet.md) | Known gaps |

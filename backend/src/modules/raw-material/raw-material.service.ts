@@ -5,6 +5,7 @@ import { activeOnly } from "../../lib/activeRecords.js";
 import { piecesFromKg } from "../../lib/rawMaterialYield.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import { paymentStatus } from "../payments/payment.utils.js";
+import { scheduleSheetsSync } from "../sheets/sheets.sync.js";
 import type {
   createRawMaterialBillSchema,
   createRawMaterialPaymentSchema,
@@ -108,6 +109,7 @@ export async function createRawMaterialBill(data: z.infer<typeof createRawMateri
       },
       include: billInclude,
     });
+    scheduleSheetsSync("raw material create");
     return withSummary(bill);
   } catch (error) {
     if (isUniqueViolation(error)) {
@@ -155,6 +157,7 @@ export async function updateRawMaterialBill(
         include: billInclude,
       });
     });
+    scheduleSheetsSync("raw material update");
     return withSummary(bill);
   } catch (error) {
     if (isUniqueViolation(error)) {
@@ -170,6 +173,7 @@ export async function deleteRawMaterialBill(id: string) {
     throw new ApiError(400, "Cannot delete bill with payments. Delete payments first.");
   }
   await prisma.rawMaterialBill.delete({ where: { id } });
+  scheduleSheetsSync("raw material delete");
 }
 
 const PAYMENT_PREFIX = "RMP-";
@@ -211,6 +215,7 @@ export async function createRawMaterialPayment(
       narration: data.narration?.trim() || null,
     },
   });
+  scheduleSheetsSync("raw material payment");
   return getRawMaterialBill(billId);
 }
 
@@ -241,6 +246,7 @@ export async function updateRawMaterialPayment(
       narration: data.narration?.trim() || null,
     },
   });
+  scheduleSheetsSync("raw material payment update");
   return getRawMaterialBill(payment.billId);
 }
 
@@ -250,5 +256,6 @@ export async function deleteRawMaterialPayment(paymentId: string) {
   const bill = await prisma.rawMaterialBill.findUnique({ where: { id: payment.billId } });
   if (bill?.deletedAt) throw new ApiError(400, "Cannot change payments on a deleted bill");
   await prisma.rawMaterialPayment.delete({ where: { id: paymentId } });
+  scheduleSheetsSync("raw material payment delete");
   return getRawMaterialBill(payment.billId);
 }

@@ -8,6 +8,7 @@ import {
   uploadObject,
 } from "../../lib/storage.js";
 import { withBillPaymentSummary } from "../payments/payment.utils.js";
+import { scheduleSheetsSync } from "../sheets/sheets.sync.js";
 import { rateFromPricePerKg, type createPurchaseBillSchema } from "./purchase.schema.js";
 import type { z } from "zod";
 
@@ -143,7 +144,7 @@ export async function createPurchaseBill(data: BillInput) {
   const totalAmount = data.items.reduce((sum, item) => sum + lineAmount(item), 0);
   const billNo = await generateBillNo();
 
-  return prisma.$transaction(async (tx) => {
+  const presented = await prisma.$transaction(async (tx) => {
     const bill = await tx.purchaseBill.create({
       data: {
         billNo,
@@ -169,6 +170,8 @@ export async function createPurchaseBill(data: BillInput) {
 
     return presentBill(bill);
   });
+  scheduleSheetsSync("purchase create");
+  return presented;
 }
 
 /** Full edit of an existing bill: reverses old stock effects, validates and applies new ones. */
@@ -218,7 +221,7 @@ export async function updatePurchaseBill(id: string, data: BillInput) {
 
   const totalAmount = data.items.reduce((sum, item) => sum + lineAmount(item), 0);
 
-  return prisma.$transaction(async (tx) => {
+  const presented = await prisma.$transaction(async (tx) => {
     for (const item of existingBill.items) {
       if (!item.productId) continue;
       await tx.product.update({
@@ -254,6 +257,8 @@ export async function updatePurchaseBill(id: string, data: BillInput) {
 
     return presentBill(bill);
   });
+  scheduleSheetsSync("purchase update");
+  return presented;
 }
 
 /** Move bill to recycle bin (soft delete) and reverse stock. */
@@ -296,6 +301,7 @@ export async function deletePurchaseBill(id: string) {
       data: { deletedAt: new Date() },
     });
   });
+  scheduleSheetsSync("purchase delete");
 }
 
 /** Restore bill from recycle bin and re-apply stock. */
@@ -330,6 +336,7 @@ export async function restorePurchaseBill(id: string) {
       data: { deletedAt: null },
     });
   });
+  scheduleSheetsSync("purchase restore");
 }
 
 /** Permanently delete a bill already in the recycle bin. */
@@ -350,6 +357,7 @@ export async function permanentlyDeletePurchaseBill(id: string) {
   }
 
   await prisma.purchaseBill.delete({ where: { id } });
+  scheduleSheetsSync("purchase permanent delete");
 }
 
 export async function addPurchaseAttachment(

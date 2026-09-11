@@ -3,6 +3,7 @@ import { activeOnly } from "../../lib/activeRecords.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import type { createReceiptSchema, createVendorPaymentSchema } from "./payment.schema.js";
 import { withBillPaymentSummary, withPaymentSummary } from "./payment.utils.js";
+import { scheduleSheetsSync } from "../sheets/sheets.sync.js";
 import type { z } from "zod";
 import type { PaymentMode } from "@prisma/client";
 
@@ -56,7 +57,7 @@ export async function createReceipt(data: z.infer<typeof createReceiptSchema>) {
 
   const receiptNo = await nextDocNo(RECEIPT_PREFIX, RECEIPT_START, "receiptNo");
 
-  return prisma.paymentReceipt.create({
+  const receipt = await prisma.paymentReceipt.create({
     data: {
       receiptNo,
       customerId: invoice.customerId,
@@ -72,12 +73,15 @@ export async function createReceipt(data: z.infer<typeof createReceiptSchema>) {
       salesInvoice: { select: { id: true, invoiceNo: true, totalAmount: true } },
     },
   });
+  scheduleSheetsSync("sales receipt");
+  return receipt;
 }
 
 export async function deleteReceipt(id: string) {
   const receipt = await prisma.paymentReceipt.findUnique({ where: { id } });
   if (!receipt) throw new ApiError(404, "Receipt not found");
   await prisma.paymentReceipt.delete({ where: { id } });
+  scheduleSheetsSync("sales receipt delete");
 }
 
 export async function createVendorPayment(data: z.infer<typeof createVendorPaymentSchema>) {
@@ -101,7 +105,7 @@ export async function createVendorPayment(data: z.infer<typeof createVendorPayme
 
   const paymentNo = await nextDocNo(PAYMENT_PREFIX, PAYMENT_START, "paymentNo");
 
-  return prisma.vendorPayment.create({
+  const payment = await prisma.vendorPayment.create({
     data: {
       paymentNo,
       vendorId: bill.vendorId,
@@ -117,12 +121,15 @@ export async function createVendorPayment(data: z.infer<typeof createVendorPayme
       purchaseBill: { select: { id: true, billNo: true, totalAmount: true } },
     },
   });
+  scheduleSheetsSync("purchase payment");
+  return payment;
 }
 
 export async function deleteVendorPayment(id: string) {
   const payment = await prisma.vendorPayment.findUnique({ where: { id } });
   if (!payment) throw new ApiError(404, "Payment not found");
   await prisma.vendorPayment.delete({ where: { id } });
+  scheduleSheetsSync("purchase payment delete");
 }
 
 export async function listCashBankBook(mode: PaymentMode) {

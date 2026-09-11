@@ -1,4 +1,4 @@
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { api } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { UserFormDialog } from "./UserFormDialog";
 import { useDeleteUser, useUsers } from "./useUsers";
@@ -126,7 +127,28 @@ export function UsersPage() {
   const currentUserId = useAuthStore((state) => state.user?.id);
   const isMobile = useIsMobile();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [sheetsSyncing, setSheetsSyncing] = useState(false);
   const list = users ?? [];
+
+  async function handleSheetsSync() {
+    setSheetsSyncing(true);
+    try {
+      const { data } = await api.post<{ tabs?: Record<string, number> }>("/sheets/sync");
+      const counts = data.tabs
+        ? Object.entries(data.tabs)
+            .map(([tab, n]) => `${tab}: ${n}`)
+            .join(", ")
+        : "done";
+      toast.success(`Google Sheet updated (${counts})`);
+    } catch (error: unknown) {
+      const message =
+        (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        "Sheets sync failed — check Google env vars on the server";
+      toast.error(message);
+    } finally {
+      setSheetsSyncing(false);
+    }
+  }
 
   function handleDelete(user: AppUser) {
     if (user.id === currentUserId) {
@@ -155,16 +177,31 @@ export function UsersPage() {
         backLabel="Back to Dashboard"
         actions={
           isMobile ? null : (
-            <Button onClick={() => setDialogOpen(true)}>
-              <Plus className="size-4" />
-              Add user
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={handleSheetsSync} disabled={sheetsSyncing}>
+                <RefreshCw className={`size-4 ${sheetsSyncing ? "animate-spin" : ""}`} />
+                Sync Google Sheet
+              </Button>
+              <Button onClick={() => setDialogOpen(true)}>
+                <Plus className="size-4" />
+                Add user
+              </Button>
+            </div>
           )
         }
       />
 
       {isMobile ? (
         <>
+          <Button
+            variant="outline"
+            className="h-12 w-full text-base"
+            onClick={handleSheetsSync}
+            disabled={sheetsSyncing}
+          >
+            <RefreshCw className={`size-5 ${sheetsSyncing ? "animate-spin" : ""}`} />
+            Sync Google Sheet
+          </Button>
           <Button className="h-12 w-full text-base" onClick={() => setDialogOpen(true)}>
             <Plus className="size-5" />
             Add user
