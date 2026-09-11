@@ -32,7 +32,7 @@ export function AppShell() {
   });
 
   return (
-    <div className="relative flex min-h-screen overscroll-x-none">
+    <div className="relative flex min-h-screen max-w-[100vw] overscroll-x-none">
       <SectionDataSync />
       {ENABLE_3D && <GlobalBackground />}
       {isCompactNav ? <EdgeSwipeGuards className="print:hidden" /> : null}
@@ -50,7 +50,7 @@ export function AppShell() {
         </div>
         <main
           className={cn(
-            "min-w-0 flex-1 p-4 sm:p-6 print:p-0",
+            "min-w-0 flex-1 overflow-x-hidden p-4 sm:p-6 print:overflow-visible print:p-0",
             isCompactNav && "pb-[calc(6rem+env(safe-area-inset-bottom))]"
           )}
         >

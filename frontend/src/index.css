@@ -152,10 +152,14 @@
   html {
     @apply font-sans;
     overscroll-behavior-x: none;
+    overflow-x: clip;
+    max-width: 100%;
   }
   body {
     @apply bg-background text-foreground;
     overscroll-behavior-x: none;
+    overflow-x: clip;
+    max-width: 100%;
   }
 }
 
@@ -209,8 +213,14 @@
     background: white !important;
     margin: 0 !important;
     padding: 0 !important;
+    overflow: visible !important;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
+  }
+
+  main {
+    overflow: visible !important;
+    max-width: none !important;
   }
 
   /* Hide app chrome / toasts — bill only */
@@ -220,6 +230,12 @@
   }
 
   .invoice-print-scroll {
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .sales-totals-scroll {
     overflow: visible !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -255,5 +271,19 @@
   .invoice-print-page-break:last-child {
     break-after: auto;
     page-break-after: auto;
+  }
+
+  .sales-totals-sheet {
+    width: 190mm !important;
+    max-width: 190mm !important;
+    margin: 8mm 10mm !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+  }
+
+  .sales-totals-sheet table {
+    width: 100% !important;
+    table-layout: fixed !important;
   }
 }

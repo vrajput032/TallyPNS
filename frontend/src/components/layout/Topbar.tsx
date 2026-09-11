@@ -102,10 +102,10 @@ export function Topbar({
     <>
       <header
         className={cn(
-          "z-40 flex min-h-16 items-center justify-between gap-2 border-b border-border/40 bg-card/60 px-3 py-2.5 backdrop-blur-xl backdrop-saturate-150 transition-transform duration-300 ease-out will-change-transform sm:px-4 sm:py-3",
+          "z-40 flex min-h-16 w-full max-w-[100vw] items-center justify-between gap-2 overflow-x-hidden border-b border-border/40 bg-card/60 px-3 py-2.5 backdrop-blur-xl backdrop-saturate-150 transition-transform duration-300 ease-out will-change-transform sm:px-4 sm:py-3",
           isCompactNav
             ? cn(
-                "fixed inset-x-0 top-0 pt-[env(safe-area-inset-top,0px)]",
+                "fixed left-0 right-auto top-0 pt-[env(safe-area-inset-top,0px)]",
                 !headerVisible && "-translate-y-full",
               )
             : "sticky top-0",

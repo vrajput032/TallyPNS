@@ -38,3 +38,24 @@ export function parseMonthQuery(
 export function monthPrintFileName(year: number, month: number) {
   return `PNS-Sales-${year}-${String(month).padStart(2, "0")}`;
 }
+
+export type SalesTotalsPeriod =
+  | { kind: "all" }
+  | { kind: "month"; year: number; month: number };
+
+export function parseSalesTotalsQuery(search: URLSearchParams): SalesTotalsPeriod | null {
+  if (search.get("view") === "all") return { kind: "all" };
+  const period = parseMonthQuery(search.get("year"), search.get("month"));
+  if (!period) return null;
+  return { kind: "month", year: period.year, month: period.month };
+}
+
+export function salesTotalsPeriodLabel(period: SalesTotalsPeriod) {
+  if (period.kind === "all") return "All time";
+  return monthLabel(period.year, period.month);
+}
+
+export function salesTotalsPrintFileName(period: SalesTotalsPeriod) {
+  if (period.kind === "all") return "PNS-Sales-All";
+  return `PNS-Sales-${period.year}-${String(period.month).padStart(2, "0")}-Summary`;
+}

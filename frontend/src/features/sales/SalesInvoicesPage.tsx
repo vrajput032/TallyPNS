@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Download,
   Eye,
+  FileText,
   MessageSquarePlus,
   Pencil,
   Plus,
@@ -33,7 +34,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { TableSkeletonRows } from "@/components/loading/PageSkeletons";
 import {
   Table,
@@ -52,15 +52,12 @@ import {
   parseMonthInput,
 } from "./salesMonthUtils";
 import { useDeleteSalesInvoice, useSalesInvoices } from "./useSales";
-import { daysUntilDue, type SalesInvoice } from "./types";
+import { daysUntilDue, invoicePieces, type SalesInvoice } from "./types";
 import { PaymentStatusBadge } from "@/features/payments/PaymentStatusBadge";
 import { formatInr } from "@/lib/formatInr";
 import { canDelete } from "@/lib/permissions";
+import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
-
-function invoicePieces(invoice: SalesInvoice) {
-  return invoice.items.reduce((sum, item) => sum + Number(item.quantity), 0);
-}
 
 const SORT_OPTIONS: { value: string; label: string; id: string; desc: boolean }[] = [
   { value: "date-desc", label: "Date (newest first)", id: "invoiceDate", desc: true },
@@ -88,55 +85,6 @@ function DueStatus({ invoice }: { invoice: SalesInvoice }) {
     <span className={days <= 7 ? "font-medium text-amber-600" : "text-muted-foreground"}>
       {days} days left
     </span>
-  );
-}
-
-function DueBanner({ invoice, balance }: { invoice: SalesInvoice; balance: number }) {
-  const days = daysUntilDue(invoice);
-
-  let dayLabel: string | null = null;
-  let tone: "overdue" | "warn" | "ok" = "ok";
-  if (days !== null) {
-    if (days < 0) {
-      dayLabel = `${Math.abs(days)}d overdue`;
-      tone = "overdue";
-    } else if (days === 0) {
-      dayLabel = "Due today";
-      tone = "warn";
-    } else {
-      dayLabel = `${days}d left`;
-      tone = days <= 7 ? "warn" : "ok";
-    }
-  }
-
-  const toneClasses =
-    tone === "overdue"
-      ? "bg-red-600 text-white"
-      : tone === "warn"
-        ? "bg-amber-500 text-white"
-        : "bg-slate-800 text-white dark:bg-slate-700";
-
-  const badgeClasses =
-    tone === "overdue" || tone === "warn"
-      ? "bg-black/20 text-white"
-      : "bg-white/15 text-white";
-
-  return (
-    <div className={`flex items-center justify-between gap-2 px-4 py-3 pl-5 ${toneClasses}`}>
-      <div className="min-w-0">
-        <p className="text-[10px] font-semibold uppercase tracking-wider opacity-80">
-          Balance due
-        </p>
-        <p className="text-lg font-extrabold leading-tight tabular-nums">
-          ₹{formatInr(balance)}
-        </p>
-      </div>
-      {dayLabel && (
-        <span className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-bold ${badgeClasses}`}>
-          {dayLabel}
-        </span>
-      )}
-    </div>
   );
 }
 
@@ -196,117 +144,6 @@ const columns: ColumnDef<SalesInvoice>[] = [
     ),
   },
 ];
-
-function MobileInvoiceCards({
-  invoices,
-  isLoading,
-  emptyMessage,
-  onView,
-  onEdit,
-  onDelete,
-}: {
-  invoices: SalesInvoice[];
-  isLoading: boolean;
-  emptyMessage: string;
-  onView: (invoice: SalesInvoice) => void;
-  onEdit: (invoice: SalesInvoice) => void;
-  onDelete?: (invoice: SalesInvoice) => void;
-}) {
-  if (isLoading) {
-    return (
-      <div className="grid gap-2">
-        {[0, 1, 2].map((i) => (
-          <Skeleton key={i} className="h-24 w-full rounded-xl" />
-        ))}
-      </div>
-    );
-  }
-
-  if (invoices.length === 0) {
-    return <p className="py-16 text-center text-sm text-muted-foreground">{emptyMessage}</p>;
-  }
-
-  return (
-    <div className="grid gap-3">
-      {invoices.map((invoice) => {
-        const balance = invoice.balanceAmount ?? 0;
-        const status = invoice.paymentStatus ?? "PENDING";
-        const accent =
-          status === "PAID" ? "bg-emerald-500" : status === "PARTIAL" ? "bg-amber-500" : "bg-red-400";
-        const initial = invoice.customer.name.trim().charAt(0).toUpperCase() || "?";
-
-        return (
-          <div
-            key={invoice.id}
-            onClick={() => onView(invoice)}
-            className="relative overflow-hidden rounded-2xl border bg-card shadow-sm transition-all active:scale-[0.99] active:bg-muted/60"
-          >
-            {/* Status accent bar */}
-            <div className={`absolute inset-y-0 left-0 w-1 ${accent}`} />
-
-            <div className="flex items-center gap-3 p-4 pl-5">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-                {initial}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="truncate font-semibold leading-tight">{invoice.invoiceNo}</p>
-                  <PaymentStatusBadge status={status} />
-                </div>
-                <p className="truncate text-sm text-muted-foreground">
-                  {invoice.customer.name}
-                </p>
-              </div>
-            </div>
-
-            <div className="mx-4 border-t" />
-
-            <div className="flex items-center justify-between gap-2 p-4 pl-5">
-              <div className="flex min-w-0 items-center gap-2">
-                {/* Pieces called out as its own stat pill, not buried in text. */}
-                <div className="flex flex-col items-center rounded-xl bg-muted px-3 py-1.5">
-                  <span className="text-base font-bold leading-none tabular-nums">
-                    {invoicePieces(invoice).toLocaleString("en-IN")}
-                  </span>
-                  <span className="mt-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Pcs
-                  </span>
-                </div>
-                <div className="min-w-0">
-                  <p className="truncate text-lg font-bold leading-tight tabular-nums">
-                    ₹{formatInr(invoice.totalAmount)}
-                  </p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {new Date(invoice.invoiceDate).toLocaleDateString("en-GB")}
-                  </p>
-                </div>
-              </div>
-
-              <div
-                className="flex shrink-0 items-center"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {(invoice.receipts?.length ?? 0) === 0 && (
-                  <Button variant="ghost" size="icon" onClick={() => onEdit(invoice)}>
-                    <Pencil className="size-4" />
-                  </Button>
-                )}
-                {onDelete ? (
-                  <Button variant="ghost" size="icon" onClick={() => onDelete(invoice)}>
-                    <Trash2 className="size-4" />
-                  </Button>
-                ) : null}
-                <ChevronRight className="size-4 text-muted-foreground" />
-              </div>
-            </div>
-
-            {balance > 0 && <DueBanner invoice={invoice} balance={balance} />}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 export function SalesInvoicesPage() {
   const { data: invoices, isLoading } = useSalesInvoices();
@@ -388,8 +225,16 @@ export function SalesInvoicesPage() {
     navigate(`/sales/print-month?year=${year}&month=${month}`);
   }
 
+  function openTotalsPdf() {
+    if (viewMode === "all") {
+      navigate("/sales/print-totals?view=all");
+      return;
+    }
+    navigate(`/sales/print-totals?year=${year}&month=${month}`);
+  }
+
   return (
-    <div className="grid gap-4">
+    <div className="grid min-w-0 gap-4">
       <PageHeader
         title="Sales"
         backTo="/"
@@ -451,6 +296,16 @@ export function SalesInvoicesPage() {
                 </DropdownMenuRadioGroup>
               </DropdownMenuContent>
             </DropdownMenu>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={openTotalsPdf}
+              aria-label="Download sales PDF"
+              disabled={visibleRows.length === 0}
+            >
+              <FileText className="size-4" />
+            </Button>
           </div>
 
           {viewMode === "month" && (
@@ -525,6 +380,16 @@ export function SalesInvoicesPage() {
             >
               All
             </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={openTotalsPdf}
+              disabled={visibleRows.length === 0}
+            >
+              <FileText className="size-4" />
+              Download PDF
+            </Button>
             {viewMode === "month" && (
               <>
                 <Button type="button" variant="outline" size="sm" onClick={() => shiftMonth(-1)}>
@@ -568,38 +433,23 @@ export function SalesInvoicesPage() {
         </div>
       )}
 
-      {isMobile ? (
-        <>
-          {visibleRows.length > 0 && (
-            <div className="flex items-center justify-between rounded-xl border bg-card p-3">
-              <div>
-                <p className="text-xs text-muted-foreground">Total pieces</p>
-                <p className="text-lg font-bold leading-tight">
-                  {totalPieces.toLocaleString("en-IN")}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground">Total amount</p>
-                <p className="text-lg font-bold leading-tight">₹{formatInr(totalAmount)}</p>
-              </div>
-            </div>
-          )}
-          <MobileInvoiceCards
-            invoices={visibleRows.map((row) => row.original)}
-            isLoading={isLoading}
-            emptyMessage={
-              viewMode === "month"
-                ? `No invoices found for ${monthLabel(year, month)}.`
-                : "No invoices found."
-            }
-            onView={(invoice) => navigate(`/sales/${invoice.id}`)}
-            onEdit={(invoice) => navigate(`/sales/${invoice.id}/edit`)}
-            onDelete={allowDelete ? handleDelete : undefined}
-          />
-        </>
-      ) : (
-        <div className="min-w-0 rounded-md border bg-card">
-          <Table>
+      {isMobile && visibleRows.length > 0 ? (
+        <div className="flex items-center justify-between rounded-xl border bg-card p-3">
+          <div>
+            <p className="text-xs text-muted-foreground">Total pieces</p>
+            <p className="text-lg font-bold leading-tight">
+              {totalPieces.toLocaleString("en-IN")}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground">Total amount</p>
+            <p className="text-lg font-bold leading-tight">₹{formatInr(totalAmount)}</p>
+          </div>
+        </div>
+      ) : null}
+
+      <div className={cn("min-w-0 border bg-card", isMobile ? "-mx-4 max-w-[100vw] rounded-none border-x-0" : "rounded-md")}>
+        <Table className="min-w-[52rem] text-xs sm:text-sm">
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
@@ -683,7 +533,11 @@ export function SalesInvoicesPage() {
             )}
           </Table>
         </div>
-      )}
+      {isMobile ? (
+        <p className="text-xs text-muted-foreground">
+          Swipe sideways for all columns.
+        </p>
+      ) : null}
 
       <ConfirmDeletePinDialog
         open={deleteTarget !== null}

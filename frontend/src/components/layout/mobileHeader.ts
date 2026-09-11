@@ -11,6 +11,14 @@ type RouteRule = {
 
 const rules: RouteRule[] = [
   {
+    pattern: /^\/sales\/print-month$/,
+    resolve: () => ({ title: "Month bills", backTo: "/sales", backLabel: "Back to Sales" }),
+  },
+  {
+    pattern: /^\/sales\/print-totals$/,
+    resolve: () => ({ title: "Sales PDF", backTo: "/sales", backLabel: "Back to Sales" }),
+  },
+  {
     pattern: /^\/sales\/new$/,
     resolve: () => ({ title: "New invoice", backTo: "/sales", backLabel: "Back to Sales" }),
   },

@@ -35,7 +35,7 @@ export function MobileTabBar() {
 
   return (
     <nav
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(0.625rem,env(safe-area-inset-bottom))] md:hidden print:hidden"
+      className="pointer-events-none fixed bottom-0 left-0 z-40 w-full max-w-[100vw] overflow-x-hidden px-3 pb-[max(0.625rem,env(safe-area-inset-bottom))] md:hidden print:hidden"
       aria-label="Main navigation"
     >
       <div

@@ -78,6 +78,10 @@ export function salesItemUnit(item: SalesInvoiceItem) {
   return item.product?.unit ?? item.unit ?? "NOS";
 }
 
+export function invoicePieces(invoice: SalesInvoice) {
+  return invoice.items.reduce((sum, item) => sum + Number(item.quantity), 0);
+}
+
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /** Days remaining until the invoice is due (negative when overdue). Null when the customer has no payment term set. */
