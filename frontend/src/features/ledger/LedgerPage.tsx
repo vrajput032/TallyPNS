@@ -1,7 +1,8 @@
-import { ChevronRight, Search } from "lucide-react";
+import { ChevronRight, Download, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -93,10 +94,12 @@ function MobileCustomerList({
   customers,
   isLoading,
   onOpen,
+  onDownload,
 }: {
   customers: LedgerCustomerSummary[];
   isLoading: boolean;
   onOpen: (id: string) => void;
+  onDownload: (id: string) => void;
 }) {
   if (isLoading) return <CardListSkeleton cards={6} />;
 
@@ -107,35 +110,45 @@ function MobileCustomerList({
   return (
     <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
       {customers.map((row, index) => (
-        <button
+        <div
           key={row.id}
-          type="button"
-          onClick={() => onOpen(row.id)}
-          className={cn(
-            "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors active:bg-muted/70",
-            index > 0 && "border-t"
-          )}
+          className={cn("flex items-center gap-1 pr-1", index > 0 && "border-t")}
         >
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-            {customerInitial(row.name)}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-semibold leading-tight">{row.name}</p>
-            <p className="truncate text-xs text-muted-foreground">
-              {row.phone || "No phone"}
-              {row.lastTransactionDate ? ` · ${formatLedgerDate(row.lastTransactionDate)}` : ""}
-            </p>
-          </div>
-          <div className="shrink-0 text-right">
-            <p className={cn("text-sm font-bold tabular-nums leading-tight", balanceTone(row.closingBalance))}>
-              ₹{formatLedgerBalance(row.closingBalance)}
-            </p>
-            <p className="text-[11px] text-muted-foreground">
-              {row.entryCount === 1 ? "1 txn" : `${row.entryCount} txns`}
-            </p>
-          </div>
-          <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-        </button>
+          <button
+            type="button"
+            onClick={() => onOpen(row.id)}
+            className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 text-left transition-colors active:bg-muted/70"
+          >
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+              {customerInitial(row.name)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-semibold leading-tight">{row.name}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {row.phone || "No phone"}
+                {row.lastTransactionDate ? ` · ${formatLedgerDate(row.lastTransactionDate)}` : ""}
+              </p>
+            </div>
+            <div className="shrink-0 text-right">
+              <p className={cn("text-sm font-bold tabular-nums leading-tight", balanceTone(row.closingBalance))}>
+                ₹{formatLedgerBalance(row.closingBalance)}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                {row.entryCount === 1 ? "1 txn" : `${row.entryCount} txns`}
+              </p>
+            </div>
+            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+          </button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label={`Download ledger for ${row.name}`}
+            onClick={() => onDownload(row.id)}
+          >
+            <Download className="size-4" />
+          </Button>
+        </div>
       ))}
     </div>
   );
@@ -191,6 +204,7 @@ export function LedgerPage() {
           customers={customers}
           isLoading={isLoading}
           onOpen={(id) => navigate(`/ledger/${id}`)}
+          onDownload={(id) => navigate(`/ledger/${id}/print`)}
         />
       ) : (
         <div className="min-w-0 rounded-md border bg-card">
@@ -203,14 +217,15 @@ export function LedgerPage() {
                 <TableHead className="text-right">Received</TableHead>
                 <TableHead className="text-right">Balance</TableHead>
                 <TableHead>Last txn</TableHead>
+                <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableSkeletonRows columns={6} />
+                <TableSkeletonRows columns={7} />
               ) : customers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground">
                     No customers found.
                   </TableCell>
                 </TableRow>
@@ -229,6 +244,20 @@ export function LedgerPage() {
                       {formatInr(row.closingBalance)}
                     </TableCell>
                     <TableCell>{formatLedgerDate(row.lastTransactionDate)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Download ledger for ${row.name}`}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          navigate(`/ledger/${row.id}/print`);
+                        }}
+                      >
+                        <Download className="size-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))
               )}

@@ -10,6 +10,7 @@ import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { CustomersPage } from "@/features/customers/CustomersPage";
 import { LedgerPage } from "@/features/ledger/LedgerPage";
 import { LedgerDetailPage } from "@/features/ledger/LedgerDetailPage";
+import { LedgerPrintPage } from "@/features/ledger/LedgerPrintPage";
 import { ProductsPage } from "@/features/products/ProductsPage";
 import { SalesInvoicesPage } from "@/features/sales/SalesInvoicesPage";
 import { SalesInvoiceFormPage } from "@/features/sales/SalesInvoiceFormPage";
@@ -69,6 +70,7 @@ export default function App() {
                 <Route path="/investments" element={<InvestmentsPage />} />
                 <Route path="/customers" element={<CustomersPage />} />
                 <Route path="/ledger" element={<LedgerPage />} />
+                <Route path="/ledger/:customerId/print" element={<LedgerPrintPage />} />
                 <Route path="/ledger/:customerId" element={<LedgerDetailPage />} />
                 <Route path="/products" element={<ProductsPage />} />
                 <Route path="/reports" element={<ReportsPage />} />

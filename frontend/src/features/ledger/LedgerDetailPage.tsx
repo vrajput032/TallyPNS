@@ -1,6 +1,7 @@
-import { ChevronRight, Link as LinkIcon } from "lucide-react";
+import { ChevronRight, Download, Link as LinkIcon } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CardListSkeleton, TableSkeletonRows } from "@/components/loading/PageSkeletons";
@@ -93,6 +94,13 @@ function MobileLedgerDetail({
             <p className="text-sm font-semibold tabular-nums">₹{formatInr(data.totalCredit)}</p>
           </div>
         </div>
+        <Button
+          className="mt-4 w-full"
+          onClick={() => navigate(`/ledger/${customer.id}/print`)}
+        >
+          <Download className="size-4" />
+          Download ledger
+        </Button>
       </div>
 
       {data.entries.length === 0 ? (
@@ -189,7 +197,19 @@ export function LedgerDetailPage() {
 
   return (
     <div className="grid gap-4">
-      <PageHeader title={title} backTo="/ledger" backLabel="Back to Ledger" />
+      <PageHeader
+        title={title}
+        backTo="/ledger"
+        backLabel="Back to Ledger"
+        actions={
+          data?.customer ? (
+            <Button variant="outline" onClick={() => navigate(`/ledger/${data.customer.id}/print`)}>
+              <Download className="size-4" />
+              Download ledger
+            </Button>
+          ) : null
+        }
+      />
 
       {list && list.customers.length > 0 ? (
         <label className="grid max-w-sm gap-1 text-sm">

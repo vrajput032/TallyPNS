@@ -115,6 +115,14 @@ const rules: RouteRule[] = [
     resolve: () => ({ title: "Customers", backTo: "/", backLabel: "Back to Dashboard" }),
   },
   {
+    pattern: /^\/ledger\/([^/]+)\/print$/,
+    resolve: (m) => ({
+      title: "Ledger PDF",
+      backTo: `/ledger/${m[1]}`,
+      backLabel: "Back to Ledger",
+    }),
+  },
+  {
     pattern: /^\/ledger\/([^/]+)$/,
     resolve: () => ({ title: "Ledger", backTo: "/ledger", backLabel: "Back to Ledger" }),
   },

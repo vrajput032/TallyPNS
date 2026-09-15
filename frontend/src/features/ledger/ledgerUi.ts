@@ -35,6 +35,16 @@ export function customerInitial(name: string) {
   return name.trim().charAt(0).toUpperCase() || "?";
 }
 
+export function ledgerPrintFileName(customerName: string) {
+  const slug =
+    customerName
+      .trim()
+      .replace(/[^a-zA-Z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 40) || "customer";
+  return `PNS-ledger-${slug}-${new Date().toISOString().slice(0, 10)}`;
+}
+
 export function kindLabel(kind: LedgerEntryKind) {
   switch (kind) {
     case "OPENING":
