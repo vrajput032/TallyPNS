@@ -345,7 +345,7 @@ export function GstPage() {
         </Card>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -379,7 +379,7 @@ export function GstPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Output GST (Sales)
+              Output GST
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -388,6 +388,22 @@ export function GstPage() {
             ) : (
               <div className="text-2xl font-semibold">
                 {formatInr(data?.totalOutputTax ?? 0)}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Input GST
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-8 w-24" />
+            ) : (
+              <div className="text-2xl font-semibold">
+                {formatInr(data?.totalInputTax ?? 0)}
               </div>
             )}
           </CardContent>
@@ -410,15 +426,15 @@ export function GstPage() {
 
       <Tabs defaultValue="gstr1">
         <TabsList className="h-auto flex-wrap">
-          <TabsTrigger value="gstr1">GSTR-1 (Sales bills)</TabsTrigger>
-          <TabsTrigger value="purchase">Purchases (Input)</TabsTrigger>
+          <TabsTrigger value="gstr1">Output GST (Sales)</TabsTrigger>
+          <TabsTrigger value="purchase">Input GST</TabsTrigger>
           <TabsTrigger value="rates">By GST rate</TabsTrigger>
         </TabsList>
 
         <TabsContent value="gstr1">
           <Card className="min-w-0">
             <CardHeader>
-              <CardTitle>Pending for GSTR-1 — {data?.period.monthLabel ?? "…"}</CardTitle>
+              <CardTitle>Output GST — {data?.period.monthLabel ?? "…"}</CardTitle>
               <p className="text-sm text-muted-foreground">
                 Invoice-wise outward supplies for the tax month (Tally-style list). Click a row to
                 open the invoice.
@@ -441,10 +457,10 @@ export function GstPage() {
         <TabsContent value="purchase">
           <Card className="min-w-0">
             <CardHeader>
-              <CardTitle>Purchase bills — {data?.period.monthLabel ?? "…"}</CardTitle>
+              <CardTitle>Input GST — {data?.period.monthLabel ?? "…"}</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Input GST from purchase bills dated in this month (for your own reconciliation;
-                GSTR-1 is sales/outward only).
+                Purchase bills and raw material bills dated in this month. GSTR-1 is sales/outward
+                only.
               </p>
             </CardHeader>
             <CardContent className="min-w-0">
@@ -453,8 +469,24 @@ export function GstPage() {
               ) : (
                 <VoucherTable
                   rows={data?.purchaseVouchers ?? []}
-                  emptyLabel="No purchase bills in this month."
-                  onOpen={(row) => navigate(`/purchase/${row.id}`)}
+                  emptyLabel="No purchase or raw material bills in this month."
+                  onOpen={(row) => {
+                    switch (row.vchType) {
+                      case "Purchase":
+                        navigate(`/purchase/${row.id}`);
+                        return;
+                      case "Raw material":
+                        navigate(`/raw-material/${row.id}`);
+                        return;
+                      case "Sales":
+                        navigate(`/sales/${row.id}`);
+                        return;
+                      default: {
+                        const _exhaustive: never = row.vchType;
+                        return _exhaustive;
+                      }
+                    }
+                  }}
                 />
               )}
             </CardContent>
@@ -465,7 +497,7 @@ export function GstPage() {
           <div className="grid gap-4">
             <Card className="min-w-0">
               <CardHeader>
-                <CardTitle>Output GST by rate</CardTitle>
+                <CardTitle>Output GST</CardTitle>
               </CardHeader>
               <CardContent className="min-w-0">
                 {isLoading ? (
@@ -477,7 +509,7 @@ export function GstPage() {
             </Card>
             <Card className="min-w-0">
               <CardHeader>
-                <CardTitle>Input GST by rate</CardTitle>
+                <CardTitle>Input GST</CardTitle>
               </CardHeader>
               <CardContent className="min-w-0">
                 {isLoading ? (

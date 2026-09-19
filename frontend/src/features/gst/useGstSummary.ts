@@ -15,7 +15,7 @@ export interface GstVoucherRow {
   id: string;
   date: string;
   particulars: string;
-  vchType: "Sales" | "Purchase";
+  vchType: "Sales" | "Purchase" | "Raw material";
   vchNo: string;
   taxableAmount: number;
   taxAmount: number;

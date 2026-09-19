@@ -13,7 +13,7 @@ export interface GstVoucherRow {
   id: string;
   date: string;
   particulars: string;
-  vchType: "Sales" | "Purchase";
+  vchType: "Sales" | "Purchase" | "Raw material";
   vchNo: string;
   taxableAmount: number;
   taxAmount: number;
@@ -53,6 +53,77 @@ function lineTotals(items: { gstRate: unknown; quantity: unknown; rate: unknown 
     },
     { taxable: 0, tax: 0 }
   );
+}
+
+const STANDARD_GST_RATES = [0, 5, 12, 18, 28] as const;
+
+function inferGstRate(taxable: number, tax: number): number {
+  if (tax <= 0) return 0;
+  if (taxable <= 0) return 18;
+  const raw = (tax / taxable) * 100;
+  return STANDARD_GST_RATES.reduce((best, rate) =>
+    Math.abs(rate - raw) < Math.abs(best - raw) ? rate : best
+  );
+}
+
+function mergeRateGroups(groups: GstRateBreakdown[]): GstRateBreakdown[] {
+  const merged = new Map<number, GstRateBreakdown>();
+  for (const group of groups) {
+    const existing = merged.get(group.gstRate) ?? {
+      gstRate: group.gstRate,
+      taxableAmount: 0,
+      cgst: 0,
+      sgst: 0,
+      totalTax: 0,
+    };
+    merged.set(group.gstRate, {
+      gstRate: group.gstRate,
+      taxableAmount: existing.taxableAmount + group.taxableAmount,
+      cgst: existing.cgst + group.cgst,
+      sgst: existing.sgst + group.sgst,
+      totalTax: existing.totalTax + group.totalTax,
+    });
+  }
+  return [...merged.values()].sort((a, b) => a.gstRate - b.gstRate);
+}
+
+function summarizeRawMaterialBills(
+  bills: {
+    taxableAmount: unknown;
+    cgstAmount: unknown;
+    sgstAmount: unknown;
+    igstAmount: unknown;
+  }[]
+): GstRateBreakdown[] {
+  const groups = new Map<number, { taxable: number; cgst: number; sgst: number; tax: number }>();
+
+  for (const bill of bills) {
+    const taxable = Number(bill.taxableAmount) || 0;
+    const cgst = Number(bill.cgstAmount) || 0;
+    const sgst = Number(bill.sgstAmount) || 0;
+    const igst = Number(bill.igstAmount) || 0;
+    const tax = cgst + sgst + igst;
+    const gstRate = inferGstRate(taxable, tax);
+    const cgstShare = cgst > 0 || sgst > 0 ? cgst : tax / 2;
+    const sgstShare = cgst > 0 || sgst > 0 ? sgst : tax / 2;
+    const existing = groups.get(gstRate) ?? { taxable: 0, cgst: 0, sgst: 0, tax: 0 };
+    groups.set(gstRate, {
+      taxable: existing.taxable + taxable,
+      cgst: existing.cgst + cgstShare,
+      sgst: existing.sgst + sgstShare,
+      tax: existing.tax + tax,
+    });
+  }
+
+  return [...groups.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([gstRate, group]) => ({
+      gstRate,
+      taxableAmount: group.taxable,
+      cgst: group.cgst,
+      sgst: group.sgst,
+      totalTax: group.tax,
+    }));
 }
 
 /** Tax period = calendar month (1st → last day). GSTR-1 due = 11th of next month. */
@@ -100,7 +171,7 @@ export async function getGstSummary(month?: number, year?: number) {
   const period = resolveTaxPeriod(month, year);
   const dateFilter = { gte: period.periodGte, lt: period.periodLt };
 
-  const [salesInvoices, purchaseBills] = await Promise.all([
+  const [salesInvoices, purchaseBills, rawMaterialBills] = await Promise.all([
     prisma.salesInvoice.findMany({
       where: { ...activeOnly, invoiceDate: dateFilter },
       include: {
@@ -117,13 +188,31 @@ export async function getGstSummary(month?: number, year?: number) {
       },
       orderBy: [{ billDate: "asc" }, { billNo: "asc" }],
     }),
+    prisma.rawMaterialBill.findMany({
+      where: { ...activeOnly, billDate: dateFilter },
+      select: {
+        id: true,
+        billNo: true,
+        billDate: true,
+        supplierName: true,
+        taxableAmount: true,
+        cgstAmount: true,
+        sgstAmount: true,
+        igstAmount: true,
+        totalAmount: true,
+      },
+      orderBy: [{ billDate: "asc" }, { billNo: "asc" }],
+    }),
   ]);
 
   const salesItems = salesInvoices.flatMap((inv) => inv.items);
   const purchaseItems = purchaseBills.flatMap((bill) => bill.items);
 
   const outputGst = summarizeByRate(salesItems);
-  const inputGst = summarizeByRate(purchaseItems);
+  const inputGst = mergeRateGroups([
+    ...summarizeByRate(purchaseItems),
+    ...summarizeRawMaterialBills(rawMaterialBills),
+  ]);
   const totalOutputTax = outputGst.reduce((sum, g) => sum + g.totalTax, 0);
   const totalInputTax = inputGst.reduce((sum, g) => sum + g.totalTax, 0);
   const totalTaxableSales = outputGst.reduce((sum, g) => sum + g.taxableAmount, 0);
@@ -142,19 +231,38 @@ export async function getGstSummary(month?: number, year?: number) {
     };
   });
 
-  const purchaseVouchers: GstVoucherRow[] = purchaseBills.map((bill) => {
-    const { taxable, tax } = lineTotals(bill.items);
-    return {
-      id: bill.id,
-      date: bill.billDate.toISOString().slice(0, 10),
-      particulars: bill.title?.trim() || bill.vendor?.name || bill.billNo,
-      vchType: "Purchase",
-      vchNo: bill.billNo,
-      taxableAmount: taxable,
-      taxAmount: tax,
-      invoiceAmount: Number(bill.totalAmount),
-    };
-  });
+  const purchaseVouchers: GstVoucherRow[] = [
+    ...purchaseBills.map((bill) => {
+      const { taxable, tax } = lineTotals(bill.items);
+      return {
+        id: bill.id,
+        date: bill.billDate.toISOString().slice(0, 10),
+        particulars: bill.title?.trim() || bill.vendor?.name || bill.billNo,
+        vchType: "Purchase" as const,
+        vchNo: bill.billNo,
+        taxableAmount: taxable,
+        taxAmount: tax,
+        invoiceAmount: Number(bill.totalAmount),
+      };
+    }),
+    ...rawMaterialBills.map((bill) => {
+      const taxable = Number(bill.taxableAmount) || 0;
+      const tax =
+        (Number(bill.cgstAmount) || 0) +
+        (Number(bill.sgstAmount) || 0) +
+        (Number(bill.igstAmount) || 0);
+      return {
+        id: bill.id,
+        date: bill.billDate.toISOString().slice(0, 10),
+        particulars: bill.supplierName,
+        vchType: "Raw material" as const,
+        vchNo: bill.billNo,
+        taxableAmount: taxable,
+        taxAmount: tax,
+        invoiceAmount: Number(bill.totalAmount),
+      };
+    }),
+  ].sort((a, b) => a.date.localeCompare(b.date) || a.vchNo.localeCompare(b.vchNo));
 
   const today = new Date();
   const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
