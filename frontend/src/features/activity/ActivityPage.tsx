@@ -19,6 +19,7 @@ import { useActivity } from "./useActivity";
 import {
   activityActionLabel,
   activityModuleLabel,
+  formatActivityActor,
   type ActivityLog,
   type ActivityModule,
 } from "./types";
@@ -141,7 +142,9 @@ function ActivityCards({
           </div>
           <p className="mt-2 font-medium leading-snug">{row.summary}</p>
           <div className="mt-2 flex items-center justify-between gap-2 text-sm text-muted-foreground">
-            <span>{row.actorName}</span>
+            <span className="min-w-0 truncate">
+              {formatActivityActor(row.actorName, row.deviceName)}
+            </span>
             {row.amount != null ? (
               <span className="font-semibold tabular-nums text-foreground">₹{formatInr(row.amount)}</span>
             ) : null}
@@ -224,7 +227,14 @@ export function ActivityPage() {
                   <TableCell className="whitespace-nowrap text-muted-foreground">
                     {formatWhen(row.createdAt)}
                   </TableCell>
-                  <TableCell>{row.actorName}</TableCell>
+                  <TableCell>
+                    <div className="min-w-0">
+                      <p className="font-medium">{row.actorName}</p>
+                      {row.deviceName ? (
+                        <p className="truncate text-xs text-muted-foreground">{row.deviceName}</p>
+                      ) : null}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={moduleBadgeClass(row.module)}>
                       {activityModuleLabel(row.module)}

@@ -22,13 +22,17 @@ function toPublicUser(user: User) {
   };
 }
 
-function toPayload(user: User): AuthPayload {
-  return {
+function toPayload(user: User, deviceName?: string): AuthPayload {
+  const payload: AuthPayload = {
     sub: user.id,
     username: user.username,
     email: user.email,
     role: user.role,
   };
+  if (deviceName) {
+    payload.deviceName = deviceName;
+  }
+  return payload;
 }
 
 export async function listUsers() {
@@ -123,7 +127,7 @@ export async function register(username: string, email: string, password: string
   return { user: toPublicUser(user), ...tokens };
 }
 
-export async function login(username: string, password: string) {
+export async function login(username: string, password: string, deviceName?: string) {
   const user = await prisma.user.findUnique({ where: { username: username.toLowerCase() } });
   if (!user) {
     throw new ApiError(401, "Invalid username or password");
@@ -134,13 +138,13 @@ export async function login(username: string, password: string) {
     throw new ApiError(401, "Invalid username or password");
   }
 
-  const tokens = signTokens(toPayload(user));
+  const tokens = signTokens(toPayload(user, deviceName));
   await prisma.user.update({ where: { id: user.id }, data: { refreshToken: tokens.refreshToken } });
 
   return { user: toPublicUser(user), ...tokens };
 }
 
-export async function refresh(refreshToken: string) {
+export async function refresh(refreshToken: string, deviceName?: string) {
   let payload: AuthPayload;
   try {
     payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!) as AuthPayload;
@@ -153,7 +157,8 @@ export async function refresh(refreshToken: string) {
     throw new ApiError(401, "Refresh token revoked");
   }
 
-  const tokens = signTokens(toPayload(user));
+  const nextDevice = deviceName || payload.deviceName;
+  const tokens = signTokens(toPayload(user, nextDevice));
   await prisma.user.update({ where: { id: user.id }, data: { refreshToken: tokens.refreshToken } });
 
   return tokens;

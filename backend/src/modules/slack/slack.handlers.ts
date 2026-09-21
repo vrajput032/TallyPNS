@@ -423,6 +423,7 @@ export function registerBillHandlers(app: App, config: SlackConfig) {
       const invoice = await createSalesInvoice(buildCreatePayload(session));
       recordActivity({
         actorName: "Slack",
+        deviceName: "Slack",
         module: "SALES",
         action: "CREATED",
         entityId: invoice.id,

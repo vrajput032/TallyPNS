@@ -20,6 +20,7 @@ export interface ActivityLog {
   createdAt: string;
   userId: string | null;
   actorName: string;
+  deviceName: string | null;
   module: ActivityModule;
   action: ActivityAction;
   entityId: string | null;
@@ -27,6 +28,12 @@ export interface ActivityLog {
   summary: string;
   amount: number | null;
   href: string | null;
+}
+
+export function formatActivityActor(actorName: string, deviceName?: string | null): string {
+  const device = deviceName?.trim();
+  if (!device) return actorName;
+  return `${actorName} · ${device}`;
 }
 
 export function activityModuleLabel(module: ActivityModule): string {

@@ -9,6 +9,8 @@ export interface AuthPayload {
   username: string;
   email: string;
   role: RoleName;
+  /** Client-reported device/browser label from login (optional on older tokens). */
+  deviceName?: string;
 }
 
 declare global {

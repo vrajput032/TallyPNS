@@ -356,18 +356,19 @@ model RawMaterialPayment {
 }
 
 model ActivityLog {
-  id        String         @id @default(cuid())
-  createdAt DateTime       @default(now())
-  userId    String?
-  user      User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
-  actorName String
-  module    ActivityModule
-  action    ActivityAction
-  entityId  String?
-  entityNo  String?
-  summary   String
-  amount    Decimal?       @db.Decimal(14, 2)
-  href      String?
+  id         String         @id @default(cuid())
+  createdAt  DateTime       @default(now())
+  userId     String?
+  user       User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  actorName  String
+  deviceName String?
+  module     ActivityModule
+  action     ActivityAction
+  entityId   String?
+  entityNo   String?
+  summary    String
+  amount     Decimal?       @db.Decimal(14, 2)
+  href       String?
 
   @@index([createdAt])
   @@index([module])

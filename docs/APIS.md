@@ -64,7 +64,7 @@ Zod validation:
 | Access | 12 hours | `JWT_SECRET` |
 | Refresh | 30 days | `JWT_REFRESH_SECRET` |
 
-Payload: `{ sub, username, email, role }`. Refresh is stored on `User.refreshToken`; reuse of an old refresh after rotation returns 401.
+Payload: `{ sub, username, email, role, deviceName? }`. Refresh is stored on `User.refreshToken`; reuse of an old refresh after rotation returns 401. `deviceName` is set at login (and may be refreshed) so activity logs know which browser/device acted.
 
 Login and register: **20 requests / 15 minutes / IP**.
 
@@ -89,10 +89,11 @@ No auth. Used by Render.
 No auth. Body:
 
 ```json
-{ "username": "admin", "password": "********" }
+{ "username": "admin", "password": "********", "deviceName": "Chrome on Mac" }
 ```
 
-`username` is trimmed, lowercased; 2–32 chars `[a-zA-Z0-9._-]`. Password min 6.
+`username` is trimmed, lowercased; 2–32 chars `[a-zA-Z0-9._-]`. Password min 6.  
+`deviceName` is optional (max 80 chars). The SPA sends a browser/device label such as `Safari on iPhone`.
 
 **201 is not used** — `200`:
 
@@ -113,7 +114,8 @@ No auth. Body:
 
 ### `POST /auth/refresh`
 
-No auth. Body: `{ "refreshToken": "..." }`. Returns `{ "accessToken", "refreshToken" }`.
+No auth. Body: `{ "refreshToken": "...", "deviceName": "Chrome on Mac" }`.  
+`deviceName` is optional; if omitted, the previous token’s `deviceName` is kept. Returns `{ "accessToken", "refreshToken" }`.
 
 ### `POST /auth/register`
 
@@ -690,6 +692,37 @@ Restore and permanent delete use the sales/purchase routes above. Raw-material d
 
 ---
 
+## Activity — `/api/activity`
+
+Auth (any logged-in user).
+
+### `GET /activity`
+
+Query: `module` optional (`SALES` | `PURCHASE` | `RAW_MATERIAL` | `INVENTORY` | `PAYMENT`), `limit` optional (default 100, max 200).
+
+Newest first. Example row:
+
+```json
+{
+  "id": "...",
+  "createdAt": "...",
+  "userId": "...",
+  "actorName": "admin",
+  "deviceName": "Chrome on Mac",
+  "module": "SALES",
+  "action": "CREATED",
+  "entityId": "...",
+  "entityNo": "PNS/26-27/1",
+  "summary": "Created sales invoice PNS/26-27/1 for Acme",
+  "amount": 1200,
+  "href": "/sales/..."
+}
+```
+
+`deviceName` is null for older rows or sessions that logged in before device capture. Writes are recorded from sales/purchase/raw-material/inventory/payment routes (and Slack creates) after success; they never fail the business request.
+
+---
+
 ## Google Sheets — `/api/sheets`
 
 Optional one-way backup to Google Sheets. Disabled when env vars are missing. Does not change database data.
@@ -728,6 +761,7 @@ Optional one-way backup to Google Sheets. Disabled when env vars are missing. Do
 | `/api/gst` | Summary + GSTR-1 JSON |
 | `/api/reports` | P&L, stock, BS, TB |
 | `/api/recycle-bin` | Admin deleted list |
+| `/api/activity` | Recent operational activity |
 | `/api/sheets` | Google Sheets backup sync |
 
 Frontend client: `frontend/src/lib/api.ts` (Axios + refresh interceptor). Production API URL is locked in `frontend/.env.production`, `scripts/deploy.sh`, and `frontend/src/lib/apiBaseUrl.ts`.

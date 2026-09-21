@@ -54,6 +54,7 @@ erDiagram
   RawMaterialBill ||--|{ RawMaterialBillItem : "lines"
   RawMaterialBill ||--o{ RawMaterialPayment : "payments"
 
+  User ||--o{ ActivityLog : "acted"
   LedgerEntry ||--o| LedgerEntry : "unused"
 ```
 
@@ -67,6 +68,8 @@ erDiagram
 | `StockMovementType` | `IN`, `OUT`, `ADJUSTMENT` | `StockMovement.type` |
 | `LedgerEntryType` | `DEBIT`, `CREDIT` | `LedgerEntry.type` (unused) |
 | `PaymentMode` | `CASH`, `BANK` | receipts, vendor payments, raw-material payments |
+| `ActivityModule` | `SALES`, `PURCHASE`, `RAW_MATERIAL`, `INVENTORY`, `PAYMENT` | `ActivityLog.module` |
+| `ActivityAction` | `CREATED`, `UPDATED`, `DELETED`, `RESTORED`, `PAYMENT_RECORDED`, `PAYMENT_UPDATED`, `PAYMENT_DELETED`, `STOCK_ADJUSTED` | `ActivityLog.action` |
 
 ---
 
@@ -325,6 +328,28 @@ Indexes: `billId`, `paymentDate`, `mode`.
 
 ---
 
+### ActivityLog
+
+Append-only feed of recent operational actions (sales, purchase, raw material, inventory adjustments, payments). Written after successful HTTP (or Slack) mutations; never blocks the business request.
+
+| Column | Type | Notes |
+|--------|------|--------|
+| `id` | String PK | |
+| `createdAt` | DateTime | Indexed; newest first in API |
+| `userId` | FK → User? | SetNull on user delete |
+| `actorName` | String | Usually username; Slack uses `Slack` |
+| `deviceName` | String? | Browser/device label from JWT, e.g. `Chrome on Mac` |
+| `module` | ActivityModule | |
+| `action` | ActivityAction | |
+| `entityId` / `entityNo` | String? | Related invoice/bill/product id and number |
+| `summary` | String | Human-readable line |
+| `amount` | Decimal(14,2)? | When relevant |
+| `href` | String? | SPA path for deep link |
+
+Indexes: `createdAt`, `module`, `userId`. RLS enabled (same pattern as other ERP tables).
+
+---
+
 ### LedgerEntry
 
 Reserved for a future general ledger. **No API writes this table.** Cash and bank books are derived from `PaymentReceipt` and `VendorPayment`.
@@ -414,6 +439,8 @@ Code (not DB lookup tables):
 | `20260818123000_user_username` | `User.username` |
 | `20260818184500_raw_material_bills` | Raw material + payments + `deletedAt` |
 | `20260824115520_rename_pipe_size_45_to_85` | Catalog size 45mm → 85mm (merge stock) |
+| `20260921120000_activity_log` | `ActivityLog` + module/action enums + RLS |
+| `20260921130000_activity_device_name` | `ActivityLog.deviceName` |
 
 ---
 

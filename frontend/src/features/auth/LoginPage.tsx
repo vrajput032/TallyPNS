@@ -28,6 +28,7 @@ import { GlobalBackground } from "@/components/effects/GlobalBackground";
 import { MoneyTree } from "@/components/effects/MoneyTree";
 import { TiltCard } from "@/lib/useTilt.tsx";
 import { api } from "@/lib/api";
+import { getDeviceName } from "@/lib/deviceName";
 import { useAuthStore } from "@/store/authStore";
 
 const loginSchema = z.object({
@@ -68,6 +69,7 @@ export function LoginPage() {
       const { data } = await api.post("/auth/login", {
         username: values.username.trim().toLowerCase(),
         password: values.password,
+        deviceName: getDeviceName(),
       });
       setAuth(data.user, data.accessToken, data.refreshToken);
       toast.success("Logged in successfully");

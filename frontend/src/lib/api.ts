@@ -2,6 +2,7 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { useAuthStore } from "@/store/authStore";
 import { markApiSuccess, registerColdStartRequest } from "@/store/coldStartStore";
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+import { getDeviceName } from "@/lib/deviceName";
 
 const apiBaseUrl = getApiBaseUrl();
 
@@ -43,6 +44,7 @@ async function refreshAccessToken(): Promise<string> {
 
   const { data } = await axios.post(`${apiBaseUrl}/auth/refresh`, {
     refreshToken,
+    deviceName: getDeviceName(),
   });
 
   useAuthStore.getState().setTokens(data.accessToken, data.refreshToken);

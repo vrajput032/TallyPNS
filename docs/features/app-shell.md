@@ -6,6 +6,7 @@
 ## Behaviour
 
 - Login by **username** (not email). JWT access token (12h) + refresh token (30d); the SPA refreshes automatically on 401.
+- Login and refresh send an optional **deviceName** (browser + device type, e.g. `Chrome on Mac`) so activity logs can show which device did the work.
 - **Cold-start loader:** Full-screen Lottie overlay only when the Render backend may be waking from sleep (~15 minutes idle, or first load). Uses the [Revenue animation by Mahendra](https://lottiefiles.com/free-animation/revenue-tuJQOIS7CB) (Lottie Simple License). Cycles witty messages about the free plan; tap to change message. Normal API calls do **not** show this overlay.
 - **Section loaders:** Each feature reads from its Redux slice. Skeleton/loader shows only when that slice has **no cached data yet**. Revisiting a section shows cached data immediately; `SectionDataSync` silently refetches in the background on navigation.
 - **Redux cache:** One slice per feature area (`customers`, `sales`, `dashboard`, etc.). Hooks in `frontend/src/features/*/use*.ts` dispatch slice thunks; `{ silent: true }` refetches skip loading state when data already exists.
@@ -27,5 +28,6 @@
 | `/gst` | GST summary + GSTR-1 JSON | All |
 | `/customers` `/vendors` `/products` | Masters | All (delete = admin) |
 | `/reports` | P&L, stock, outstanding, balance sheet, trial balance | All |
+| `/activity` | Recent operational activity | All |
 | `/users` | User management | Admin |
 | `/recycle-bin` | Soft-deleted sales & purchase | Admin |

@@ -8,9 +8,17 @@ const usernameSchema = z
   .regex(/^[a-zA-Z0-9._-]+$/, "Username can only contain letters, numbers, dots, underscores, and hyphens")
   .transform((value) => value.toLowerCase());
 
+const deviceNameSchema = z
+  .string()
+  .trim()
+  .max(80)
+  .optional()
+  .transform((value) => (value && value.length > 0 ? value : undefined));
+
 export const loginSchema = z.object({
   username: usernameSchema,
   password: z.string().min(6),
+  deviceName: deviceNameSchema,
 });
 
 export const createUserSchema = z.object({
@@ -29,4 +37,5 @@ export const registerSchema = z.object({
 
 export const refreshSchema = z.object({
   refreshToken: z.string().min(1),
+  deviceName: deviceNameSchema,
 });

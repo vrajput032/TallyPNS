@@ -6,6 +6,7 @@ import type { AuthPayload } from "../../middleware/auth.js";
 export type RecordActivityInput = {
   user?: AuthPayload | null;
   actorName?: string;
+  deviceName?: string | null;
   module: ActivityModule;
   action: ActivityAction;
   entityId?: string | null;
@@ -26,6 +27,7 @@ async function writeActivity(input: RecordActivityInput) {
     data: {
       userId: input.user?.sub ?? null,
       actorName: input.actorName?.trim() || input.user?.username || "Unknown",
+      deviceName: input.deviceName?.trim() || input.user?.deviceName?.trim() || null,
       module: input.module,
       action: input.action,
       entityId: input.entityId ?? null,
@@ -46,12 +48,13 @@ export function recordActivity(input: RecordActivityInput): void {
 
 export function recordRequestActivity(
   req: Request,
-  input: Omit<RecordActivityInput, "user" | "actorName">
+  input: Omit<RecordActivityInput, "user" | "actorName" | "deviceName">
 ): void {
   recordActivity({
     ...input,
     user: req.user ?? null,
     actorName: req.user?.username ?? "Unknown",
+    deviceName: req.user?.deviceName ?? null,
   });
 }
 
@@ -67,6 +70,7 @@ export async function listActivity(opts: { module?: ActivityModule; limit?: numb
     createdAt: log.createdAt,
     userId: log.userId,
     actorName: log.actorName,
+    deviceName: log.deviceName,
     module: log.module,
     action: log.action,
     entityId: log.entityId,

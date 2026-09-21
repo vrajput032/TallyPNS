@@ -246,6 +246,7 @@ export function registerRawMaterialHandlers(app: App, config: SlackConfig) {
       const bill = await createRawMaterialBill(buildRawMaterialPayload(session));
       recordActivity({
         actorName: "Slack",
+        deviceName: "Slack",
         module: "RAW_MATERIAL",
         action: "CREATED",
         entityId: bill.id,

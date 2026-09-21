@@ -59,8 +59,8 @@ authRouter.post(
   "/login",
   authRateLimit,
   asyncHandler(async (req, res) => {
-    const { username, password } = loginSchema.parse(req.body);
-    const result = await authService.login(username, password);
+    const { username, password, deviceName } = loginSchema.parse(req.body);
+    const result = await authService.login(username, password, deviceName);
     res.json(result);
   })
 );
@@ -68,8 +68,8 @@ authRouter.post(
 authRouter.post(
   "/refresh",
   asyncHandler(async (req, res) => {
-    const { refreshToken } = refreshSchema.parse(req.body);
-    const result = await authService.refresh(refreshToken);
+    const { refreshToken, deviceName } = refreshSchema.parse(req.body);
+    const result = await authService.refresh(refreshToken, deviceName);
     res.json(result);
   })
 );
