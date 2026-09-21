@@ -24,6 +24,7 @@ import { fetchRecycleBin } from "@/store/slices/recycleBinSlice";
 import { fetchMonthProfitLoss, fetchPnlSummary } from "@/store/slices/profitLossSlice";
 import { fetchInvestments } from "@/store/slices/investmentsSlice";
 import { fetchUsers } from "@/store/slices/usersSlice";
+import { fetchActivity } from "@/store/slices/activitySlice";
 
 const silent = { silent: true } as const;
 
@@ -131,6 +132,9 @@ export function SectionDataSync() {
         break;
       case "recycle-bin":
         dispatch(fetchRecycleBin(silent));
+        break;
+      case "activity":
+        dispatch(fetchActivity(silent));
         break;
       default:
         break;

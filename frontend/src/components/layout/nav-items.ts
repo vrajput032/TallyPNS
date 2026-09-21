@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Package,
   Receipt,
+  ScrollText,
   ShoppingCart,
   Trash2,
   TrendingUp,
@@ -32,6 +33,7 @@ export const navItems = [
   { to: "/ledger", label: "Ledger", icon: BookOpen },
   { to: "/products", label: "Products", icon: Package },
   { to: "/reports", label: "Reports", icon: FileText },
+  { to: "/activity", label: "Activity", icon: ScrollText },
   { to: "/users", label: "Users", icon: UserCog, adminOnly: true },
   { to: "/recycle-bin", label: "Recycle Bin", icon: Trash2, adminOnly: true },
 ] as const;

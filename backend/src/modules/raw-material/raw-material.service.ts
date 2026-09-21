@@ -253,9 +253,10 @@ export async function updateRawMaterialPayment(
 export async function deleteRawMaterialPayment(paymentId: string) {
   const payment = await prisma.rawMaterialPayment.findUnique({ where: { id: paymentId } });
   if (!payment) throw new ApiError(404, "Payment not found");
-  const bill = await prisma.rawMaterialBill.findUnique({ where: { id: payment.billId } });
-  if (bill?.deletedAt) throw new ApiError(400, "Cannot change payments on a deleted bill");
+  const existingBill = await prisma.rawMaterialBill.findUnique({ where: { id: payment.billId } });
+  if (existingBill?.deletedAt) throw new ApiError(400, "Cannot change payments on a deleted bill");
   await prisma.rawMaterialPayment.delete({ where: { id: paymentId } });
   scheduleSheetsSync("raw material payment delete");
-  return getRawMaterialBill(payment.billId);
+  const bill = await getRawMaterialBill(payment.billId);
+  return { bill, payment };
 }

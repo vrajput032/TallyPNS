@@ -1,6 +1,7 @@
 import type { App } from "@slack/bolt";
 import type { WebClient } from "@slack/web-api";
 import { createRawMaterialBill } from "../raw-material/raw-material.service.js";
+import { recordActivity } from "../activity/activity.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import type { SlackConfig } from "./slack.config.js";
 import {
@@ -243,6 +244,16 @@ export function registerRawMaterialHandlers(app: App, config: SlackConfig) {
 
     try {
       const bill = await createRawMaterialBill(buildRawMaterialPayload(session));
+      recordActivity({
+        actorName: "Slack",
+        module: "RAW_MATERIAL",
+        action: "CREATED",
+        entityId: bill.id,
+        entityNo: bill.billNo,
+        summary: `Created raw material bill ${bill.billNo} from ${bill.supplierName} via Slack`,
+        amount: Number(bill.totalAmount),
+        href: `/raw-material/${bill.id}`,
+      });
       await postOrUpdateMessage(
         client,
         slackUserId,

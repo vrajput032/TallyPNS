@@ -15,6 +15,7 @@ import investmentsReducer from "./slices/investmentsSlice";
 import reportsReducer from "./slices/reportsSlice";
 import recycleBinReducer from "./slices/recycleBinSlice";
 import usersReducer from "./slices/usersSlice";
+import activityReducer from "./slices/activitySlice";
 
 export const rootReducer = combineReducers({
   customers: customersReducer,
@@ -33,4 +34,5 @@ export const rootReducer = combineReducers({
   reports: reportsReducer,
   recycleBin: recycleBinReducer,
   users: usersReducer,
+  activity: activityReducer,
 });

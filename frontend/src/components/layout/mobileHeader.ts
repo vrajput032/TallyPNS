@@ -139,6 +139,10 @@ const rules: RouteRule[] = [
     resolve: () => ({ title: "Reports", backTo: "/", backLabel: "Back to Dashboard" }),
   },
   {
+    pattern: /^\/activity$/,
+    resolve: () => ({ title: "Activity", backTo: "/", backLabel: "Back to Dashboard" }),
+  },
+  {
     pattern: /^\/users$/,
     resolve: () => ({ title: "Users", backTo: "/", backLabel: "Back to Dashboard" }),
   },

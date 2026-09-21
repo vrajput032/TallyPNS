@@ -28,6 +28,7 @@ import { ProfitLossPage } from "@/features/profit-loss/ProfitLossPage";
 import { InvestmentsPage } from "@/features/investments/InvestmentsPage";
 import { ReportsPage } from "@/features/reports/ReportsPage";
 import { RecycleBinPage } from "@/features/recycle-bin/RecycleBinPage";
+import { ActivityPage } from "@/features/activity/ActivityPage";
 import { UsersPage } from "@/features/users/UsersPage";
 import { RawMaterialBillsPage } from "@/features/raw-material/RawMaterialBillsPage";
 import { RawMaterialBillFormPage } from "@/features/raw-material/RawMaterialBillFormPage";
@@ -74,6 +75,7 @@ export default function App() {
                 <Route path="/ledger/:customerId" element={<LedgerDetailPage />} />
                 <Route path="/products" element={<ProductsPage />} />
                 <Route path="/reports" element={<ReportsPage />} />
+                <Route path="/activity" element={<ActivityPage />} />
                 <Route element={<AdminRoute />}>
                   <Route path="/users" element={<UsersPage />} />
                   <Route path="/recycle-bin" element={<RecycleBinPage />} />

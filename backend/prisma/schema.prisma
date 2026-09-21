@@ -13,6 +13,25 @@ enum Role {
   STAFF
 }
 
+enum ActivityModule {
+  SALES
+  PURCHASE
+  RAW_MATERIAL
+  INVENTORY
+  PAYMENT
+}
+
+enum ActivityAction {
+  CREATED
+  UPDATED
+  DELETED
+  RESTORED
+  PAYMENT_RECORDED
+  PAYMENT_UPDATED
+  PAYMENT_DELETED
+  STOCK_ADJUSTED
+}
+
 model User {
   id           String   @id @default(cuid())
   username     String   @unique
@@ -23,6 +42,8 @@ model User {
   refreshToken String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  activityLogs ActivityLog[]
 }
 
 model Customer {
@@ -332,4 +353,23 @@ model RawMaterialPayment {
   @@index([billId])
   @@index([paymentDate])
   @@index([mode])
+}
+
+model ActivityLog {
+  id        String         @id @default(cuid())
+  createdAt DateTime       @default(now())
+  userId    String?
+  user      User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  actorName String
+  module    ActivityModule
+  action    ActivityAction
+  entityId  String?
+  entityNo  String?
+  summary   String
+  amount    Decimal?       @db.Decimal(14, 2)
+  href      String?
+
+  @@index([createdAt])
+  @@index([module])
+  @@index([userId])
 }

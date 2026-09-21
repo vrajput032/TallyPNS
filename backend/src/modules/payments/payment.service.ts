@@ -78,10 +78,17 @@ export async function createReceipt(data: z.infer<typeof createReceiptSchema>) {
 }
 
 export async function deleteReceipt(id: string) {
-  const receipt = await prisma.paymentReceipt.findUnique({ where: { id } });
+  const receipt = await prisma.paymentReceipt.findUnique({
+    where: { id },
+    include: {
+      customer: true,
+      salesInvoice: { select: { id: true, invoiceNo: true } },
+    },
+  });
   if (!receipt) throw new ApiError(404, "Receipt not found");
   await prisma.paymentReceipt.delete({ where: { id } });
   scheduleSheetsSync("sales receipt delete");
+  return receipt;
 }
 
 export async function createVendorPayment(data: z.infer<typeof createVendorPaymentSchema>) {
@@ -126,10 +133,17 @@ export async function createVendorPayment(data: z.infer<typeof createVendorPayme
 }
 
 export async function deleteVendorPayment(id: string) {
-  const payment = await prisma.vendorPayment.findUnique({ where: { id } });
+  const payment = await prisma.vendorPayment.findUnique({
+    where: { id },
+    include: {
+      vendor: true,
+      purchaseBill: { select: { id: true, billNo: true } },
+    },
+  });
   if (!payment) throw new ApiError(404, "Payment not found");
   await prisma.vendorPayment.delete({ where: { id } });
   scheduleSheetsSync("purchase payment delete");
+  return payment;
 }
 
 export async function listCashBankBook(mode: PaymentMode) {

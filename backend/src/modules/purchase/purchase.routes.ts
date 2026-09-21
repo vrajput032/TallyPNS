@@ -8,6 +8,7 @@ import { assertAllowedAttachment, MAX_ATTACHMENT_BYTES } from "../../lib/storage
 import { createPurchaseBillSchema } from "./purchase.schema.js";
 import * as purchaseService from "./purchase.service.js";
 import { routeParam } from "../../lib/routeParam.js";
+import { recordRequestActivity } from "../activity/activity.js";
 
 export const purchaseRouter = Router();
 
@@ -39,6 +40,16 @@ purchaseRouter.post(
   asyncHandler(async (req, res) => {
     const data = createPurchaseBillSchema.parse(req.body);
     const bill = await purchaseService.createPurchaseBill(data);
+    const party = bill.vendor?.name?.trim() || bill.title?.trim() || bill.billNo;
+    recordRequestActivity(req, {
+      module: "PURCHASE",
+      action: "CREATED",
+      entityId: bill.id,
+      entityNo: bill.billNo,
+      summary: `Created purchase bill ${bill.billNo} for ${party}`,
+      amount: Number(bill.totalAmount),
+      href: `/purchase/${bill.id}`,
+    });
     res.status(201).json(bill);
   })
 );
@@ -49,6 +60,16 @@ purchaseRouter.put(
   asyncHandler(async (req, res) => {
     const data = createPurchaseBillSchema.parse(req.body);
     const bill = await purchaseService.updatePurchaseBill(routeParam(req.params.id), data);
+    const party = bill.vendor?.name?.trim() || bill.title?.trim() || bill.billNo;
+    recordRequestActivity(req, {
+      module: "PURCHASE",
+      action: "UPDATED",
+      entityId: bill.id,
+      entityNo: bill.billNo,
+      summary: `Updated purchase bill ${bill.billNo} for ${party}`,
+      amount: Number(bill.totalAmount),
+      href: `/purchase/${bill.id}`,
+    });
     res.json(bill);
   })
 );
@@ -100,7 +121,17 @@ purchaseRouter.delete(
   requireCanDelete,
   requireDeletePin,
   asyncHandler(async (req, res) => {
-    await purchaseService.permanentlyDeletePurchaseBill(routeParam(req.params.id));
+    const id = routeParam(req.params.id);
+    const bill = await purchaseService.getPurchaseBill(id, { includeDeleted: true });
+    await purchaseService.permanentlyDeletePurchaseBill(id);
+    recordRequestActivity(req, {
+      module: "PURCHASE",
+      action: "DELETED",
+      entityId: bill.id,
+      entityNo: bill.billNo,
+      summary: `Permanently deleted purchase bill ${bill.billNo}`,
+      amount: Number(bill.totalAmount),
+    });
     res.status(204).send();
   })
 );
@@ -109,7 +140,19 @@ purchaseRouter.post(
   "/:id/restore",
   requireCanDelete,
   asyncHandler(async (req, res) => {
-    await purchaseService.restorePurchaseBill(routeParam(req.params.id));
+    const id = routeParam(req.params.id);
+    await purchaseService.restorePurchaseBill(id);
+    const bill = await purchaseService.getPurchaseBill(id);
+    const party = bill.vendor?.name?.trim() || bill.title?.trim() || bill.billNo;
+    recordRequestActivity(req, {
+      module: "PURCHASE",
+      action: "RESTORED",
+      entityId: bill.id,
+      entityNo: bill.billNo,
+      summary: `Restored purchase bill ${bill.billNo} for ${party}`,
+      amount: Number(bill.totalAmount),
+      href: `/purchase/${bill.id}`,
+    });
     res.status(204).send();
   })
 );
@@ -119,7 +162,18 @@ purchaseRouter.delete(
   requireCanDelete,
   requireDeletePin,
   asyncHandler(async (req, res) => {
-    await purchaseService.deletePurchaseBill(routeParam(req.params.id));
+    const id = routeParam(req.params.id);
+    const bill = await purchaseService.getPurchaseBill(id);
+    const party = bill.vendor?.name?.trim() || bill.title?.trim() || bill.billNo;
+    await purchaseService.deletePurchaseBill(id);
+    recordRequestActivity(req, {
+      module: "PURCHASE",
+      action: "DELETED",
+      entityId: bill.id,
+      entityNo: bill.billNo,
+      summary: `Deleted purchase bill ${bill.billNo} for ${party}`,
+      amount: Number(bill.totalAmount),
+    });
     res.status(204).send();
   })
 );

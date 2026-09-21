@@ -12,6 +12,7 @@ import {
   createRawMaterialPaymentSchema,
 } from "./raw-material.schema.js";
 import * as rawMaterialService from "./raw-material.service.js";
+import { recordRequestActivity } from "../activity/activity.js";
 
 export const rawMaterialRouter = Router();
 
@@ -77,6 +78,15 @@ rawMaterialRouter.post(
   asyncHandler(async (req, res) => {
     const data = createRawMaterialBillSchema.parse(req.body);
     const bill = await rawMaterialService.createRawMaterialBill(data);
+    recordRequestActivity(req, {
+      module: "RAW_MATERIAL",
+      action: "CREATED",
+      entityId: bill.id,
+      entityNo: bill.billNo,
+      summary: `Created raw material bill ${bill.billNo} from ${bill.supplierName}`,
+      amount: Number(bill.totalAmount),
+      href: `/raw-material/${bill.id}`,
+    });
     res.status(201).json(bill);
   })
 );
@@ -87,6 +97,15 @@ rawMaterialRouter.put(
   asyncHandler(async (req, res) => {
     const data = createRawMaterialBillSchema.parse(req.body);
     const bill = await rawMaterialService.updateRawMaterialBill(routeParam(req.params.id), data);
+    recordRequestActivity(req, {
+      module: "RAW_MATERIAL",
+      action: "UPDATED",
+      entityId: bill.id,
+      entityNo: bill.billNo,
+      summary: `Updated raw material bill ${bill.billNo} from ${bill.supplierName}`,
+      amount: Number(bill.totalAmount),
+      href: `/raw-material/${bill.id}`,
+    });
     res.json(bill);
   })
 );
@@ -96,7 +115,17 @@ rawMaterialRouter.delete(
   requireCanDelete,
   requireDeletePin,
   asyncHandler(async (req, res) => {
-    await rawMaterialService.deleteRawMaterialBill(routeParam(req.params.id));
+    const id = routeParam(req.params.id);
+    const bill = await rawMaterialService.getRawMaterialBill(id);
+    await rawMaterialService.deleteRawMaterialBill(id);
+    recordRequestActivity(req, {
+      module: "RAW_MATERIAL",
+      action: "DELETED",
+      entityId: bill.id,
+      entityNo: bill.billNo,
+      summary: `Deleted raw material bill ${bill.billNo} from ${bill.supplierName}`,
+      amount: Number(bill.totalAmount),
+    });
     res.status(204).send();
   })
 );
@@ -106,6 +135,15 @@ rawMaterialRouter.post(
   asyncHandler(async (req, res) => {
     const data = createRawMaterialPaymentSchema.parse(req.body);
     const bill = await rawMaterialService.createRawMaterialPayment(routeParam(req.params.id), data);
+    recordRequestActivity(req, {
+      module: "PAYMENT",
+      action: "PAYMENT_RECORDED",
+      entityId: bill.id,
+      entityNo: bill.billNo,
+      summary: `Recorded ${data.mode.toLowerCase()} payment on raw material bill ${bill.billNo} (${bill.supplierName})`,
+      amount: data.amount,
+      href: `/raw-material/${bill.id}`,
+    });
     res.status(201).json(bill);
   })
 );
@@ -118,6 +156,15 @@ rawMaterialRouter.put(
       routeParam(req.params.paymentId),
       data
     );
+    recordRequestActivity(req, {
+      module: "PAYMENT",
+      action: "PAYMENT_UPDATED",
+      entityId: bill.id,
+      entityNo: bill.billNo,
+      summary: `Updated payment on raw material bill ${bill.billNo} (${bill.supplierName})`,
+      amount: data.amount,
+      href: `/raw-material/${bill.id}`,
+    });
     res.json(bill);
   })
 );
@@ -125,7 +172,18 @@ rawMaterialRouter.put(
 rawMaterialRouter.delete(
   "/payments/:paymentId",
   asyncHandler(async (req, res) => {
-    const bill = await rawMaterialService.deleteRawMaterialPayment(routeParam(req.params.paymentId));
+    const { bill, payment } = await rawMaterialService.deleteRawMaterialPayment(
+      routeParam(req.params.paymentId)
+    );
+    recordRequestActivity(req, {
+      module: "PAYMENT",
+      action: "PAYMENT_DELETED",
+      entityId: bill.id,
+      entityNo: bill.billNo,
+      summary: `Deleted payment ${payment.paymentNo} on raw material bill ${bill.billNo} (${bill.supplierName})`,
+      amount: Number(payment.amount),
+      href: `/raw-material/${bill.id}`,
+    });
     res.json(bill);
   })
 );

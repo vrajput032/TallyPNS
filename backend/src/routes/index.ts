@@ -20,6 +20,7 @@ import { vendorRouter } from "../modules/vendors/vendor.routes.js";
 import { recycleBinRouter } from "../modules/recycle-bin/recycle-bin.routes.js";
 import { rawMaterialRouter } from "../modules/raw-material/raw-material.routes.js";
 import { sheetsRouter } from "../modules/sheets/sheets.routes.js";
+import { activityRouter } from "../modules/activity/activity.routes.js";
 
 export const apiRouter = Router();
 
@@ -42,3 +43,4 @@ apiRouter.use("/cash", cashRouter);
 apiRouter.use("/bank", bankRouter);
 apiRouter.use("/recycle-bin", recycleBinRouter);
 apiRouter.use("/sheets", sheetsRouter);
+apiRouter.use("/activity", activityRouter);

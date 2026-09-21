@@ -3,6 +3,7 @@ import type { WebClient } from "@slack/web-api";
 import { listCustomers } from "../customers/customer.service.js";
 import { listProducts } from "../products/product.service.js";
 import { createSalesInvoice } from "../sales/sales.service.js";
+import { recordActivity } from "../activity/activity.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import type { SlackConfig } from "./slack.config.js";
 import {
@@ -420,6 +421,16 @@ export function registerBillHandlers(app: App, config: SlackConfig) {
 
     try {
       const invoice = await createSalesInvoice(buildCreatePayload(session));
+      recordActivity({
+        actorName: "Slack",
+        module: "SALES",
+        action: "CREATED",
+        entityId: invoice.id,
+        entityNo: invoice.invoiceNo,
+        summary: `Created sales invoice ${invoice.invoiceNo} for ${invoice.customer.name} via Slack`,
+        amount: Number(invoice.totalAmount),
+        href: `/sales/${invoice.id}`,
+      });
       clearSession(slackUserId);
       await postOrUpdateMessage(
         client,
