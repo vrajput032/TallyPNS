@@ -5,8 +5,11 @@ import { requireAuth, requireCanDelete } from "../../middleware/auth.js";
 import { requireDeletePin } from "../../middleware/requireDeletePin.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import { assertAllowedAttachment, MAX_ATTACHMENT_BYTES } from "../../lib/storage.js";
+import { extractPdfText } from "../../lib/extractPdf.js";
 import { createPurchaseBillSchema } from "./purchase.schema.js";
 import * as purchaseService from "./purchase.service.js";
+import { parseSupplierInvoiceText } from "./parseSupplierInvoice.js";
+import { getMonthlyRunningCosts } from "./runningCosts.js";
 import { routeParam } from "../../lib/routeParam.js";
 import { recordRequestActivity } from "../activity/activity.js";
 
@@ -24,6 +27,36 @@ purchaseRouter.get(
   asyncHandler(async (_req, res) => {
     const bills = await purchaseService.listPurchaseBills();
     res.json(bills);
+  })
+);
+
+purchaseRouter.get(
+  "/running-costs",
+  asyncHandler(async (_req, res) => {
+    res.json(await getMonthlyRunningCosts());
+  })
+);
+
+purchaseRouter.post(
+  "/parse",
+  (req, res, next) => {
+    upload.single("file")(req as never, res as never, (err: unknown) => {
+      if (err instanceof Error) {
+        next(new ApiError(400, err.message.includes("File too large") ? "File too large (max 10 MB)" : err.message));
+        return;
+      }
+      next();
+    });
+  },
+  asyncHandler(async (req, res) => {
+    const file = req.file;
+    const isPdf =
+      file?.mimetype === "application/pdf" || file?.originalname.toLowerCase().endsWith(".pdf");
+    if (!file?.buffer || !isPdf) {
+      throw new ApiError(400, "Upload the supplier bill as a PDF to read its details");
+    }
+    const text = await extractPdfText(file.buffer);
+    res.json({ ...parseSupplierInvoiceText(text), sourceFileName: file.originalname });
   })
 );
 

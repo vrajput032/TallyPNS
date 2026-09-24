@@ -5,7 +5,7 @@ import { requireAuth, requireCanDelete } from "../../middleware/auth.js";
 import { requireDeletePin } from "../../middleware/requireDeletePin.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import { routeParam } from "../../lib/routeParam.js";
-import { extractPdfText } from "./extractPdf.js";
+import { extractPdfText } from "../../lib/extractPdf.js";
 import { parseRawMaterialInvoiceText } from "./parseInvoice.js";
 import {
   createRawMaterialBillSchema,

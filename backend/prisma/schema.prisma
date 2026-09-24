@@ -155,6 +155,10 @@ model SalesInvoiceItem {
 enum PurchaseBillKind {
   CATALOG
   EQUIPMENT
+  /** Goods bought to resell as-is (no pipe stock change) */
+  TRADING
+  /** Monthly factory expenses (rent, diesel, maintenance, …) */
+  RUNNING_COST
 }
 
 model PurchaseBill {
@@ -163,7 +167,7 @@ model PurchaseBill {
   vendorId          String?
   vendor            Vendor?          @relation(fields: [vendorId], references: [id])
   billDate          DateTime         @default(now())
-  /** CATALOG = legacy pipe stock-in; new bills are EQUIPMENT (CNC, Traub, etc.) */
+  /** CATALOG = legacy pipe stock-in; new bills are EQUIPMENT, TRADING or RUNNING_COST */
   kind              PurchaseBillKind @default(EQUIPMENT)
   transport         String?
   vehicleNo         String?

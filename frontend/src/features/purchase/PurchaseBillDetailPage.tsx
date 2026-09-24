@@ -20,7 +20,12 @@ import { RecordPaymentDialog } from "@/features/payments/RecordPaymentDialog";
 import { useDeleteVendorPayment } from "@/features/payments/usePayments";
 import { PurchaseAttachmentsPanel } from "./PurchaseAttachmentsPanel";
 import { useDeletePurchaseBill, usePurchaseBill } from "./usePurchase";
-import { purchaseLineLabel, purchaseBillTitle } from "./types";
+import {
+  purchaseBillTitle,
+  purchaseLineLabel,
+  purchaseSectionLabel,
+  purchaseSectionOf,
+} from "./types";
 import { formatInr } from "@/lib/formatInr";
 import { canDelete } from "@/lib/permissions";
 import { apiErrorMessage } from "@/lib/apiError";
@@ -40,6 +45,9 @@ export function PurchaseBillDetailPage() {
     return <DetailSkeleton />;
   }
 
+  const section = purchaseSectionOf(bill.kind);
+  const listPath = `/purchase?tab=${section.toLowerCase()}`;
+
   function handleDelete(pin: string) {
     if (!bill) return;
     deleteBill.mutate(
@@ -48,7 +56,7 @@ export function PurchaseBillDetailPage() {
         onSuccess: () => {
           toast.success(`Bill ${bill.billNo} moved to recycle bin`);
           setDeleteOpen(false);
-          navigate("/purchase");
+          navigate(listPath);
         },
         onError: (error: unknown) => {
           toast.error(apiErrorMessage(error, "Failed to delete bill"));
@@ -61,7 +69,7 @@ export function PurchaseBillDetailPage() {
     <div className="grid gap-4">
       <PageHeader
         title={purchaseBillTitle(bill)}
-        backTo="/purchase"
+        backTo={listPath}
         backLabel="Back to Purchase"
         actions={
           <>
@@ -185,6 +193,20 @@ export function PurchaseBillDetailPage() {
         </CardHeader>
         <CardContent className="grid gap-3 text-sm">
           <div className="flex flex-wrap gap-x-6 gap-y-1">
+            <span>
+              <span className="text-muted-foreground">Type: </span>
+              {purchaseSectionLabel(section)}
+            </span>
+            <span>
+              <span className="text-muted-foreground">Date: </span>
+              {new Date(bill.billDate).toLocaleDateString("en-GB")}
+            </span>
+            {bill.vehicleNo ? (
+              <span>
+                <span className="text-muted-foreground">Vehicle: </span>
+                {bill.vehicleNo}
+              </span>
+            ) : null}
             {bill.title?.trim() ? (
               <span>
                 <span className="text-muted-foreground">Title: </span>

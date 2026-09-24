@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { z } from "zod";
 import { ConfirmDeletePinDialog } from "@/components/ConfirmDeletePinDialog";
@@ -21,6 +21,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { PurchaseAttachmentsPanel } from "./PurchaseAttachmentsPanel";
 import { PurchaseLineItemsField } from "./PurchaseLineItemsField";
+import { SupplierBillUploadCard } from "./SupplierBillUploadCard";
+import {
+  parsePurchaseSection,
+  purchaseSectionOf,
+  type ParsedSupplierInvoice,
+  type PurchaseSection,
+} from "./types";
 import {
   useCreatePurchaseBill,
   usePurchaseBill,
@@ -30,8 +37,77 @@ import {
 import { formatInr } from "@/lib/formatInr";
 import { apiErrorMessage } from "@/lib/apiError";
 
+const RUNNING_COST_SUGGESTIONS = [
+  "Rent",
+  "Salary",
+  "Electricity",
+  "Diesel",
+  "Machine maintenance",
+  "Transport / kiraya",
+  "Tools & consumables",
+  "Water",
+  "Internet / phone",
+];
+
+type SectionCopy = {
+  newTitle: string;
+  titleLabel: string;
+  titlePlaceholder: string;
+  titleError: string;
+  itemsTitle: string;
+  hint: string;
+  descriptionPlaceholder: string;
+  notesPlaceholder: string;
+  defaultGst: number;
+};
+
+function sectionCopy(section: PurchaseSection): SectionCopy {
+  switch (section) {
+    case "EQUIPMENT":
+      return {
+        newTitle: "New Equipment Bill",
+        titleLabel: "Bill title",
+        titlePlaceholder: "CNC, Traub, caliper…",
+        titleError: "Enter a bill title",
+        itemsTitle: "Machines / equipment",
+        hint: "Equipment / machines: describe the item (CNC, Traub, etc.), qty, rate, and GST.",
+        descriptionPlaceholder: "e.g. CNC / Traub",
+        notesPlaceholder: "Serial no., warranty, installation notes…",
+        defaultGst: 0,
+      };
+    case "TRADING":
+      return {
+        newTitle: "New Trading Purchase",
+        titleLabel: "Supplier name",
+        titlePlaceholder: "e.g. ARB Tubes Corporation",
+        titleError: "Enter the supplier name",
+        itemsTitle: "Goods bought for trading",
+        hint: "Goods bought to resell as-is: description, qty, rate per unit, and GST. Pipe stock is not changed.",
+        descriptionPlaceholder: "e.g. MS pipe 85mm × 25mm",
+        notesPlaceholder: "HSN, destination, delivery notes…",
+        defaultGst: 18,
+      };
+    case "RUNNING_COST":
+      return {
+        newTitle: "New Running Cost",
+        titleLabel: "Expense",
+        titlePlaceholder: "Rent, diesel, maintenance…",
+        titleError: "Enter what the expense is for",
+        itemsTitle: "Cost lines",
+        hint: "Monthly running cost: describe each charge, qty (usually 1), amount, and GST if any.",
+        descriptionPlaceholder: "e.g. September diesel",
+        notesPlaceholder: "Paid to, meter reading, period covered…",
+        defaultGst: 0,
+      };
+    default: {
+      const _exhaustive: never = section;
+      return _exhaustive;
+    }
+  }
+}
+
 const lineItemSchema = z.object({
-  description: z.string().trim().min(1, "Enter what was purchased (e.g. CNC / Traub)"),
+  description: z.string().trim().min(1, "Enter a description"),
   quantity: z.coerce.number().positive("Qty must be greater than 0"),
   pricePerKg: z.coerce.number().min(0).optional(),
   rate: z.coerce.number().min(0),
@@ -39,30 +115,38 @@ const lineItemSchema = z.object({
 });
 
 const billFormSchema = z.object({
-  title: z.string().trim().min(1, "Enter a bill title").max(120),
+  title: z.string().trim().min(1, "Enter a title").max(120),
+  billDate: z.string().min(1, "Pick the bill date"),
   supplierInvoiceNo: z.string().trim().max(80).optional(),
   supplierGstin: z.string().trim().max(15).optional(),
+  vehicleNo: z.string().trim().max(40).optional(),
   notes: z.string().trim().max(2000).optional(),
   items: z.array(lineItemSchema).min(1, "Add at least one item"),
 });
 
 type BillFormValues = z.infer<typeof billFormSchema>;
 
-const emptyItem = {
-  description: "",
-  quantity: 1,
-  pricePerKg: 0,
-  rate: 0,
-  gstRate: 0,
-};
+function todayIso() {
+  return new Date().toLocaleDateString("en-CA");
+}
+
+function emptyItem(gstRate: number) {
+  return { description: "", quantity: 1, pricePerKg: 0, rate: 0, gstRate };
+}
 
 export function PurchaseBillFormPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { id } = useParams<{ id: string }>();
   const isEditing = !!id;
   const { data: existingBill, isLoading: isLoadingBill } = usePurchaseBill(
     isEditing ? id : undefined
   );
+  const section: PurchaseSection = existingBill
+    ? purchaseSectionOf(existingBill.kind)
+    : (parsePurchaseSection(searchParams.get("kind")) ?? "EQUIPMENT");
+  const copy = sectionCopy(section);
+  const listPath = `/purchase?tab=${section.toLowerCase()}`;
   const createBill = useCreatePurchaseBill();
   const updateBill = useUpdatePurchaseBill();
   const uploadAttachment = useUploadPurchaseAttachment();
@@ -74,10 +158,12 @@ export function PurchaseBillFormPage() {
     resolver: zodResolver(billFormSchema),
     defaultValues: {
       title: "",
+      billDate: todayIso(),
       supplierInvoiceNo: "",
       supplierGstin: "",
+      vehicleNo: "",
       notes: "",
-      items: [{ ...emptyItem }],
+      items: [emptyItem(copy.defaultGst)],
     },
   });
 
@@ -85,8 +171,10 @@ export function PurchaseBillFormPage() {
     if (!existingBill) return;
     form.reset({
       title: existingBill.title ?? "",
+      billDate: existingBill.billDate.slice(0, 10),
       supplierInvoiceNo: existingBill.supplierInvoiceNo ?? "",
       supplierGstin: existingBill.supplierGstin ?? existingBill.vendor?.gstin ?? "",
+      vehicleNo: existingBill.vehicleNo ?? "",
       notes: existingBill.notes ?? "",
       items: existingBill.items.map((item) => ({
         description: item.description ?? item.product?.name ?? "",
@@ -98,7 +186,7 @@ export function PurchaseBillFormPage() {
     });
   }, [existingBill, form]);
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: "items",
   });
@@ -112,13 +200,47 @@ export function PurchaseBillFormPage() {
     return sum + base + (base * gst) / 100;
   }, 0);
 
+  function applyParsedBill(parsed: ParsedSupplierInvoice) {
+    const fill = (name: "title" | "supplierInvoiceNo" | "supplierGstin" | "vehicleNo" | "billDate", value: string | null) => {
+      if (value) form.setValue(name, value, { shouldDirty: true, shouldValidate: true });
+    };
+    fill("title", parsed.supplierName);
+    fill("supplierInvoiceNo", parsed.supplierInvoiceNo);
+    fill("supplierGstin", parsed.supplierGstin);
+    fill("vehicleNo", parsed.vehicleNo);
+    fill("billDate", parsed.billDate);
+    if (parsed.items.length > 0) {
+      replace(
+        parsed.items.map((item) => ({
+          description: item.description,
+          quantity: item.quantity,
+          pricePerKg: 0,
+          rate: item.rate,
+          gstRate: item.gstRate,
+        }))
+      );
+    }
+    const details = parsed.items
+      .map((item) =>
+        [item.hsn ? `HSN ${item.hsn}` : null, item.unit ? `unit ${item.unit}` : null]
+          .filter(Boolean)
+          .join(", ")
+      )
+      .filter(Boolean);
+    if (details.length > 0 && !form.getValues("notes")?.trim()) {
+      form.setValue("notes", details.join("\n"), { shouldDirty: true });
+    }
+  }
+
   function buildPayload(values: BillFormValues) {
     return {
       vendorId: null,
-      kind: "EQUIPMENT" as const,
+      kind: section,
+      billDate: values.billDate,
       title: values.title.trim(),
       supplierInvoiceNo: values.supplierInvoiceNo?.trim() || null,
       supplierGstin: values.supplierGstin?.trim() || null,
+      vehicleNo: values.vehicleNo?.trim() || null,
       notes: values.notes?.trim() || null,
       items: values.items.map((item) => ({
         productId: null,
@@ -187,12 +309,19 @@ export function PurchaseBillFormPage() {
   return (
     <div className="grid gap-4">
       <PageHeader
-        title={isEditing ? `Edit Bill ${existingBill?.billNo ?? ""}` : "New Purchase Bill"}
-        backTo={isEditing && id ? `/purchase/${id}` : "/purchase"}
+        title={isEditing ? `Edit Bill ${existingBill?.billNo ?? ""}` : copy.newTitle}
+        backTo={isEditing && id ? `/purchase/${id}` : listPath}
         backLabel={isEditing ? "Back to Bill" : "Back to Purchase"}
       />
       <Form {...form}>
         <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
+          {section === "TRADING" ? (
+            <SupplierBillUploadCard
+              onFile={(file) => setPendingFiles((files) => [...files, file])}
+              onParsed={applyParsedBill}
+            />
+          ) : null}
+
           <Card>
             <CardHeader>
               <CardTitle>Bill details</CardTitle>
@@ -203,9 +332,36 @@ export function PurchaseBillFormPage() {
                 name="title"
                 render={({ field }) => (
                   <FormItem className="sm:col-span-2">
-                    <FormLabel>Bill title</FormLabel>
+                    <FormLabel>{copy.titleLabel}</FormLabel>
                     <FormControl>
-                      <Input placeholder="CNC, Traub, caliper…" {...field} value={field.value ?? ""} />
+                      <Input
+                        placeholder={copy.titlePlaceholder}
+                        list={section === "RUNNING_COST" ? "running-cost-suggestions" : undefined}
+                        {...field}
+                        value={field.value ?? ""}
+                      />
+                    </FormControl>
+                    {section === "RUNNING_COST" ? (
+                      <datalist id="running-cost-suggestions">
+                        {RUNNING_COST_SUGGESTIONS.map((option) => (
+                          <option key={option} value={option} />
+                        ))}
+                      </datalist>
+                    ) : null}
+                    {form.formState.errors.title ? (
+                      <p className="text-sm text-destructive">{copy.titleError}</p>
+                    ) : null}
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="billDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{section === "RUNNING_COST" ? "Date (sets the month)" : "Bill date"}</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} value={field.value ?? ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -237,6 +393,21 @@ export function PurchaseBillFormPage() {
                   </FormItem>
                 )}
               />
+              {section === "TRADING" ? (
+                <FormField
+                  control={form.control}
+                  name="vehicleNo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Vehicle no. (optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. HP12N8187" {...field} value={field.value ?? ""} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : null}
               <FormField
                 control={form.control}
                 name="notes"
@@ -245,7 +416,7 @@ export function PurchaseBillFormPage() {
                     <FormLabel>Notes / details (optional)</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Serial no., warranty, installation notes…"
+                        placeholder={copy.notesPlaceholder}
                         rows={3}
                         {...field}
                         value={field.value ?? ""}
@@ -260,18 +431,20 @@ export function PurchaseBillFormPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Machines / equipment</CardTitle>
+              <CardTitle>{copy.itemsTitle}</CardTitle>
             </CardHeader>
             <CardContent>
               <PurchaseLineItemsField
                 mode="EQUIPMENT"
+                hint={copy.hint}
+                descriptionPlaceholder={copy.descriptionPlaceholder}
                 fields={fields}
                 items={items}
                 products={undefined}
                 register={form.register}
                 setValue={form.setValue}
                 onProductChange={() => undefined}
-                onAdd={() => append({ ...emptyItem })}
+                onAdd={() => append(emptyItem(copy.defaultGst))}
                 onRemove={remove}
                 errorMessage={form.formState.errors.items?.message}
               />
@@ -299,7 +472,7 @@ export function PurchaseBillFormPage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate(isEditing && id ? `/purchase/${id}` : "/purchase")}
+              onClick={() => navigate(isEditing && id ? `/purchase/${id}` : listPath)}
             >
               Cancel
             </Button>

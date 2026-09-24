@@ -1,5 +1,5 @@
 import { PDFParse } from "pdf-parse";
-import { ApiError } from "../../middleware/errorHandler.js";
+import { ApiError } from "../middleware/errorHandler.js";
 
 export async function extractPdfText(buffer: Buffer): Promise<string> {
   const parser = new PDFParse({ data: new Uint8Array(buffer) });

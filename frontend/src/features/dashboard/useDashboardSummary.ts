@@ -8,6 +8,24 @@ export interface RawMaterialSummary {
   billCount: number;
 }
 
+export interface TradingPnlMonth {
+  key: string;
+  label: string;
+  sales: number;
+  purchases: number;
+  profit: number;
+}
+
+/** Trading sales vs trading purchase bills, before GST. */
+export interface TradingPnlSummary {
+  sales: number;
+  purchases: number;
+  profit: number;
+  invoiceCount: number;
+  billCount: number;
+  months: TradingPnlMonth[];
+}
+
 export interface DashboardSummary {
   customerCount: number;
   productCount: number;
@@ -18,6 +36,7 @@ export interface DashboardSummary {
   pnsSales: number;
   tradingSales: number;
   tradingInvoiceCount: number;
+  trading?: TradingPnlSummary;
   totalReceived: number;
   rawMaterial?: RawMaterialSummary;
 }

@@ -1,4 +1,6 @@
 import { prisma } from "../../lib/prisma.js";
+import { activeOnly } from "../../lib/activeRecords.js";
+import { businessMonthsThrough, monthKey, round2 } from "../../lib/manufacturingPnl.js";
 import { PIPE_SIZES_MM } from "../../lib/pipeSizes.js";
 
 const LOW_STOCK_THRESHOLD = 10;
@@ -27,8 +29,96 @@ function businessMonthStarts(): Date[] {
   return result;
 }
 
+type TaxableLine = { quantity: unknown; rate: unknown };
+
+function taxableTotal(items: TaxableLine[]): number {
+  return items.reduce((sum, item) => {
+    const qty = Number(item.quantity);
+    const rate = Number(item.rate);
+    return sum + (Number.isFinite(qty) ? qty : 0) * (Number.isFinite(rate) ? rate : 0);
+  }, 0);
+}
+
+function shortMonthLabel(year: number, month: number): string {
+  return new Date(Date.UTC(year, month - 1, 1)).toLocaleString("en-GB", {
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+export type TradingPnlMonth = {
+  key: string;
+  label: string;
+  sales: number;
+  purchases: number;
+  profit: number;
+};
+
+/** Trading = goods bought and resold as-is. Amounts are before GST (qty × rate). */
+async function getTradingPnl() {
+  const [invoices, bills] = await Promise.all([
+    prisma.salesInvoice.findMany({
+      where: { ...activeOnly, isTrading: true },
+      select: { invoiceDate: true, items: { select: { quantity: true, rate: true } } },
+    }),
+    prisma.purchaseBill.findMany({
+      where: { ...activeOnly, kind: "TRADING" },
+      select: { billDate: true, items: { select: { quantity: true, rate: true } } },
+    }),
+  ]);
+
+  const months = new Map<string, TradingPnlMonth>();
+  for (const { year, month } of businessMonthsThrough()) {
+    const key = monthKey(year, month);
+    months.set(key, { key, label: shortMonthLabel(year, month), sales: 0, purchases: 0, profit: 0 });
+  }
+
+  function bucket(date: Date): TradingPnlMonth {
+    const year = date.getUTCFullYear();
+    const month = date.getUTCMonth() + 1;
+    const key = monthKey(year, month);
+    const existing = months.get(key);
+    if (existing) return existing;
+    const created = { key, label: shortMonthLabel(year, month), sales: 0, purchases: 0, profit: 0 };
+    months.set(key, created);
+    return created;
+  }
+
+  let sales = 0;
+  let purchases = 0;
+  for (const invoice of invoices) {
+    const amount = taxableTotal(invoice.items);
+    sales += amount;
+    bucket(invoice.invoiceDate).sales += amount;
+  }
+  for (const bill of bills) {
+    const amount = taxableTotal(bill.items);
+    purchases += amount;
+    bucket(bill.billDate).purchases += amount;
+  }
+
+  const monthRows = [...months.values()]
+    .map((row) => ({
+      ...row,
+      sales: round2(row.sales),
+      purchases: round2(row.purchases),
+      profit: round2(row.sales - row.purchases),
+    }))
+    .sort((a, b) => (a.key < b.key ? 1 : a.key > b.key ? -1 : 0));
+
+  return {
+    sales: round2(sales),
+    purchases: round2(purchases),
+    profit: round2(sales - purchases),
+    invoiceCount: invoices.length,
+    billCount: bills.length,
+    months: monthRows,
+  };
+}
+
 export async function getDashboardSummary() {
-  const [customerCount, productCount, products, salesAgg, tradingAgg, receiptsAgg, sizeStocks] = await Promise.all([
+  const [customerCount, productCount, products, salesAgg, tradingAgg, receiptsAgg, sizeStocks, trading] = await Promise.all([
     prisma.customer.count(),
     prisma.product.count(),
     prisma.product.findMany({ select: { price: true, currentStock: true } }),
@@ -47,6 +137,7 @@ export async function getDashboardSummary() {
     prisma.productSizeStock.findMany({
       select: { sizeMm: true, quantity: true },
     }),
+    getTradingPnl(),
   ]);
 
   const stockValue = products.reduce(
@@ -99,6 +190,7 @@ export async function getDashboardSummary() {
     pnsSales: totalSales - tradingSales,
     tradingSales,
     tradingInvoiceCount: tradingAgg._count,
+    trading,
     totalReceived: Number(receiptsAgg._sum.amount ?? 0),
     rawMaterial: {
       totalBilled: Math.round(rawMaterialTotal),

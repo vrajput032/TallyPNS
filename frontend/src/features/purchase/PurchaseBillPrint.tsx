@@ -2,7 +2,7 @@ import { COMPANY } from "@/config/company";
 import { amountToIndianWords } from "@/lib/numberToWords";
 import { formatInr } from "@/lib/formatInr";
 import type { PurchaseBill } from "./types";
-import { purchaseLineLabel } from "./types";
+import { purchaseLineLabel, purchaseSectionLabel, purchaseSectionOf } from "./types";
 
 const KG_PER_TON = 1000;
 
@@ -12,7 +12,8 @@ function formatDate(iso: string) {
 }
 
 export function PurchaseBillPrint({ bill }: { bill: PurchaseBill }) {
-  const isEquipment = bill.kind === "EQUIPMENT";
+  const isEquipment = bill.kind !== "CATALOG";
+  const recordLabel = `${purchaseSectionLabel(purchaseSectionOf(bill.kind))} purchase`;
   const taxableTotal = bill.items.reduce(
     (sum, item) => sum + Number(item.quantity) * Number(item.rate),
     0
@@ -31,7 +32,7 @@ export function PurchaseBillPrint({ bill }: { bill: PurchaseBill }) {
   const totalTax = [...gstGroups.values()].reduce((sum, g) => sum + g.tax, 0);
   const grandTotal = taxableTotal + totalTax;
   const totalQty = bill.items.reduce((sum, item) => sum + Number(item.quantity), 0);
-  const sellerName = bill.vendor?.name ?? "Equipment purchase";
+  const sellerName = bill.vendor?.name ?? recordLabel;
   const sellerGstin = bill.supplierGstin ?? bill.vendor?.gstin ?? "-";
   const sellerAddress = bill.vendor?.address ?? null;
 
@@ -49,13 +50,15 @@ export function PurchaseBillPrint({ bill }: { bill: PurchaseBill }) {
                     {sellerAddress ? <p className="text-xs leading-tight">{sellerAddress}</p> : null}
                   </>
                 ) : (
-                  <h1 className="text-xl font-bold">Equipment purchase</h1>
+                  <h1 className="text-xl font-bold">
+                    {bill.kind === "TRADING" && bill.title?.trim() ? bill.title : recordLabel}
+                  </h1>
                 )}
               </>
             ) : (
               <>
                 <h1 className="text-xl font-bold">{COMPANY.name}</h1>
-                <p className="text-xs leading-tight">Equipment purchase record</p>
+                <p className="text-xs leading-tight">{recordLabel} record</p>
               </>
             )}
           </div>

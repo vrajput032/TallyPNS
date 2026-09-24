@@ -1,8 +1,10 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
+  ParsedSupplierInvoice,
   PurchaseAttachment,
   PurchaseBill,
   PurchaseBillInput,
+  RunningCostsSummary,
 } from "@/features/purchase/types";
 import { api } from "@/lib/api";
 import { fetchProducts } from "./productsSlice";
@@ -21,12 +23,40 @@ type FetchArgs = { silent?: boolean };
 interface PurchaseState {
   list: ListState<PurchaseBill>;
   byId: Record<string, ValueState<PurchaseBill>>;
+  runningCosts: ValueState<RunningCostsSummary>;
 }
 
 const initialState: PurchaseState = {
   list: initialListState(),
   byId: {},
+  runningCosts: initialValueState(),
 };
+
+export const fetchRunningCosts = createAsyncThunk(
+  "purchase/fetchRunningCosts",
+  async (_args: FetchArgs | undefined, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get<RunningCostsSummary>("/purchase/running-costs");
+      return data;
+    } catch (error) {
+      return rejectWithValue(apiErrorMessage(error));
+    }
+  }
+);
+
+export const parseSupplierBill = createAsyncThunk(
+  "purchase/parseSupplierBill",
+  async (file: File, { rejectWithValue }) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const { data } = await api.post<ParsedSupplierInvoice>("/purchase/parse", formData);
+      return data;
+    } catch (error) {
+      return rejectWithValue(apiErrorMessage(error));
+    }
+  }
+);
 
 export const fetchPurchaseBills = createAsyncThunk(
   "purchase/fetchList",
@@ -58,6 +88,7 @@ export const createPurchaseBill = createAsyncThunk(
     try {
       const { data } = await api.post<PurchaseBill>("/purchase", input);
       dispatch(fetchPurchaseBills({ silent: true }));
+      dispatch(fetchRunningCosts({ silent: true }));
       dispatch(fetchProducts({ silent: true }));
       dispatch(fetchDashboardSummary({ silent: true }));
       return data;
@@ -78,6 +109,7 @@ export const updatePurchaseBill = createAsyncThunk(
         headers: { "X-Delete-Pin": pin },
       });
       dispatch(fetchPurchaseBills({ silent: true }));
+      dispatch(fetchRunningCosts({ silent: true }));
       dispatch(fetchProducts({ silent: true }));
       dispatch(fetchDashboardSummary({ silent: true }));
       return data;
@@ -93,6 +125,7 @@ export const deletePurchaseBill = createAsyncThunk(
     try {
       await api.delete(`/purchase/${id}`, { headers: { "X-Delete-Pin": pin } });
       dispatch(fetchPurchaseBills({ silent: true }));
+      dispatch(fetchRunningCosts({ silent: true }));
       dispatch(fetchProducts({ silent: true }));
       dispatch(fetchDashboardSummary({ silent: true }));
       return id;
@@ -180,6 +213,21 @@ const purchaseSlice = createSlice({
         entry.status = "failed";
         entry.error = String(action.payload ?? action.error.message);
         state.byId[id] = entry;
+      })
+      .addCase(fetchRunningCosts.pending, (state, action) => {
+        state.runningCosts.status = listPending(
+          state.runningCosts.status,
+          state.runningCosts.value != null,
+          action.meta.arg?.silent
+        );
+        state.runningCosts.error = null;
+      })
+      .addCase(fetchRunningCosts.fulfilled, (state, action) => {
+        state.runningCosts = { value: action.payload, status: "succeeded", error: null };
+      })
+      .addCase(fetchRunningCosts.rejected, (state, action) => {
+        state.runningCosts.status = "failed";
+        state.runningCosts.error = String(action.payload ?? action.error.message);
       });
   },
 });

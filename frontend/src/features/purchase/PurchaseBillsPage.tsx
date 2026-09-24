@@ -17,8 +17,8 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ConfirmDeletePinDialog } from "@/components/ConfirmDeletePinDialog";
@@ -32,8 +32,33 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MonthlyRunningCostsPanel } from "./MonthlyRunningCostsPanel";
 import { useDeletePurchaseBill, usePurchaseBills } from "./usePurchase";
-import { purchaseBillTitle, type PurchaseBill } from "./types";
+import {
+  parsePurchaseSection,
+  PURCHASE_SECTIONS,
+  purchaseBillTitle,
+  purchaseSectionLabel,
+  purchaseSectionOf,
+  type PurchaseBill,
+  type PurchaseSection,
+} from "./types";
+
+function newBillLabel(section: PurchaseSection) {
+  switch (section) {
+    case "EQUIPMENT":
+      return "New Bill";
+    case "TRADING":
+      return "New Trading Bill";
+    case "RUNNING_COST":
+      return "Add Running Cost";
+    default: {
+      const _exhaustive: never = section;
+      return _exhaustive;
+    }
+  }
+}
 import { PaymentStatusBadge } from "@/features/payments/PaymentStatusBadge";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { formatInr } from "@/lib/formatInr";
@@ -213,6 +238,12 @@ const columns: ColumnDef<PurchaseBill>[] = [
 export function PurchaseBillsPage() {
   const { data: bills, isLoading } = usePurchaseBills();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const section = parsePurchaseSection(searchParams.get("tab")) ?? "EQUIPMENT";
+  const sectionBills = useMemo(
+    () => (bills ?? []).filter((bill) => purchaseSectionOf(bill.kind) === section),
+    [bills, section]
+  );
   const isMobile = useIsMobile();
   const allowDelete = canDelete(useAuthStore((state) => state.user));
   const deleteBill = useDeletePurchaseBill();
@@ -220,7 +251,7 @@ export function PurchaseBillsPage() {
   const [sorting, setSorting] = useState<SortingState>([{ id: "billDate", desc: true }]);
 
   const table = useReactTable({
-    data: bills ?? [],
+    data: sectionBills,
     columns,
     state: { sorting },
     onSortingChange: setSorting,
@@ -257,12 +288,32 @@ export function PurchaseBillsPage() {
         backTo="/"
         backLabel="Back to Dashboard"
         actions={
-          <Button onClick={() => navigate("/purchase/new")}>
+          <Button onClick={() => navigate(`/purchase/new?kind=${section}`)}>
             <Plus className="size-4" />
-            New Bill
+            {newBillLabel(section)}
           </Button>
         }
       />
+
+      <Tabs
+        value={section}
+        onValueChange={(value) => setSearchParams({ tab: String(value).toLowerCase() })}
+      >
+        <TabsList className="w-full sm:w-auto">
+          {PURCHASE_SECTIONS.map((option) => (
+            <TabsTrigger key={option} value={option} className="flex-1 sm:flex-none">
+              {purchaseSectionLabel(option)}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+
+      {section === "RUNNING_COST" ? (
+        <>
+          <MonthlyRunningCostsPanel />
+          <h2 className="px-0.5 pt-2 text-base font-semibold">Running cost entries</h2>
+        </>
+      ) : null}
 
       {isLoading ? (
         isMobile ? (

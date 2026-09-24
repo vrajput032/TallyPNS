@@ -1,14 +1,35 @@
-import { useListQuery, useEntityQuery, useAsyncMutation } from "@/store/hooks/useReduxData";
-import type { PurchaseAttachment, PurchaseBill, PurchaseBillInput } from "@/features/purchase/types";
+import {
+  useListQuery,
+  useEntityQuery,
+  useAsyncMutation,
+  useValueQuery,
+} from "@/store/hooks/useReduxData";
+import type {
+  ParsedSupplierInvoice,
+  PurchaseAttachment,
+  PurchaseBill,
+  PurchaseBillInput,
+  RunningCostsSummary,
+} from "@/features/purchase/types";
 import {
   createPurchaseBill,
   deletePurchaseAttachment,
   deletePurchaseBill,
   fetchPurchaseBill,
   fetchPurchaseBills,
+  fetchRunningCosts,
+  parseSupplierBill,
   updatePurchaseBill,
   uploadPurchaseAttachment,
 } from "@/store/slices/purchaseSlice";
+
+export function useRunningCosts() {
+  return useValueQuery<RunningCostsSummary>((s) => s.purchase.runningCosts, fetchRunningCosts);
+}
+
+export function useParseSupplierBill() {
+  return useAsyncMutation<File, ParsedSupplierInvoice>(parseSupplierBill);
+}
 
 export function usePurchaseBills() {
   return useListQuery<PurchaseBill>((s) => s.purchase.list, fetchPurchaseBills);

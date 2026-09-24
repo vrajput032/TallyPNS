@@ -22,6 +22,7 @@ import { RawMaterialPaymentCard } from "./RawMaterialPaymentCard";
 import { StatCard } from "./StatCard";
 import { SalesChart } from "./SalesChart";
 import { SalesByCustomerChart } from "./SalesByCustomerChart";
+import { TradingPnlCard } from "./TradingPnlCard";
 import { useDashboardSummary } from "./useDashboardSummary";
 
 function useScrollReveal(threshold = 0.12) {
@@ -245,6 +246,10 @@ export function DashboardPage() {
           isLoading={isLoading}
         />
       </div>
+
+      <RevealCard className="min-w-0">
+        <TradingPnlCard data={data?.trading} isLoading={isLoading} />
+      </RevealCard>
 
       <div className="grid min-w-0 gap-2 sm:gap-3">
         <div className="min-w-0 px-0.5">

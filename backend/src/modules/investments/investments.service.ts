@@ -24,7 +24,7 @@ export async function getInvestments() {
     loadPartnerExpensesSnapshot(),
   ]);
 
-  const equipmentBills = bills.filter((bill) => bill.kind !== "CATALOG");
+  const equipmentBills = bills.filter((bill) => bill.kind === "EQUIPMENT");
   const billsTotal = round2(
     equipmentBills.reduce((sum, bill) => sum + Number(bill.totalAmount), 0)
   );

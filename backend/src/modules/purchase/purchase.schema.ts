@@ -12,7 +12,7 @@ export const purchaseBillItemSchema = z.object({
 
 export const createPurchaseBillSchema = z.object({
   vendorId: z.string().min(1).optional().nullable(),
-  kind: z.enum(["CATALOG", "EQUIPMENT"]).default("EQUIPMENT"),
+  kind: z.enum(["CATALOG", "EQUIPMENT", "TRADING", "RUNNING_COST"]).default("EQUIPMENT"),
   billDate: z.coerce.date().optional(),
   transport: z.string().trim().max(100).optional().nullable(),
   vehicleNo: z.string().trim().max(40).optional().nullable(),

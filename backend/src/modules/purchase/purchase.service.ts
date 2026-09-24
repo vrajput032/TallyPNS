@@ -10,6 +10,7 @@ import {
 import { withBillPaymentSummary } from "../payments/payment.utils.js";
 import { scheduleSheetsSync } from "../sheets/sheets.sync.js";
 import { rateFromPricePerKg, type createPurchaseBillSchema } from "./purchase.schema.js";
+import type { PurchaseBillKind } from "@prisma/client";
 import type { z } from "zod";
 
 const billInclude = {
@@ -21,6 +22,22 @@ const billInclude = {
 
 type BillInput = z.infer<typeof createPurchaseBillSchema>;
 type BillItemInput = BillInput["items"][number];
+
+/** New and edited bills never become CATALOG (legacy pipe stock-in). */
+function storedKind(kind: BillInput["kind"]): PurchaseBillKind {
+  switch (kind) {
+    case "CATALOG":
+    case "EQUIPMENT":
+      return "EQUIPMENT";
+    case "TRADING":
+    case "RUNNING_COST":
+      return kind;
+    default: {
+      const _exhaustive: never = kind;
+      throw new ApiError(400, `Unhandled purchase kind: ${_exhaustive}`);
+    }
+  }
+}
 
 function catalogProductId(item: { productId?: string | null }) {
   const id = item.productId?.trim();
@@ -149,7 +166,7 @@ export async function createPurchaseBill(data: BillInput) {
       data: {
         billNo,
         vendorId: data.vendorId?.trim() || null,
-        kind: "EQUIPMENT",
+        kind: storedKind(data.kind),
         billDate: data.billDate ?? new Date(),
         transport: data.transport?.trim() || null,
         vehicleNo: data.vehicleNo?.trim() || null,
@@ -236,7 +253,7 @@ export async function updatePurchaseBill(id: string, data: BillInput) {
       where: { id },
       data: {
         vendorId: data.vendorId?.trim() || null,
-        kind: "EQUIPMENT",
+        kind: storedKind(data.kind),
         billDate: data.billDate ?? existingBill.billDate,
         transport: data.transport?.trim() || null,
         vehicleNo: data.vehicleNo?.trim() || null,

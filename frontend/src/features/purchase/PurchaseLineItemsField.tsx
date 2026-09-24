@@ -41,6 +41,9 @@ export interface PurchaseLineItemValue {
 interface PurchaseLineItemsFieldProps<TFieldValues extends FieldValues> {
   mode?: "CATALOG" | "EQUIPMENT";
   showGst?: boolean;
+  /** Overrides the equipment helper text above the lines */
+  hint?: string;
+  descriptionPlaceholder?: string;
   fields: { id: string }[];
   items: PurchaseLineItemValue[];
   products: PurchaseLineItemOption[] | undefined;
@@ -55,6 +58,8 @@ interface PurchaseLineItemsFieldProps<TFieldValues extends FieldValues> {
 export function PurchaseLineItemsField<TFieldValues extends FieldValues>({
   mode = "CATALOG",
   showGst = true,
+  hint,
+  descriptionPlaceholder = "e.g. CNC / Traub",
   fields,
   items,
   products,
@@ -92,7 +97,9 @@ export function PurchaseLineItemsField<TFieldValues extends FieldValues>({
   return (
     <div className="grid gap-4">
       <p className="text-sm text-muted-foreground">
-        {isEquipment
+        {isEquipment && hint
+          ? hint
+          : isEquipment
           ? showGst
             ? "Equipment / machines: describe the item (CNC, Traub, etc.), qty, rate, and GST."
             : "Equipment / machines: describe the item (CNC, Traub, etc.), qty, and rate."
@@ -126,7 +133,7 @@ export function PurchaseLineItemsField<TFieldValues extends FieldValues>({
                   <div className="grid gap-1.5">
                     <Label>Description</Label>
                     <Input
-                      placeholder="e.g. CNC lathe / Traub A25"
+                      placeholder={descriptionPlaceholder}
                       {...register(fieldPath(index, "description"))}
                     />
                   </div>
@@ -256,7 +263,7 @@ export function PurchaseLineItemsField<TFieldValues extends FieldValues>({
                     <TableCell>
                       {isEquipment ? (
                         <Input
-                          placeholder="e.g. CNC / Traub"
+                          placeholder={descriptionPlaceholder}
                           {...register(fieldPath(index, "description"))}
                         />
                       ) : (
