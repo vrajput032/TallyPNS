@@ -21,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { formatInr } from "@/lib/formatInr";
 import { piecesFromKg } from "@/lib/rawMaterialYield";
+import { apiErrorMessage } from "@/lib/apiError";
 import type { ParsedRawMaterialBill } from "./types";
 import {
   useCreateRawMaterialBill,
@@ -70,9 +71,7 @@ function money(value: number) {
 }
 
 function errorMessage(error: unknown, fallback: string) {
-  return (
-    (error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? fallback
-  );
+  return apiErrorMessage(error, fallback);
 }
 
 export function RawMaterialBillFormPage() {

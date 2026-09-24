@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { api } from "@/lib/api";
+import { apiErrorMessage } from "@/lib/apiError";
 import { useAuthStore } from "@/store/authStore";
 import { UserFormDialog } from "./UserFormDialog";
 import { useDeleteUser, useUsers } from "./useUsers";
@@ -141,10 +142,7 @@ export function UsersPage() {
         : "done";
       toast.success(`Google Sheet updated (${counts})`);
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-        "Sheets sync failed — check Google env vars on the server";
-      toast.error(message);
+      toast.error(apiErrorMessage(error, "Sheets sync failed — check Google env vars on the server"));
     } finally {
       setSheetsSyncing(false);
     }
@@ -161,10 +159,7 @@ export function UsersPage() {
     deleteUser.mutate(user.id, {
       onSuccess: () => toast.success(`User ${user.username} deleted`),
       onError: (error: unknown) => {
-        const message =
-          (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-          "Failed to delete user";
-        toast.error(message);
+        toast.error(apiErrorMessage(error, "Failed to delete user"));
       },
     });
   }

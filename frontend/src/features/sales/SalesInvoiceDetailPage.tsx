@@ -22,6 +22,7 @@ import { SalesInvoicePrint } from "./SalesInvoicePrint";
 import { useDeleteSalesInvoice, useSalesInvoice } from "./useSales";
 import { formatInr } from "@/lib/formatInr";
 import { canDelete } from "@/lib/permissions";
+import { apiErrorMessage } from "@/lib/apiError";
 import { useAuthStore } from "@/store/authStore";
 
 export function SalesInvoiceDetailPage() {
@@ -70,10 +71,7 @@ export function SalesInvoiceDetailPage() {
           navigate("/sales");
         },
         onError: (error: unknown) => {
-          const message =
-            (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-            "Failed to delete invoice";
-          toast.error(message);
+          toast.error(apiErrorMessage(error, "Failed to delete invoice"));
         },
       }
     );

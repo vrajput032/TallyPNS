@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatInr } from "@/lib/formatInr";
+import { apiErrorMessage } from "@/lib/apiError";
 import type { RawMaterialPayment } from "./types";
 import { useCreateRawMaterialPayment, useUpdateRawMaterialPayment } from "./useRawMaterial";
 
@@ -119,10 +120,7 @@ export function RecordRawMaterialPaymentDialog({
             onOpenChange(false);
           },
           onError: (error: unknown) => {
-            const message =
-              (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-              "Failed to update payment";
-            toast.error(message);
+            toast.error(apiErrorMessage(error, "Failed to update payment"));
           },
         }
       );
@@ -138,10 +136,7 @@ export function RecordRawMaterialPaymentDialog({
           onOpenChange(false);
         },
         onError: (error: unknown) => {
-          const message =
-            (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-            "Failed to record payment";
-          toast.error(message);
+          toast.error(apiErrorMessage(error, "Failed to record payment"));
         },
       }
     );

@@ -1,3 +1,4 @@
+import { apiErrorMessage } from "@/lib/apiError";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -98,10 +99,7 @@ export function RecordPaymentDialog({
           onOpenChange(false);
         },
         onError: (error: unknown) => {
-          const message =
-            (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-            "Failed to record payment";
-          toast.error(message);
+          toast.error(apiErrorMessage(error, "Failed to record payment"));
         },
       }
     );

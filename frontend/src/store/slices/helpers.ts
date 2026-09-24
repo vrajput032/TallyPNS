@@ -34,9 +34,4 @@ export function listPending(status: LoadStatus, hasData: boolean, silent?: boole
   return "loading";
 }
 
-export function apiErrorMessage(error: unknown): string {
-  if (typeof error === "object" && error !== null && "message" in error) {
-    return String((error as { message: string }).message);
-  }
-  return "Request failed";
-}
+export { apiErrorMessage } from "@/lib/apiError";

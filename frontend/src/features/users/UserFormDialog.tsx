@@ -27,6 +27,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { apiErrorMessage } from "@/lib/apiError";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useCreateUser } from "./useUsers";
 import type { UserRole } from "./types";
@@ -90,10 +91,7 @@ export function UserFormDialog({ open, onOpenChange }: UserFormDialogProps) {
         onOpenChange(false);
       })
       .catch((error: unknown) => {
-        const message =
-          (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-          "Could not create user";
-        toast.error(message);
+        toast.error(apiErrorMessage(error, "Could not create user"));
       });
   }
 

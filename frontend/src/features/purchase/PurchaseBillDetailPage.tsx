@@ -23,6 +23,7 @@ import { useDeletePurchaseBill, usePurchaseBill } from "./usePurchase";
 import { purchaseLineLabel, purchaseBillTitle } from "./types";
 import { formatInr } from "@/lib/formatInr";
 import { canDelete } from "@/lib/permissions";
+import { apiErrorMessage } from "@/lib/apiError";
 import { useAuthStore } from "@/store/authStore";
 
 export function PurchaseBillDetailPage() {
@@ -50,10 +51,7 @@ export function PurchaseBillDetailPage() {
           navigate("/purchase");
         },
         onError: (error: unknown) => {
-          const message =
-            (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-            "Failed to delete bill";
-          toast.error(message);
+          toast.error(apiErrorMessage(error, "Failed to delete bill"));
         },
       }
     );

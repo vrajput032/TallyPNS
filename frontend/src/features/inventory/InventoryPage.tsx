@@ -12,6 +12,7 @@ import { useStock, useStockMovements } from "./useInventory";
 import { useUploadProductImage } from "@/features/products/useProducts";
 import type { StockMovement, StockRow } from "./types";
 import { formatPipeSize, LOW_STOCK_QTY, PIPE_SIZES_MM } from "@/lib/pipeSizes";
+import { apiErrorMessage } from "@/lib/apiError";
 
 const LOW_STOCK_THRESHOLD = LOW_STOCK_QTY;
 /** Bar fills to 100% at this quantity — purely a visual reference point, not a hard cap. */
@@ -162,10 +163,7 @@ function StockView({
               {
                 onSuccess: () => toast.success("Product photo saved"),
                 onError: (error: unknown) => {
-                  const message =
-                    (error as { response?: { data?: { error?: string } } })?.response?.data
-                      ?.error ?? "Failed to upload photo";
-                  toast.error(message);
+                  toast.error(apiErrorMessage(error, "Failed to upload photo"));
                 },
               }
             );

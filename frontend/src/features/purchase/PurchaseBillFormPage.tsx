@@ -28,6 +28,7 @@ import {
   useUploadPurchaseAttachment,
 } from "./usePurchase";
 import { formatInr } from "@/lib/formatInr";
+import { apiErrorMessage } from "@/lib/apiError";
 
 const lineItemSchema = z.object({
   description: z.string().trim().min(1, "Enter what was purchased (e.g. CNC / Traub)"),
@@ -155,10 +156,7 @@ export function PurchaseBillFormPage() {
         navigate(`/purchase/${bill.id}`);
       },
       onError: (error: unknown) => {
-        const message =
-          (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-          "Failed to create bill";
-        toast.error(message);
+        toast.error(apiErrorMessage(error, "Failed to create bill"));
       },
     });
   }
@@ -176,10 +174,7 @@ export function PurchaseBillFormPage() {
           navigate(`/purchase/${bill.id}`);
         },
         onError: (error: unknown) => {
-          const message =
-            (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-            "Failed to update bill";
-          toast.error(message);
+          toast.error(apiErrorMessage(error, "Failed to update bill"));
         },
       }
     );

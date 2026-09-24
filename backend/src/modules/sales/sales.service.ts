@@ -1,4 +1,4 @@
-import { prisma } from "../../lib/prisma.js";
+import { dbTransactionOptions, prisma } from "../../lib/prisma.js";
 import { activeOnly, deletedOnly } from "../../lib/activeRecords.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import { applySizeStockDelta } from "../../lib/sizeStock.js";
@@ -193,7 +193,7 @@ export async function createSalesInvoice(data: z.infer<typeof createSalesInvoice
     }
 
     return created;
-  });
+  }, dbTransactionOptions);
   scheduleSheetsSync("sales create");
   return invoice;
 }
@@ -352,7 +352,7 @@ export async function updateSalesInvoice(
     }
 
     return invoice;
-  });
+  }, dbTransactionOptions);
   scheduleSheetsSync("sales update");
   return updated;
 }
@@ -410,7 +410,7 @@ export async function deleteSalesInvoice(id: string) {
       where: { id },
       data: { deletedAt: new Date() },
     });
-  });
+  }, dbTransactionOptions);
   scheduleSheetsSync("sales delete");
 }
 
@@ -464,7 +464,7 @@ export async function restoreSalesInvoice(id: string) {
       where: { id },
       data: { deletedAt: null },
     });
-  });
+  }, dbTransactionOptions);
   scheduleSheetsSync("sales restore");
 }
 

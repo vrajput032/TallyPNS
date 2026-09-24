@@ -16,6 +16,7 @@ import {
 import type { PurchaseBill } from "@/features/purchase/types";
 import type { SalesInvoice } from "@/features/sales/types";
 import { formatInr } from "@/lib/formatInr";
+import { apiErrorMessage } from "@/lib/apiError";
 import {
   usePermanentDeletePurchaseBill,
   usePermanentDeleteSalesInvoice,
@@ -49,10 +50,7 @@ export function RecycleBinPage() {
     restoreSales.mutate(invoice.id, {
       onSuccess: () => toast.success(`Invoice ${invoice.invoiceNo} restored`),
       onError: (error: unknown) => {
-        const message =
-          (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-          "Failed to restore invoice";
-        toast.error(message);
+        toast.error(apiErrorMessage(error, "Failed to restore invoice"));
       },
     });
   }
@@ -61,10 +59,7 @@ export function RecycleBinPage() {
     restorePurchase.mutate(bill.id, {
       onSuccess: () => toast.success(`Bill ${bill.billNo} restored`),
       onError: (error: unknown) => {
-        const message =
-          (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-          "Failed to restore bill";
-        toast.error(message);
+        toast.error(apiErrorMessage(error, "Failed to restore bill"));
       },
     });
   }
@@ -82,10 +77,7 @@ export function RecycleBinPage() {
             setPermanentTarget(null);
           },
           onError: (error: unknown) => {
-            const message =
-              (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-              "Failed to delete invoice";
-            toast.error(message);
+            toast.error(apiErrorMessage(error, "Failed to delete invoice"));
           },
         }
       );
@@ -101,10 +93,7 @@ export function RecycleBinPage() {
           setPermanentTarget(null);
         },
         onError: (error: unknown) => {
-          const message =
-            (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-            "Failed to delete bill";
-          toast.error(message);
+          toast.error(apiErrorMessage(error, "Failed to delete bill"));
         },
       }
     );

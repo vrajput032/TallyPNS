@@ -38,6 +38,7 @@ import { PaymentStatusBadge } from "@/features/payments/PaymentStatusBadge";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { formatInr } from "@/lib/formatInr";
 import { canDelete } from "@/lib/permissions";
+import { apiErrorMessage } from "@/lib/apiError";
 import { useAuthStore } from "@/store/authStore";
 
 function SortableHeader({ label, sorted }: { label: string; sorted: false | "asc" | "desc" }) {
@@ -243,10 +244,7 @@ export function PurchaseBillsPage() {
           setDeleteTarget(null);
         },
         onError: (error: unknown) => {
-          const message =
-            (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-            "Failed to delete bill";
-          toast.error(message);
+          toast.error(apiErrorMessage(error, "Failed to delete bill"));
         },
       }
     );

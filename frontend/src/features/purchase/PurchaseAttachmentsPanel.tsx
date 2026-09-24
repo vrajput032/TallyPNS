@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import type { PurchaseAttachment } from "./types";
 import { useDeletePurchaseAttachment, useUploadPurchaseAttachment } from "./usePurchase";
 import { canDelete } from "@/lib/permissions";
+import { apiErrorMessage } from "@/lib/apiError";
 import { useAuthStore } from "@/store/authStore";
 
 interface PurchaseAttachmentsPanelProps {
@@ -45,10 +46,7 @@ export function PurchaseAttachmentsPanel({
         await upload.mutateAsync({ id: billId, file });
         toast.success(`Uploaded ${file.name}`);
       } catch (error: unknown) {
-        const message =
-          (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-          `Failed to upload ${file.name}`;
-        toast.error(message);
+        toast.error(apiErrorMessage(error, `Failed to upload ${file.name}`));
       }
     }
     setBusyName(null);

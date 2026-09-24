@@ -21,6 +21,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { formatInr } from "@/lib/formatInr";
 import { canDelete } from "@/lib/permissions";
 import { piecesFromKg } from "@/lib/rawMaterialYield";
+import { apiErrorMessage } from "@/lib/apiError";
 import { useAuthStore } from "@/store/authStore";
 import { RecordRawMaterialPaymentDialog } from "./RecordRawMaterialPaymentDialog";
 import type { RawMaterialBill } from "./types";
@@ -132,10 +133,7 @@ export function RawMaterialBillsPage() {
           setDeleteTarget(null);
         },
         onError: (error: unknown) => {
-          const message =
-            (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-            "Failed to delete bill";
-          toast.error(message);
+          toast.error(apiErrorMessage(error, "Failed to delete bill"));
         },
       }
     );

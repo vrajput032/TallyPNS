@@ -35,6 +35,7 @@ import {
   useUpdateSalesInvoice,
 } from "./useSales";
 import { formatInr } from "@/lib/formatInr";
+import { apiErrorMessage } from "@/lib/apiError";
 
 const lineItemSchema = z
   .object({
@@ -226,10 +227,7 @@ export function SalesInvoiceFormPage() {
         navigate(`/sales/${invoice.id}`);
       },
       onError: (error: unknown) => {
-        const message =
-          (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-          "Failed to create invoice";
-        toast.error(message);
+        toast.error(apiErrorMessage(error, "Failed to create invoice"));
       },
     });
   }
@@ -246,10 +244,7 @@ export function SalesInvoiceFormPage() {
           navigate(`/sales/${invoice.id}`);
         },
         onError: (error: unknown) => {
-          const message =
-            (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-            "Failed to update invoice";
-          toast.error(message);
+          toast.error(apiErrorMessage(error, "Failed to update invoice"));
         },
       }
     );

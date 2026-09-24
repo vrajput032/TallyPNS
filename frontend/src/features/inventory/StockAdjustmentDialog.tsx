@@ -29,6 +29,7 @@ import {
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useProducts } from "@/features/products/useProducts";
 import { PIPE_SIZES_MM, formatPipeSize } from "@/lib/pipeSizes";
+import { apiErrorMessage } from "@/lib/apiError";
 import { useCreateAdjustment } from "./useInventory";
 
 const adjustmentSchema = z.object({
@@ -100,10 +101,7 @@ export function StockAdjustmentDialog({
           onOpenChange(false);
         },
         onError: (error: unknown) => {
-          const message =
-            (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-            "Failed to adjust stock";
-          toast.error(message);
+          toast.error(apiErrorMessage(error, "Failed to adjust stock"));
         },
       }
     );
