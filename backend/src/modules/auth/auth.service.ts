@@ -152,14 +152,13 @@ export async function refresh(refreshToken: string, deviceName?: string) {
     throw new ApiError(401, "Invalid or expired refresh token");
   }
 
+  // Not compared with user.refreshToken: that column holds only the latest login,
+  // so checking it would sign out every other device and racing tabs.
   const user = await prisma.user.findUnique({ where: { id: payload.sub } });
-  if (!user || user.refreshToken !== refreshToken) {
+  if (!user) {
     throw new ApiError(401, "Refresh token revoked");
   }
 
   const nextDevice = deviceName || payload.deviceName;
-  const tokens = signTokens(toPayload(user, nextDevice));
-  await prisma.user.update({ where: { id: user.id }, data: { refreshToken: tokens.refreshToken } });
-
-  return tokens;
+  return signTokens(toPayload(user, nextDevice));
 }

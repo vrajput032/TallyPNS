@@ -51,6 +51,13 @@ async function refreshAccessToken(): Promise<string> {
   return data.accessToken;
 }
 
+/** Only a definite 401/403 from refresh ends the session; network errors, cold starts and 5xx keep it. */
+function isSessionRejected(error: unknown) {
+  if (!axios.isAxiosError(error)) return true;
+  const status = error.response?.status;
+  return status === 401 || status === 403;
+}
+
 api.interceptors.response.use(
   (response) => {
     releaseColdStart(response.config);
@@ -75,9 +82,11 @@ api.interceptors.response.use(
         refreshPromise = null;
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);
-      } catch {
+      } catch (refreshError) {
         refreshPromise = null;
-        useAuthStore.getState().logout();
+        if (isSessionRejected(refreshError)) {
+          useAuthStore.getState().logout();
+        }
       }
     }
 
