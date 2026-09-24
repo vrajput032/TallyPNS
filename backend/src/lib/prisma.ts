@@ -8,7 +8,22 @@ const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
  * session between queries and surfaces as Prisma P2028. DIRECT_URL is the
  * session pooler (5432).
  */
-const databaseUrl = process.env.DIRECT_URL || process.env.DATABASE_URL;
+const DEFAULT_CONNECTION_LIMIT = "5";
+
+/**
+ * The session pooler caps clients at pool_size (15) across every backend
+ * sharing the database, while Prisma defaults to num_cpus * 2 + 1 connections.
+ */
+function withConnectionLimit(url: string | undefined) {
+  if (!url) return url;
+  const parsed = new URL(url);
+  if (!parsed.searchParams.has("connection_limit")) {
+    parsed.searchParams.set("connection_limit", DEFAULT_CONNECTION_LIMIT);
+  }
+  return parsed.toString();
+}
+
+const databaseUrl = withConnectionLimit(process.env.DIRECT_URL || process.env.DATABASE_URL);
 
 export const prisma =
   globalForPrisma.prisma ??

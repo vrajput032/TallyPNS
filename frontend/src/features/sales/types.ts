@@ -23,6 +23,7 @@ export interface SalesInvoice {
   invoiceDate: string;
   transport: string | null;
   vehicleNo: string | null;
+  isTrading: boolean;
   totalAmount: string;
   paidAmount: number;
   balanceAmount: number;
@@ -58,6 +59,7 @@ export interface SalesInvoiceInput {
   invoiceNo?: string;
   transport?: string | null;
   vehicleNo?: string | null;
+  isTrading?: boolean;
   items: SalesInvoiceItemInput[];
 }
 

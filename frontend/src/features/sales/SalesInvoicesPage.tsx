@@ -54,6 +54,7 @@ import {
 import { useDeleteSalesInvoice, useSalesInvoices } from "./useSales";
 import { daysUntilDue, invoicePieces, type SalesInvoice } from "./types";
 import { PaymentStatusBadge } from "@/features/payments/PaymentStatusBadge";
+import { TradingBadge } from "./TradingBadge";
 import { formatInr } from "@/lib/formatInr";
 import { canDelete } from "@/lib/permissions";
 import { apiErrorMessage } from "@/lib/apiError";
@@ -153,6 +154,12 @@ const columns: ColumnDef<SalesInvoice>[] = [
     header: ({ column }) => (
       <SortableHeader label="Invoice No." sorted={column.getIsSorted()} />
     ),
+    cell: ({ row }) => (
+      <span className="inline-flex items-center gap-2">
+        {row.original.invoiceNo}
+        {row.original.isTrading ? <TradingBadge /> : null}
+      </span>
+    ),
   },
   {
     accessorKey: "invoiceDate",
@@ -241,7 +248,10 @@ function MobileInvoiceCards({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                   <p className="truncate font-semibold leading-tight">{invoice.invoiceNo}</p>
-                  <PaymentStatusBadge status={status} />
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    {invoice.isTrading ? <TradingBadge /> : null}
+                    <PaymentStatusBadge status={status} />
+                  </div>
                 </div>
                 <p className="truncate text-sm text-muted-foreground">{invoice.customer.name}</p>
               </div>

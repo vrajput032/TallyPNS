@@ -19,6 +19,7 @@ import { PaymentStatusBadge } from "@/features/payments/PaymentStatusBadge";
 import { RecordReceiptDialog } from "@/features/payments/RecordReceiptDialog";
 import { useDeleteReceipt } from "@/features/payments/usePayments";
 import { SalesInvoicePrint } from "./SalesInvoicePrint";
+import { TradingBadge } from "./TradingBadge";
 import { useDeleteSalesInvoice, useSalesInvoice } from "./useSales";
 import { formatInr } from "@/lib/formatInr";
 import { canDelete } from "@/lib/permissions";
@@ -152,8 +153,9 @@ export function SalesInvoiceDetailPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground">Status</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-wrap items-center gap-1.5">
             <PaymentStatusBadge status={invoice.paymentStatus} />
+            {invoice.isTrading ? <TradingBadge /> : null}
           </CardContent>
         </Card>
       </div>

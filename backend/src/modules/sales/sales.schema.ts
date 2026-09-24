@@ -34,5 +34,6 @@ export const createSalesInvoiceSchema = z.object({
   invoiceDate: z.coerce.date().optional(),
   transport: z.string().trim().max(100).optional().nullable(),
   vehicleNo: z.string().trim().max(40).optional().nullable(),
+  isTrading: z.boolean().optional(),
   items: z.array(salesInvoiceItemSchema).min(1, "At least one item is required"),
 });

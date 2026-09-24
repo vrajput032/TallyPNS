@@ -74,6 +74,7 @@ const invoiceFormSchema = z.object({
   invoiceNo: z.string().trim().max(60).optional(),
   transport: z.string().trim().max(100).optional(),
   vehicleNo: z.string().trim().max(40).optional(),
+  isTrading: z.boolean(),
   items: z.array(lineItemSchema).min(1, "Add at least one item"),
 });
 
@@ -125,6 +126,7 @@ export function SalesInvoiceFormPage() {
       invoiceNo: "",
       transport: "REGULAR",
       vehicleNo: "",
+      isTrading: false,
       items: [{ ...emptyProductItem }],
     },
   });
@@ -142,6 +144,7 @@ export function SalesInvoiceFormPage() {
       invoiceNo: existingInvoice.invoiceNo,
       transport: existingInvoice.transport ?? "",
       vehicleNo: existingInvoice.vehicleNo ?? "",
+      isTrading: existingInvoice.isTrading ?? false,
       items: existingInvoice.items.map((item) => ({
         isManual: !item.productId,
         productId: item.productId ?? "",
@@ -184,6 +187,7 @@ export function SalesInvoiceFormPage() {
       invoiceNo: values.invoiceNo,
       transport: values.transport,
       vehicleNo: values.vehicleNo,
+      isTrading: values.isTrading,
       items: values.items.map((item) => {
         if (item.isManual) {
           return {
@@ -337,6 +341,33 @@ export function SalesInvoiceFormPage() {
                       />
                     </FormControl>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="isTrading"
+                render={({ field }) => (
+                  <FormItem className="sm:col-span-2">
+                    <FormLabel className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 font-normal">
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          className="mt-0.5 size-4 accent-primary"
+                          checked={field.value}
+                          onChange={(event) => field.onChange(event.target.checked)}
+                          onBlur={field.onBlur}
+                          ref={field.ref}
+                        />
+                      </FormControl>
+                      <span className="grid gap-0.5">
+                        <span className="font-medium">Trading invoice</span>
+                        <span className="text-sm text-muted-foreground">
+                          Goods bought and resold, not manufactured. Shown with a Trading label
+                          and counted in the dashboard Trading total.
+                        </span>
+                      </span>
+                    </FormLabel>
                   </FormItem>
                 )}
               />

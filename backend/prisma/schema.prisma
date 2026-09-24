@@ -118,6 +118,8 @@ model SalesInvoice {
   invoiceDate  DateTime @default(now())
   transport    String?
   vehicleNo    String?
+  /** Traded goods (bought and resold) rather than manufactured */
+  isTrading    Boolean   @default(false)
   totalAmount  Decimal   @default(0) @db.Decimal(14, 2)
   deletedAt    DateTime?
   createdAt    DateTime  @default(now())

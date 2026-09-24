@@ -1,4 +1,11 @@
-import { CircleDollarSign, Package, TrendingUp, Warehouse } from "lucide-react";
+import {
+  ArrowLeftRight,
+  CircleDollarSign,
+  Factory,
+  Package,
+  TrendingUp,
+  Warehouse,
+} from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -174,6 +181,8 @@ function AnimatedCount({
 export function DashboardPage() {
   const { data, isLoading } = useDashboardSummary();
   const totalSales = data?.totalSales ?? 0;
+  const pnsSales = data?.pnsSales ?? 0;
+  const tradingSales = data?.tradingSales ?? 0;
   const totalReceived = data?.totalReceived ?? 0;
   const stockBySize = data?.stockBySize ?? PIPE_SIZES_MM.map((sizeMm) => ({ sizeMm, quantity: 0 }));
   const skipCountAnimation = data != null;
@@ -186,7 +195,7 @@ export function DashboardPage() {
   return (
     <div className="grid min-w-0 max-w-full gap-4 overflow-x-hidden sm:gap-5">
       <ParallaxHeader />
-      <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-4">
+      <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
         <StatCard
           label="Total Sales"
           value={
@@ -209,6 +218,30 @@ export function DashboardPage() {
             />
           }
           icon={CircleDollarSign}
+          isLoading={isLoading}
+        />
+        <StatCard
+          label="PNS Sales"
+          value={
+            <AnimatedCount
+              target={pnsSales}
+              prefix="₹"
+              skipAnimation={skipCountAnimation}
+            />
+          }
+          icon={Factory}
+          isLoading={isLoading}
+        />
+        <StatCard
+          label="Trading"
+          value={
+            <AnimatedCount
+              target={tradingSales}
+              prefix="₹"
+              skipAnimation={skipCountAnimation}
+            />
+          }
+          icon={ArrowLeftRight}
           isLoading={isLoading}
         />
       </div>

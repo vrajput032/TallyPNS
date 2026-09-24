@@ -28,13 +28,18 @@ function businessMonthStarts(): Date[] {
 }
 
 export async function getDashboardSummary() {
-  const [customerCount, productCount, products, salesAgg, receiptsAgg, sizeStocks] = await Promise.all([
+  const [customerCount, productCount, products, salesAgg, tradingAgg, receiptsAgg, sizeStocks] = await Promise.all([
     prisma.customer.count(),
     prisma.product.count(),
     prisma.product.findMany({ select: { price: true, currentStock: true } }),
     prisma.salesInvoice.aggregate({
       where: { deletedAt: null },
       _sum: { totalAmount: true },
+    }),
+    prisma.salesInvoice.aggregate({
+      where: { deletedAt: null, isTrading: true },
+      _sum: { totalAmount: true },
+      _count: true,
     }),
     prisma.paymentReceipt.aggregate({
       _sum: { amount: true },
@@ -81,13 +86,19 @@ export async function getDashboardSummary() {
     }
   }
 
+  const totalSales = Number(salesAgg._sum.totalAmount ?? 0);
+  const tradingSales = Number(tradingAgg._sum.totalAmount ?? 0);
+
   return {
     customerCount,
     productCount,
     stockValue,
     stockBySize,
     lowStockCount,
-    totalSales: Number(salesAgg._sum.totalAmount ?? 0),
+    totalSales,
+    pnsSales: totalSales - tradingSales,
+    tradingSales,
+    tradingInvoiceCount: tradingAgg._count,
     totalReceived: Number(receiptsAgg._sum.amount ?? 0),
     rawMaterial: {
       totalBilled: Math.round(rawMaterialTotal),

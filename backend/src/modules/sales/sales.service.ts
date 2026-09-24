@@ -134,6 +134,7 @@ export async function createSalesInvoice(data: z.infer<typeof createSalesInvoice
         invoiceDate: data.invoiceDate ?? new Date(),
         transport: data.transport?.trim() || null,
         vehicleNo: data.vehicleNo?.trim() || null,
+        isTrading: data.isTrading ?? false,
         totalAmount,
         items: {
           create: data.items.map((item) => {
@@ -293,6 +294,7 @@ export async function updateSalesInvoice(
         invoiceDate: data.invoiceDate ?? existingInvoice.invoiceDate,
         transport: data.transport?.trim() || null,
         vehicleNo: data.vehicleNo?.trim() || null,
+        isTrading: data.isTrading ?? existingInvoice.isTrading,
         totalAmount,
         items: {
           create: data.items.map((item) => {
