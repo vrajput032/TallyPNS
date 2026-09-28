@@ -68,6 +68,7 @@ erDiagram
 | `StockMovementType` | `IN`, `OUT`, `ADJUSTMENT` | `StockMovement.type` |
 | `LedgerEntryType` | `DEBIT`, `CREDIT` | `LedgerEntry.type` (unused) |
 | `PaymentMode` | `CASH`, `BANK` | receipts, vendor payments, raw-material payments |
+| `PurchaseBillKind` | `CATALOG` (legacy), `EQUIPMENT`, `TRADING`, `RUNNING_COST` | `PurchaseBill.kind` |
 | `ActivityModule` | `SALES`, `PURCHASE`, `RAW_MATERIAL`, `INVENTORY`, `PAYMENT` | `ActivityLog.module` |
 | `ActivityAction` | `CREATED`, `UPDATED`, `DELETED`, `RESTORED`, `PAYMENT_RECORDED`, `PAYMENT_UPDATED`, `PAYMENT_DELETED`, `STOCK_ADJUSTED` | `ActivityLog.action` |
 
@@ -200,12 +201,29 @@ Either `productId` or `description` is required.
 | `billNo` | String unique | `PB-{year}-{####}` |
 | `vendorId` | FK → Vendor | |
 | `billDate` | DateTime | |
+| `kind` | `PurchaseBillKind` | Default `EQUIPMENT`; indexed. Purchase tab |
 | `transport` / `vehicleNo` | String? | |
 | `totalAmount` | Decimal(14,2) | |
 | `deletedAt` | DateTime? | Indexed |
 | `createdAt` / `updatedAt` | DateTime | |
 
 **Relations:** `items`, `payments`.
+
+---
+
+### RunningCostOverride
+
+Manual ₹ for one Profit & Loss running-cost line in one month (Purchase → Running cost → Edit). Replaces the default amount from `manufacturingPnl.ts`. No soft delete; reset deletes the row.
+
+| Column | Type | Notes |
+|--------|------|--------|
+| `id` | String PK | |
+| `lineId` | String | `rent`, `akshay-salary`, `electricity`, `thekedar`, `delivery`, `other-expenses` |
+| `month` | String | `YYYY-MM`; indexed |
+| `amount` | Decimal(14,2) | `0` = removed for that month |
+| `createdAt` / `updatedAt` | DateTime | |
+
+Unique on (`lineId`, `month`).
 
 ---
 
@@ -441,6 +459,9 @@ Code (not DB lookup tables):
 | `20260824115520_rename_pipe_size_45_to_85` | Catalog size 45mm → 85mm (merge stock) |
 | `20260921120000_activity_log` | `ActivityLog` + module/action enums + RLS |
 | `20260921130000_activity_device_name` | `ActivityLog.deviceName` |
+| `20260924120000_sales_invoice_trading` | `SalesInvoice.isTrading` |
+| `20260924140000_purchase_trading_running_cost` | `PurchaseBillKind` + `TRADING`, `RUNNING_COST` |
+| `20260928120000_running_cost_override` | `RunningCostOverride` |
 
 ---
 

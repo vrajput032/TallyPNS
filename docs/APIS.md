@@ -339,6 +339,44 @@ Auth on all. Same PIN / admin pattern as sales.
 | DELETE | `/purchase/:id` | Admin + PIN, soft |
 | POST | `/purchase/:id/restore` | Admin |
 | DELETE | `/purchase/:id/permanent` | Admin + PIN |
+| GET | `/purchase/running-costs` | Monthly running costs (P&L lines + `RUNNING_COST` bills) |
+| PUT | `/purchase/running-costs/lines` | PIN. Save one amount for a line over a month range |
+| POST | `/purchase/running-costs/lines/reset` | PIN. Remove saved amounts in a month range |
+
+### Running costs
+
+`GET /purchase/running-costs` →
+
+```json
+{
+  "months": [
+    {
+      "key": "2026-09",
+      "label": "September 2026",
+      "pnlLines": [{ "id": "rent", "label": "Rent", "amount": 25000, "overridden": true }],
+      "pnlTotal": 64167,
+      "entries": [{ "id": "clxx...", "billNo": "PB-2026-0012", "title": "Diesel", "billDate": "...", "totalAmount": 4500 }],
+      "entriesTotal": 4500,
+      "total": 68667
+    }
+  ],
+  "totals": { "pnl": 439292, "entries": 39167, "combined": 478459 }
+}
+```
+
+Lines saved as ₹0 are left out of `pnlLines`.
+
+`PUT /purchase/running-costs/lines` (header `X-Delete-Pin`):
+
+```json
+{ "lineId": "rent", "fromMonth": "2026-10", "toMonth": "2027-03", "amount": 25000 }
+```
+
+`POST /purchase/running-costs/lines/reset` takes the same body without `amount`. Both return `{ "months": ["2026-10", …] }`.
+
+- `lineId`: `rent`, `akshay-salary`, `electricity`, `thekedar`, `delivery`, `other-expenses`
+- Months are `YYYY-MM`, From ≤ To, not before `2026-07`, at most 36 months → otherwise `400`
+- Saved amounts also change `GET /profit-loss` and `/profit-loss/summary`
 
 Create body:
 
