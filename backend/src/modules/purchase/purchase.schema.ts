@@ -1,4 +1,17 @@
 import { z } from "zod";
+import { RUNNING_COST_LINE_IDS } from "../../lib/manufacturingPnl.js";
+
+const yearMonth = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Use YYYY-MM");
+
+export const resetRunningCostSchema = z.object({
+  lineId: z.enum(RUNNING_COST_LINE_IDS),
+  fromMonth: yearMonth,
+  toMonth: yearMonth,
+});
+
+export const setRunningCostSchema = resetRunningCostSchema.extend({
+  amount: z.number().min(0).max(100_000_000),
+});
 
 export const purchaseBillItemSchema = z.object({
   /** Ignored for new bills — purchase is equipment only, not pipe catalog */

@@ -9,6 +9,7 @@ import type {
   PurchaseAttachment,
   PurchaseBill,
   PurchaseBillInput,
+  RunningCostRangeInput,
   RunningCostsSummary,
 } from "@/features/purchase/types";
 import {
@@ -19,12 +20,24 @@ import {
   fetchPurchaseBills,
   fetchRunningCosts,
   parseSupplierBill,
+  resetRunningCost,
+  setRunningCost,
   updatePurchaseBill,
   uploadPurchaseAttachment,
 } from "@/store/slices/purchaseSlice";
 
 export function useRunningCosts() {
   return useValueQuery<RunningCostsSummary>((s) => s.purchase.runningCosts, fetchRunningCosts);
+}
+
+export function useSetRunningCost() {
+  return useAsyncMutation<RunningCostRangeInput & { amount: number; pin: string }, string[]>(
+    setRunningCost
+  );
+}
+
+export function useResetRunningCost() {
+  return useAsyncMutation<RunningCostRangeInput & { pin: string }, string[]>(resetRunningCost);
 }
 
 export function useParseSupplierBill() {

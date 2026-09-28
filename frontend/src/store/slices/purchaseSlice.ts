@@ -4,11 +4,13 @@ import type {
   PurchaseAttachment,
   PurchaseBill,
   PurchaseBillInput,
+  RunningCostRangeInput,
   RunningCostsSummary,
 } from "@/features/purchase/types";
 import { api } from "@/lib/api";
 import { fetchProducts } from "./productsSlice";
 import { fetchDashboardSummary } from "./dashboardSlice";
+import { fetchPnlSummary } from "./profitLossSlice";
 import {
   apiErrorMessage,
   initialListState,
@@ -38,6 +40,46 @@ export const fetchRunningCosts = createAsyncThunk(
     try {
       const { data } = await api.get<RunningCostsSummary>("/purchase/running-costs");
       return data;
+    } catch (error) {
+      return rejectWithValue(apiErrorMessage(error));
+    }
+  }
+);
+
+export const setRunningCost = createAsyncThunk(
+  "purchase/setRunningCost",
+  async (
+    { pin, ...input }: RunningCostRangeInput & { amount: number; pin: string },
+    { rejectWithValue, dispatch }
+  ) => {
+    try {
+      const { data } = await api.put<{ months: string[] }>("/purchase/running-costs/lines", input, {
+        headers: { "X-Delete-Pin": pin },
+      });
+      dispatch(fetchRunningCosts({ silent: true }));
+      dispatch(fetchPnlSummary({ silent: true }));
+      return data.months;
+    } catch (error) {
+      return rejectWithValue(apiErrorMessage(error));
+    }
+  }
+);
+
+export const resetRunningCost = createAsyncThunk(
+  "purchase/resetRunningCost",
+  async (
+    { pin, ...input }: RunningCostRangeInput & { pin: string },
+    { rejectWithValue, dispatch }
+  ) => {
+    try {
+      const { data } = await api.post<{ months: string[] }>(
+        "/purchase/running-costs/lines/reset",
+        input,
+        { headers: { "X-Delete-Pin": pin } }
+      );
+      dispatch(fetchRunningCosts({ silent: true }));
+      dispatch(fetchPnlSummary({ silent: true }));
+      return data.months;
     } catch (error) {
       return rejectWithValue(apiErrorMessage(error));
     }

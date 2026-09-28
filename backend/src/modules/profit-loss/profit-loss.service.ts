@@ -3,6 +3,7 @@ import { activeOnly } from "../../lib/activeRecords.js";
 import { PIPE_SIZES_MM } from "../../lib/pipeSizes.js";
 import { resolveTaxPeriod } from "../gst/gst.service.js";
 import { loadPartnerExpensesSnapshot } from "../../lib/kirayaDelivery.js";
+import { loadRunningCostOverrides } from "../../lib/runningCostOverrides.js";
 import {
   buildMonthPnl,
   businessMonthsThrough,
@@ -105,12 +106,14 @@ function newAgg(year: number, month: number): MonthPnlInput {
 
 export async function getMonthProfitLoss(month: number, year: number): Promise<MonthPnl> {
   const period = resolveTaxPeriod(month, year);
-  const [{ invoices, bills }, expenses] = await Promise.all([
+  const [{ invoices, bills }, expenses, overrides] = await Promise.all([
     loadVouchers(period.periodGte, period.periodLt),
     loadPartnerExpensesSnapshot(),
+    loadRunningCostOverrides(),
   ]);
   const agg = newAgg(year, month);
   agg.monthLabel = period.monthLabel;
+  agg.costOverrides = overrides.get(monthKey(year, month));
   const monthExpenses = expenses.byMonth[monthKey(year, month)];
   agg.delivery = monthExpenses?.delivery ?? 0;
   agg.otherExpenses = monthExpenses?.other ?? 0;
@@ -140,14 +143,16 @@ export async function getProfitLossSummary(): Promise<{
   const afterLast = last.month === 12 ? { year: last.year + 1, month: 1 } : { year: last.year, month: last.month + 1 };
   const endExclusive = resolveTaxPeriod(afterLast.month, afterLast.year).periodGte;
 
-  const [{ invoices, bills }, expenses] = await Promise.all([
+  const [{ invoices, bills }, expenses, overrides] = await Promise.all([
     loadVouchers(first.periodGte, endExclusive),
     loadPartnerExpensesSnapshot(),
+    loadRunningCostOverrides(),
   ]);
   const buckets = new Map<string, MonthPnlInput>();
   for (const { year, month } of months) {
     const agg = newAgg(year, month);
     const key = monthKey(year, month);
+    agg.costOverrides = overrides.get(key);
     const monthExpenses = expenses.byMonth[key];
     agg.delivery = monthExpenses?.delivery ?? 0;
     agg.otherExpenses = monthExpenses?.other ?? 0;

@@ -20,6 +20,7 @@ import { SalesTotalsPrintPage } from "@/features/sales/SalesTotalsPrintPage";
 import { PurchaseBillsPage } from "@/features/purchase/PurchaseBillsPage";
 import { PurchaseBillFormPage } from "@/features/purchase/PurchaseBillFormPage";
 import { PurchaseBillDetailPage } from "@/features/purchase/PurchaseBillDetailPage";
+import { RunningCostEditPage } from "@/features/purchase/RunningCostEditPage";
 import { InventoryPage } from "@/features/inventory/InventoryPage";
 import { CashPage } from "@/features/cash/CashPage";
 import { BankPage } from "@/features/bank/BankPage";
@@ -57,6 +58,7 @@ export default function App() {
                 <Route path="/sales/:id" element={<SalesInvoiceDetailPage />} />
                 <Route path="/purchase" element={<PurchaseBillsPage />} />
                 <Route path="/purchase/new" element={<PurchaseBillFormPage />} />
+                <Route path="/purchase/running-costs/edit" element={<RunningCostEditPage />} />
                 <Route path="/purchase/:id/edit" element={<PurchaseBillFormPage />} />
                 <Route path="/purchase/:id" element={<PurchaseBillDetailPage />} />
                 <Route path="/inventory" element={<InventoryPage />} />

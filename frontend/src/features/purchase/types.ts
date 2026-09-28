@@ -67,10 +67,59 @@ export interface ParsedSupplierInvoice {
   sourceFileName: string;
 }
 
+export const RUNNING_COST_LINE_IDS = [
+  "rent",
+  "akshay-salary",
+  "electricity",
+  "thekedar",
+  "delivery",
+  "other-expenses",
+] as const;
+
+export type RunningCostLineId = (typeof RUNNING_COST_LINE_IDS)[number];
+
+export const RUNNING_COST_LINE_LABELS: Record<RunningCostLineId, string> = {
+  rent: "Rent",
+  "akshay-salary": "Akshay salary",
+  electricity: "Electricity",
+  thekedar: "Thekedar",
+  delivery: "Delivery (kiraya)",
+  "other-expenses": "Other factory expenses",
+};
+
+export function parseRunningCostLineId(value: string | null | undefined): RunningCostLineId | null {
+  return RUNNING_COST_LINE_IDS.find((id) => id === value) ?? null;
+}
+
+export function runningCostEditPath(lineId?: RunningCostLineId, month?: string) {
+  const params = new URLSearchParams();
+  if (lineId) params.set("line", lineId);
+  if (month) {
+    params.set("from", month);
+    params.set("to", month);
+  }
+  const query = params.toString();
+  return `/purchase/running-costs/edit${query ? `?${query}` : ""}`;
+}
+
+export interface RunningCostRangeInput {
+  lineId: RunningCostLineId;
+  fromMonth: string;
+  toMonth: string;
+}
+
+export interface RunningCostLine {
+  id: string;
+  label: string;
+  amount: number;
+  /** Amount was saved from the edit page instead of the default */
+  overridden: boolean;
+}
+
 export interface RunningCostMonth {
   key: string;
   label: string;
-  pnlLines: { id: string; label: string; amount: number }[];
+  pnlLines: RunningCostLine[];
   pnlTotal: number;
   entries: {
     id: string;

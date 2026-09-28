@@ -6,10 +6,19 @@ import { requireDeletePin } from "../../middleware/requireDeletePin.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import { assertAllowedAttachment, MAX_ATTACHMENT_BYTES } from "../../lib/storage.js";
 import { extractPdfText } from "../../lib/extractPdf.js";
-import { createPurchaseBillSchema } from "./purchase.schema.js";
+import {
+  createPurchaseBillSchema,
+  resetRunningCostSchema,
+  setRunningCostSchema,
+} from "./purchase.schema.js";
+import {
+  resetRunningCostOverrides,
+  setRunningCostOverrides,
+} from "../../lib/runningCostOverrides.js";
 import * as purchaseService from "./purchase.service.js";
 import { parseSupplierInvoiceText } from "./parseSupplierInvoice.js";
 import { getMonthlyRunningCosts } from "./runningCosts.js";
+import { RUNNING_COST_LINE_LABELS } from "../../lib/manufacturingPnl.js";
 import { routeParam } from "../../lib/routeParam.js";
 import { recordRequestActivity } from "../activity/activity.js";
 
@@ -34,6 +43,41 @@ purchaseRouter.get(
   "/running-costs",
   asyncHandler(async (_req, res) => {
     res.json(await getMonthlyRunningCosts());
+  })
+);
+
+purchaseRouter.put(
+  "/running-costs/lines",
+  requireDeletePin,
+  asyncHandler(async (req, res) => {
+    const data = setRunningCostSchema.parse(req.body);
+    const months = await setRunningCostOverrides(data);
+    recordRequestActivity(req, {
+      module: "PURCHASE",
+      action: "UPDATED",
+      entityId: data.lineId,
+      summary: `Set ${RUNNING_COST_LINE_LABELS[data.lineId]} to ₹${data.amount} for ${data.fromMonth} → ${data.toMonth}`,
+      amount: data.amount,
+      href: "/purchase?tab=running_cost",
+    });
+    res.json({ months });
+  })
+);
+
+purchaseRouter.post(
+  "/running-costs/lines/reset",
+  requireDeletePin,
+  asyncHandler(async (req, res) => {
+    const data = resetRunningCostSchema.parse(req.body);
+    const months = await resetRunningCostOverrides(data);
+    recordRequestActivity(req, {
+      module: "PURCHASE",
+      action: "UPDATED",
+      entityId: data.lineId,
+      summary: `Reset ${RUNNING_COST_LINE_LABELS[data.lineId]} to default for ${data.fromMonth} → ${data.toMonth}`,
+      href: "/purchase?tab=running_cost",
+    });
+    res.json({ months });
   })
 );
 

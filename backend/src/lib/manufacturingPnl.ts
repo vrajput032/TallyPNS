@@ -23,10 +23,33 @@ export const ELECTRICITY_BY_MONTH: Record<string, number> = {
 /** Delivery ₹ by `YYYY-MM`. Empty until isolated delivery totals are added. */
 export const DELIVERY_BY_MONTH: Record<string, number> = {};
 
+/** P&L cost lines whose monthly ₹ can be overridden from Purchase → Running cost. */
+export const RUNNING_COST_LINE_IDS = [
+  "rent",
+  "akshay-salary",
+  "electricity",
+  "thekedar",
+  "delivery",
+  "other-expenses",
+] as const;
+
+export type RunningCostLineId = (typeof RUNNING_COST_LINE_IDS)[number];
+
+export const RUNNING_COST_LINE_LABELS: Record<RunningCostLineId, string> = {
+  rent: "Rent",
+  "akshay-salary": "Akshay salary",
+  electricity: "Electricity",
+  thekedar: "Thekedar",
+  delivery: "Delivery (kiraya)",
+  "other-expenses": "Other factory expenses",
+};
+
 export type PnlLine = {
   id: string;
   label: string;
   amount: number;
+  /** True when the amount comes from a saved running-cost override. */
+  overridden?: boolean;
 };
 
 export type YieldHintRow = {
@@ -74,6 +97,8 @@ export type MonthPnlInput = {
     billUrl?: string | null;
   }[];
   expensesFetchedAt?: string | null;
+  /** Saved running-cost amounts for this month, keyed by cost line id. */
+  costOverrides?: Partial<Record<RunningCostLineId, number>>;
 };
 
 export type MonthPnl = {
@@ -194,14 +219,22 @@ export function buildMonthPnl(input: MonthPnlInput): MonthPnl {
       amount: scrapIncome,
     },
   ];
+  const overrides = input.costOverrides ?? {};
+  const runningCost = (id: RunningCostLineId, amount: number): PnlLine => {
+    const label = RUNNING_COST_LINE_LABELS[id];
+    const saved = overrides[id];
+    return saved === undefined
+      ? { id, label, amount }
+      : { id, label, amount: round2(saved), overridden: true };
+  };
   const costs: PnlLine[] = [
     { id: "raw-material", label: "Raw material", amount: rmTaxable },
-    { id: "thekedar", label: "Thekedar", amount: thekedar },
-    { id: "rent", label: "Rent", amount: rent },
-    { id: "electricity", label: "Electricity", amount: electricity },
-    { id: "akshay-salary", label: "Akshay salary", amount: salary },
-    { id: "delivery", label: "Delivery (kiraya)", amount: delivery },
-    { id: "other-expenses", label: "Other factory expenses", amount: otherExpenses },
+    runningCost("thekedar", thekedar),
+    runningCost("rent", rent),
+    runningCost("electricity", electricity),
+    runningCost("akshay-salary", salary),
+    runningCost("delivery", delivery),
+    runningCost("other-expenses", otherExpenses),
   ];
 
   const totalIncome = round2(income.reduce((sum, line) => sum + line.amount, 0));

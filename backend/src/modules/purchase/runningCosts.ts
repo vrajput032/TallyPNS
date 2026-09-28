@@ -6,7 +6,7 @@ import { getProfitLossSummary } from "../profit-loss/profit-loss.service.js";
 /** P&L cost lines that are material, not monthly running cost. */
 const NON_RUNNING_COST_LINES = new Set(["raw-material"]);
 
-export type RunningCostLine = { id: string; label: string; amount: number };
+export type RunningCostLine = { id: string; label: string; amount: number; overridden: boolean };
 
 export type RunningCostEntry = {
   id: string;
@@ -48,7 +48,13 @@ export async function getMonthlyRunningCosts() {
     const month = emptyMonth(key, report.monthLabel);
     month.pnlLines = report.costs
       .filter((line) => !NON_RUNNING_COST_LINES.has(line.id))
-      .map((line) => ({ id: line.id, label: line.label, amount: round2(line.amount) }));
+      .filter((line) => !(line.overridden && line.amount === 0))
+      .map((line) => ({
+        id: line.id,
+        label: line.label,
+        amount: round2(line.amount),
+        overridden: line.overridden === true,
+      }));
     month.pnlTotal = round2(month.pnlLines.reduce((sum, line) => sum + line.amount, 0));
     months.set(key, month);
   }

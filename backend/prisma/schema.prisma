@@ -191,6 +191,21 @@ model PurchaseBill {
   @@index([kind])
 }
 
+/** Manual ₹ for one P&L running-cost line (rent, salary, …) in one month; replaces the default amount. */
+model RunningCostOverride {
+  id        String   @id @default(cuid())
+  /** P&L cost line id: rent, akshay-salary, electricity, thekedar, delivery, other-expenses */
+  lineId    String
+  /** YYYY-MM */
+  month     String
+  amount    Decimal  @db.Decimal(14, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([lineId, month])
+  @@index([month])
+}
+
 model PurchaseBillItem {
   id             String       @id @default(cuid())
   purchaseBillId String
