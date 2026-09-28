@@ -27,9 +27,9 @@ function profitTone(value: number) {
   return undefined;
 }
 
-function signedInr(value: number) {
+function signedInr(value: number, withSymbol = true) {
   const sign = value < 0 ? "−" : "";
-  return `${sign}₹${formatInr(Math.abs(value), 0)}`;
+  return `${sign}${withSymbol ? "₹" : ""}${formatInr(Math.abs(value), 0)}`;
 }
 
 interface TradingPnlCardProps {
@@ -59,7 +59,6 @@ export function TradingPnlCard({ data, isLoading }: TradingPnlCardProps) {
   if (!data) return null;
 
   const hasActivity = data.invoiceCount > 0 || data.billCount > 0;
-  const margin = data.sales > 0 ? Math.round((data.profit / data.sales) * 1000) / 10 : null;
   const activeMonths = data.months.filter((row) => row.sales !== 0 || row.purchases !== 0);
 
   return (
@@ -68,7 +67,7 @@ export function TradingPnlCard({ data, isLoading }: TradingPnlCardProps) {
       <CardHeader>
         <CardTitle className="text-base font-medium">Trading Profit &amp; Loss</CardTitle>
         <CardDescription className="text-xs">
-          Goods bought and resold · amounts before GST
+          Goods bought and resold · sold − bought − GST = profit
         </CardDescription>
         <CardAction className="flex gap-1">
           <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate("/sales")}>
@@ -80,7 +79,7 @@ export function TradingPnlCard({ data, isLoading }: TradingPnlCardProps) {
         </CardAction>
       </CardHeader>
       <CardContent className="grid gap-4">
-        <div className="grid min-w-0 grid-cols-3 gap-2">
+        <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4">
           <div className="min-w-0 overflow-hidden rounded-xl bg-muted/60 px-2 py-3 text-center sm:px-3">
             <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-[11px]">
               Sold
@@ -103,6 +102,17 @@ export function TradingPnlCard({ data, isLoading }: TradingPnlCardProps) {
               {data.billCount} bill{data.billCount === 1 ? "" : "s"}
             </p>
           </div>
+          <div className="min-w-0 overflow-hidden rounded-xl bg-muted/60 px-2 py-3 text-center sm:px-3">
+            <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-[11px]">
+              {data.gst < 0 ? "GST credit" : "GST payable"}
+            </p>
+            <p className="mt-1 truncate text-sm font-bold tabular-nums sm:text-xl">
+              ₹{formatInr(Math.abs(data.gst), 0)}
+            </p>
+            <p className="truncate text-[10px] text-muted-foreground sm:text-xs">
+              {data.gst < 0 ? "Added back" : "Owed to govt"}
+            </p>
+          </div>
           <div
             className={cn(
               "min-w-0 overflow-hidden rounded-xl px-2 py-3 text-center sm:px-3",
@@ -120,9 +130,7 @@ export function TradingPnlCard({ data, isLoading }: TradingPnlCardProps) {
             <p className={cn("mt-1 truncate text-sm font-bold tabular-nums sm:text-xl", profitTone(data.profit))}>
               {signedInr(data.profit)}
             </p>
-            <p className="truncate text-[10px] text-muted-foreground sm:text-xs">
-              {margin == null ? "—" : `${margin}% margin`}
-            </p>
+            <p className="truncate text-[10px] text-muted-foreground sm:text-xs">After GST</p>
           </div>
         </div>
 
@@ -144,6 +152,7 @@ export function TradingPnlCard({ data, isLoading }: TradingPnlCardProps) {
                   <TableHead>Month</TableHead>
                   <TableHead className="text-right">Sold</TableHead>
                   <TableHead className="text-right">Bought</TableHead>
+                  <TableHead className="text-right">GST</TableHead>
                   <TableHead className="text-right">Profit</TableHead>
                 </TableRow>
               </TableHeader>
@@ -153,6 +162,7 @@ export function TradingPnlCard({ data, isLoading }: TradingPnlCardProps) {
                     <TableCell className="font-medium">{row.label}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatInr(row.sales, 0)}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatInr(row.purchases, 0)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{signedInr(row.gst, false)}</TableCell>
                     <TableCell className={cn("text-right font-semibold tabular-nums", profitTone(row.profit))}>
                       {signedInr(row.profit)}
                     </TableCell>

@@ -1,5 +1,5 @@
 import type { KnownBlock, View } from "@slack/types";
-import { PIPE_SIZES_MM } from "../../lib/pipeSizes.js";
+import { formatPipeSize, PIPE_SIZES_MM } from "../../lib/pipeSizes.js";
 import { truncateSlackText } from "./slack.format.js";
 import {
   cancelButtonBlock,
@@ -35,7 +35,7 @@ export function stockDirectionBlocks(productName: string, sizeMm: number) {
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `*${truncateSlackText(productName, 50)}* · ${sizeMm}mm\nIncrease or decrease stock?`,
+        text: `*${truncateSlackText(productName, 50)}* · ${formatPipeSize(sizeMm)}\nIncrease or decrease stock?`,
       },
     },
     {
@@ -88,7 +88,7 @@ export function stockAdjustModal(session: SlackStockSession, productName: string
         type: "section",
         text: {
           type: "mrkdwn",
-          text: `*${truncateSlackText(productName, 50)}* · ${session.sizeMm}mm · ${direction}`,
+          text: `*${truncateSlackText(productName, 50)}* · ${formatPipeSize(session.sizeMm ?? 0)} · ${direction}`,
         },
       },
       {
@@ -128,7 +128,7 @@ export function stockSuccessBlocks(
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `:white_check_mark: ${verb} *${truncateSlackText(productName, 50)}* ${sizeMm}mm by *${Math.abs(signedQty).toLocaleString("en-IN")}*.\n<${frontendUrl}/inventory|View inventory>`,
+        text: `:white_check_mark: ${verb} *${truncateSlackText(productName, 50)}* ${formatPipeSize(sizeMm)} by *${Math.abs(signedQty).toLocaleString("en-IN")}*.\n<${frontendUrl}/inventory|View inventory>`,
       },
     },
   ] satisfies KnownBlock[];

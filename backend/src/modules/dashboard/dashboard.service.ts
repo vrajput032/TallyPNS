@@ -1,7 +1,7 @@
 import { prisma } from "../../lib/prisma.js";
 import { activeOnly } from "../../lib/activeRecords.js";
 import { businessMonthsThrough, monthKey, round2 } from "../../lib/manufacturingPnl.js";
-import { PIPE_SIZES_MM } from "../../lib/pipeSizes.js";
+import { PIPE_SIZES_MM, quantityForCatalogSize } from "../../lib/pipeSizes.js";
 
 const LOW_STOCK_THRESHOLD = 10;
 
@@ -47,70 +47,103 @@ function shortMonthLabel(year: number, month: number): string {
   });
 }
 
+/** Bill totals with GST; the before-GST parts are kept so profit excludes GST owed to the government. */
+type TradingTotals = {
+  sales: number;
+  purchases: number;
+  salesBeforeGst: number;
+  purchasesBeforeGst: number;
+};
+
 export type TradingPnlMonth = {
   key: string;
   label: string;
   sales: number;
   purchases: number;
+  /** Output GST on trading sales minus input GST on trading purchases (negative = credit). */
+  gst: number;
   profit: number;
 };
 
-/** Trading = goods bought and resold as-is. Amounts are before GST (qty × rate). */
+function emptyTotals(): TradingTotals {
+  return { sales: 0, purchases: 0, salesBeforeGst: 0, purchasesBeforeGst: 0 };
+}
+
+function summarizeTotals(totals: TradingTotals) {
+  const outputGst = totals.sales - totals.salesBeforeGst;
+  const inputGst = totals.purchases - totals.purchasesBeforeGst;
+  return {
+    sales: round2(totals.sales),
+    purchases: round2(totals.purchases),
+    gst: round2(outputGst - inputGst),
+    profit: round2(totals.salesBeforeGst - totals.purchasesBeforeGst),
+  };
+}
+
+/** Trading = goods bought and resold as-is. Sold − bought − GST payable = profit. */
 async function getTradingPnl() {
   const [invoices, bills] = await Promise.all([
     prisma.salesInvoice.findMany({
       where: { ...activeOnly, isTrading: true },
-      select: { invoiceDate: true, items: { select: { quantity: true, rate: true } } },
+      select: {
+        invoiceDate: true,
+        totalAmount: true,
+        items: { select: { quantity: true, rate: true } },
+      },
     }),
     prisma.purchaseBill.findMany({
       where: { ...activeOnly, kind: "TRADING" },
-      select: { billDate: true, items: { select: { quantity: true, rate: true } } },
+      select: {
+        billDate: true,
+        totalAmount: true,
+        items: { select: { quantity: true, rate: true } },
+      },
     }),
   ]);
 
-  const months = new Map<string, TradingPnlMonth>();
+  const months = new Map<string, { key: string; label: string; totals: TradingTotals }>();
   for (const { year, month } of businessMonthsThrough()) {
     const key = monthKey(year, month);
-    months.set(key, { key, label: shortMonthLabel(year, month), sales: 0, purchases: 0, profit: 0 });
+    months.set(key, { key, label: shortMonthLabel(year, month), totals: emptyTotals() });
   }
 
-  function bucket(date: Date): TradingPnlMonth {
+  function bucket(date: Date): TradingTotals {
     const year = date.getUTCFullYear();
     const month = date.getUTCMonth() + 1;
     const key = monthKey(year, month);
     const existing = months.get(key);
-    if (existing) return existing;
-    const created = { key, label: shortMonthLabel(year, month), sales: 0, purchases: 0, profit: 0 };
+    if (existing) return existing.totals;
+    const created = { key, label: shortMonthLabel(year, month), totals: emptyTotals() };
     months.set(key, created);
-    return created;
+    return created.totals;
   }
 
-  let sales = 0;
-  let purchases = 0;
+  const overall = emptyTotals();
   for (const invoice of invoices) {
-    const amount = taxableTotal(invoice.items);
-    sales += amount;
-    bucket(invoice.invoiceDate).sales += amount;
+    const total = Number(invoice.totalAmount) || 0;
+    const beforeGst = taxableTotal(invoice.items);
+    const month = bucket(invoice.invoiceDate);
+    overall.sales += total;
+    overall.salesBeforeGst += beforeGst;
+    month.sales += total;
+    month.salesBeforeGst += beforeGst;
   }
   for (const bill of bills) {
-    const amount = taxableTotal(bill.items);
-    purchases += amount;
-    bucket(bill.billDate).purchases += amount;
+    const total = Number(bill.totalAmount) || 0;
+    const beforeGst = taxableTotal(bill.items);
+    const month = bucket(bill.billDate);
+    overall.purchases += total;
+    overall.purchasesBeforeGst += beforeGst;
+    month.purchases += total;
+    month.purchasesBeforeGst += beforeGst;
   }
 
-  const monthRows = [...months.values()]
-    .map((row) => ({
-      ...row,
-      sales: round2(row.sales),
-      purchases: round2(row.purchases),
-      profit: round2(row.sales - row.purchases),
-    }))
+  const monthRows: TradingPnlMonth[] = [...months.values()]
+    .map(({ key, label, totals }) => ({ key, label, ...summarizeTotals(totals) }))
     .sort((a, b) => (a.key < b.key ? 1 : a.key > b.key ? -1 : 0));
 
   return {
-    sales: round2(sales),
-    purchases: round2(purchases),
-    profit: round2(sales - purchases),
+    ...summarizeTotals(overall),
     invoiceCount: invoices.length,
     billCount: bills.length,
     months: monthRows,
@@ -153,7 +186,7 @@ export async function getDashboardSummary() {
 
   const stockBySize = PIPE_SIZES_MM.map((sizeMm) => ({
     sizeMm,
-    quantity: qtyBySize.get(sizeMm) ?? 0,
+    quantity: quantityForCatalogSize(qtyBySize, sizeMm),
   }));
 
   const lowStockCount = products.filter(

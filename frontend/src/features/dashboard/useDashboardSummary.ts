@@ -13,13 +13,16 @@ export interface TradingPnlMonth {
   label: string;
   sales: number;
   purchases: number;
+  gst: number;
   profit: number;
 }
 
-/** Trading sales vs trading purchase bills, before GST. */
+/** Trading sales vs trading purchase bills (with GST). Profit = sales − purchases − gst. */
 export interface TradingPnlSummary {
   sales: number;
   purchases: number;
+  /** Output GST minus input GST; negative means a GST credit. */
+  gst: number;
   profit: number;
   invoiceCount: number;
   billCount: number;

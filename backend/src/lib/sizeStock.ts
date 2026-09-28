@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { ApiError } from "../middleware/errorHandler.js";
-import { isPipeSizeMm } from "./pipeSizes.js";
+import { formatPipeSize, isPipeSizeMm } from "./pipeSizes.js";
 
 export async function applySizeStockDelta(
   tx: Prisma.TransactionClient,
@@ -8,7 +8,7 @@ export async function applySizeStockDelta(
 ) {
   const { productId, sizeMm, delta } = params;
   if (!isPipeSizeMm(sizeMm)) {
-    throw new ApiError(400, `Invalid size ${sizeMm}mm`);
+    throw new ApiError(400, `Invalid size ${formatPipeSize(sizeMm)}`);
   }
 
   const existing = await tx.productSizeStock.findUnique({
@@ -16,7 +16,7 @@ export async function applySizeStockDelta(
   });
   const next = Number(existing?.quantity ?? 0) + delta;
   if (next < 0) {
-    throw new ApiError(400, `Insufficient ${sizeMm}mm stock`);
+    throw new ApiError(400, `Insufficient ${formatPipeSize(sizeMm)} stock`);
   }
 
   if (existing) {

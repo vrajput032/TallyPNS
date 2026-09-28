@@ -11,7 +11,7 @@ import { StockAdjustmentDialog } from "./StockAdjustmentDialog";
 import { useStock, useStockMovements } from "./useInventory";
 import { useUploadProductImage } from "@/features/products/useProducts";
 import type { StockMovement, StockRow } from "./types";
-import { formatPipeSize, LOW_STOCK_QTY, PIPE_SIZES_MM } from "@/lib/pipeSizes";
+import { formatPipeSize, LOW_STOCK_QTY, PIPE_SIZES_MM, pipeSizeMatches } from "@/lib/pipeSizes";
 import { apiErrorMessage } from "@/lib/apiError";
 
 const LOW_STOCK_THRESHOLD = LOW_STOCK_QTY;
@@ -26,7 +26,9 @@ interface SizeCard {
 function sizeCardsFor(row: StockRow | undefined): SizeCard[] {
   return PIPE_SIZES_MM.map((sizeMm) => ({
     sizeMm,
-    qty: Number(row?.sizeStocks?.find((s) => Number(s.sizeMm) === sizeMm)?.quantity ?? 0),
+    qty: Number(
+      row?.sizeStocks?.find((s) => pipeSizeMatches(Number(s.sizeMm), sizeMm))?.quantity ?? 0
+    ),
   }));
 }
 

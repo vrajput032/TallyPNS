@@ -1,5 +1,6 @@
 import type { Customer } from "@/features/customers/types";
 import type { Product } from "@/features/products/types";
+import { formatPipeSize } from "@/lib/pipeSizes";
 
 export interface SalesInvoiceItem {
   id: string;
@@ -65,8 +66,8 @@ export interface SalesInvoiceInput {
 
 export function salesItemDescription(item: SalesInvoiceItem) {
   if (item.product?.name) {
-    const size =
-      item.sizeMm != null && Number(item.sizeMm) > 0 ? ` ${Number(item.sizeMm)}mm` : "";
+    const sizeMm = item.sizeMm != null ? Number(item.sizeMm) : 0;
+    const size = sizeMm > 0 ? ` ${formatPipeSize(sizeMm)}` : "";
     return `${item.product.name}${size}`;
   }
   return item.description?.trim() || "Item";
