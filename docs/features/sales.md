@@ -16,3 +16,16 @@ GST tax invoices to customers.
 - Print view matches a GST tax invoice (company header, GSTIN, bank details).
 - **Payments:** record receipts (cash or bank) against the invoice. Status: PENDING / PARTIAL / PAID. Cannot overpay.
 - Edit and delete require the deletion PIN. Delete is **soft** (recycle bin) and reverses stock. Permanent delete is admin + PIN.
+
+## List filters (`/sales`)
+
+- **Month / All** toggle, plus these filters (combined with AND, applied in the browser):
+  - **Customer** — customers that have at least one invoice
+  - **Search** — invoice number, customer name or vehicle number
+  - **Payment** — All, Unpaid (pending + partial), Pending, Partial, Paid
+  - **Type** — Factory + trading, Factory only, Trading only
+  - **Due** — Any, Overdue, Due in 7 days (only invoices with a balance and a customer payment term)
+- **Clear** resets all filters. Totals (pieces, amount) follow the filtered list.
+- Desktop shows the filter row under the month controls; mobile opens it from the **Filters** button (badge = number of active filters).
+- Filters live in the URL (`customer`, `q`, `status`, `type`, `due`), so they survive opening an invoice and going back.
+- **Download PDF** (`/sales/print-totals`) applies the same filters and names them in the heading. **Download bills** (`/sales/print-month`) always prints every bill of the month.

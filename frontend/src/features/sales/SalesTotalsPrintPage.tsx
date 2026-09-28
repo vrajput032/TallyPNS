@@ -24,6 +24,7 @@ import {
   salesTotalsPrintFileName,
   type SalesTotalsPeriod,
 } from "./salesMonthUtils";
+import { applySalesFilters, describeSalesFilters, parseSalesFilters } from "./salesFilters";
 import { invoicePieces, type SalesInvoice } from "./types";
 import { useSalesInvoices } from "./useSales";
 
@@ -256,11 +257,16 @@ export function SalesTotalsPrintPage() {
   const isCompactNav = useIsCompactNav();
   const period = parseSalesTotalsQuery(searchParams);
   const { data: invoices, isLoading } = useSalesInvoices();
+  const filters = useMemo(() => parseSalesFilters(searchParams), [searchParams]);
+  const filterSummary = describeSalesFilters(
+    filters,
+    invoices?.find((invoice) => invoice.customerId === filters.customerId)?.customer.name
+  );
 
   const rows = useMemo(() => {
     if (!period || !invoices) return [];
-    return invoicesForPeriod(invoices, period);
-  }, [invoices, period]);
+    return applySalesFilters(invoicesForPeriod(invoices, period), filters);
+  }, [invoices, period, filters]);
 
   const totals = useMemo(() => {
     return rows.reduce(
@@ -303,7 +309,7 @@ export function SalesTotalsPrintPage() {
   if (isLoading) return <DetailSkeleton />;
 
   const selectedPeriod = period;
-  const label = salesTotalsPeriodLabel(selectedPeriod);
+  const label = [salesTotalsPeriodLabel(selectedPeriod), filterSummary].filter(Boolean).join(" · ");
   const generatedOn = new Date().toLocaleDateString("en-GB");
 
   function handlePrint() {

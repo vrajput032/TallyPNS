@@ -18,10 +18,11 @@ import {
   MessageSquarePlus,
   Pencil,
   Plus,
+  SlidersHorizontal,
   Trash2,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ConfirmDeletePinDialog } from "@/components/ConfirmDeletePinDialog";
@@ -45,6 +46,16 @@ import {
 } from "@/components/ui/table";
 import { useIsCompactNav } from "@/hooks/useIsMobile";
 import { SalesInvoiceChatSheet } from "./SalesInvoiceChatSheet";
+import { SalesFiltersBar } from "./SalesFiltersBar";
+import {
+  activeSalesFilterCount,
+  applySalesFilters,
+  describeSalesFilters,
+  invoiceCustomers,
+  parseSalesFilters,
+  writeSalesFilters,
+  type SalesFilters,
+} from "./salesFilters";
 import {
   isInMonth,
   monthInputValue,
@@ -316,11 +327,36 @@ export function SalesInvoicesPage() {
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filters = useMemo(() => parseSalesFilters(searchParams), [searchParams]);
+  const activeFilters = activeSalesFilterCount(filters);
+  const [filtersOpen, setFiltersOpen] = useState(activeFilters > 0);
+  const customers = useMemo(() => invoiceCustomers(invoices ?? []), [invoices]);
+  const filterSummary = describeSalesFilters(
+    filters,
+    customers.find((customer) => customer.id === filters.customerId)?.name
+  );
+
+  function setFilters(next: SalesFilters) {
+    setSearchParams(writeSalesFilters(searchParams, next), { replace: true });
+  }
+
   const filteredInvoices = useMemo(() => {
     const list = invoices ?? [];
-    if (viewMode === "all") return list;
-    return list.filter((invoice) => isInMonth(invoice.invoiceDate, year, month));
-  }, [invoices, viewMode, year, month]);
+    const inPeriod =
+      viewMode === "all"
+        ? list
+        : list.filter((invoice) => isInMonth(invoice.invoiceDate, year, month));
+    return applySalesFilters(inPeriod, filters);
+  }, [invoices, viewMode, year, month, filters]);
+
+  const periodLabel = viewMode === "month" ? monthLabel(year, month) : "All months";
+  const emptyMessage =
+    activeFilters > 0
+      ? "No invoices match these filters."
+      : viewMode === "month"
+        ? `No invoices found for ${monthLabel(year, month)}.`
+        : "No invoices found.";
 
   const table = useReactTable({
     data: filteredInvoices,
@@ -379,11 +415,11 @@ export function SalesInvoicesPage() {
   }
 
   function openTotalsPdf() {
-    if (viewMode === "all") {
-      navigate("/sales/print-totals?view=all");
-      return;
-    }
-    navigate(`/sales/print-totals?year=${year}&month=${month}`);
+    const period =
+      viewMode === "all"
+        ? new URLSearchParams({ view: "all" })
+        : new URLSearchParams({ year: String(year), month: String(month) });
+    navigate(`/sales/print-totals?${writeSalesFilters(period, filters).toString()}`);
   }
 
   return (
@@ -430,6 +466,23 @@ export function SalesInvoicesPage() {
                 All
               </button>
             </div>
+
+            <Button
+              type="button"
+              variant={filtersOpen || activeFilters > 0 ? "default" : "outline"}
+              size="icon"
+              className="relative"
+              onClick={() => setFiltersOpen((open) => !open)}
+              aria-label="Filters"
+              aria-expanded={filtersOpen}
+            >
+              <SlidersHorizontal className="size-4" />
+              {activeFilters > 0 ? (
+                <span className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
+                  {activeFilters}
+                </span>
+              ) : null}
+            </Button>
 
             <DropdownMenu>
               <DropdownMenuTrigger
@@ -509,12 +562,17 @@ export function SalesInvoicesPage() {
             </div>
           )}
 
+          {filtersOpen ? (
+            <SalesFiltersBar filters={filters} customers={customers} onChange={setFilters} compact />
+          ) : null}
+
           <p className="text-xs text-muted-foreground">
-            {viewMode === "month" ? monthLabel(year, month) : "All months"} ·{" "}
-            {visibleRows.length} invoice{visibleRows.length === 1 ? "" : "s"}
+            {periodLabel} · {visibleRows.length} invoice{visibleRows.length === 1 ? "" : "s"}
+            {filterSummary ? ` · ${filterSummary}` : ""}
           </p>
         </div>
       ) : (
+        <div className="grid min-w-0 gap-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -577,12 +635,18 @@ export function SalesInvoicesPage() {
             )}
           </div>
           <p className="text-sm text-muted-foreground">
-            {viewMode === "month"
-              ? `${monthLabel(year, month)} · ${visibleRows.length} invoice${
-                  visibleRows.length === 1 ? "" : "s"
-                }`
-              : `All months · ${visibleRows.length} invoice${visibleRows.length === 1 ? "" : "s"}`}
+            {periodLabel} · {visibleRows.length} invoice{visibleRows.length === 1 ? "" : "s"}
           </p>
+        </div>
+        <SalesFiltersBar
+          filters={filters}
+          customers={customers}
+          onChange={setFilters}
+          compact={false}
+        />
+        {filterSummary ? (
+          <p className="-mt-1 text-xs text-muted-foreground">Filtered: {filterSummary}</p>
+        ) : null}
         </div>
       )}
 
@@ -605,11 +669,7 @@ export function SalesInvoicesPage() {
           <MobileInvoiceCards
             invoices={visibleRows.map((row) => row.original)}
             isLoading={isLoading}
-            emptyMessage={
-              viewMode === "month"
-                ? `No invoices found for ${monthLabel(year, month)}.`
-                : "No invoices found."
-            }
+            emptyMessage={emptyMessage}
             onView={(invoice) => navigate(`/sales/${invoice.id}`)}
             onEdit={(invoice) => navigate(`/sales/${invoice.id}/edit`)}
             onDelete={allowDelete ? handleDelete : undefined}
@@ -645,9 +705,7 @@ export function SalesInvoicesPage() {
               ) : table.getRowModel().rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={columns.length + 1} className="text-center text-muted-foreground">
-                    {viewMode === "month"
-                      ? `No invoices found for ${monthLabel(year, month)}.`
-                      : "No invoices found."}
+                    {emptyMessage}
                   </TableCell>
                 </TableRow>
               ) : (
