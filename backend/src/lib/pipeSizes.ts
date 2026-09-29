@@ -13,6 +13,7 @@ export const PIPE_SIZE_CATALOG = [
   { sizeMm: 70, label: "70mm" },
   { sizeMm: SIZE_70MM_WITHOUT_CHUDI, label: "70mm without chudi" },
   { sizeMm: 82, label: "82mm" },
+  { sizeMm: 45, label: "45mm" },
 ] as const;
 
 export const PIPE_SIZES_MM = PIPE_SIZE_CATALOG.map((row) => row.sizeMm);
