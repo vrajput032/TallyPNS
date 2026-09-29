@@ -1,3 +1,5 @@
+import type { CommissionType } from "@/features/commission/commission";
+
 export interface Customer {
   id: string;
   name: string;
@@ -7,6 +9,8 @@ export interface Customer {
   address: string | null;
   openingBalance: string;
   paymentTermDays: number;
+  commissionType: CommissionType | null;
+  commissionRate: string | null;
   totalBilled: number;
   totalPaid: number;
   balanceAmount: number;
@@ -22,4 +26,6 @@ export interface CustomerInput {
   address?: string;
   openingBalance: number;
   paymentTermDays: number;
+  commissionType: CommissionType | null;
+  commissionRate: number | null;
 }

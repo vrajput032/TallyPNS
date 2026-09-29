@@ -57,7 +57,7 @@ export interface CashBankEntry {
   amount: number;
   reference: string | null;
   narration: string | null;
-  source: "receipt" | "payment";
+  source: "receipt" | "payment" | "commission";
 }
 
 export interface CashBankBook {

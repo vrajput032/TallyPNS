@@ -20,18 +20,44 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  COMMISSION_TYPES,
+  commissionTypeLabel,
+  parseCommissionType,
+} from "@/features/commission/commission";
 import { useCreateCustomer, useUpdateCustomer } from "./useCustomers";
 import type { Customer } from "./types";
 
-const customerSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  phone: z.string().optional(),
-  email: z.string().email("Invalid email").optional().or(z.literal("")),
-  gstin: z.string().optional(),
-  address: z.string().optional(),
-  openingBalance: z.coerce.number(),
-  paymentTermDays: z.coerce.number().int().min(0),
-});
+const NO_COMMISSION = "NONE";
+
+const customerSchema = z
+  .object({
+    name: z.string().min(1, "Name is required"),
+    phone: z.string().optional(),
+    email: z.string().email("Invalid email").optional().or(z.literal("")),
+    gstin: z.string().optional(),
+    address: z.string().optional(),
+    openingBalance: z.coerce.number(),
+    paymentTermDays: z.coerce.number().int().min(0),
+    commissionType: z.string(),
+    commissionRate: z.coerce.number().min(0),
+  })
+  .superRefine((values, ctx) => {
+    const type = parseCommissionType(values.commissionType);
+    if (!type) return;
+    if (values.commissionRate <= 0) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Enter the commission rate", path: ["commissionRate"] });
+    } else if (type === "PERCENT" && values.commissionRate > 100) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Percent must be 100 or less", path: ["commissionRate"] });
+    }
+  });
 
 type CustomerFormValues = z.infer<typeof customerSchema>;
 
@@ -43,7 +69,14 @@ const emptyValues: CustomerFormValues = {
   address: "",
   openingBalance: 0,
   paymentTermDays: 0,
+  commissionType: NO_COMMISSION,
+  commissionRate: 0,
 };
+
+function rateLabel(type: string) {
+  const parsed = parseCommissionType(type);
+  return parsed ? `Rate (${commissionTypeLabel(parsed)})` : "Rate";
+}
 
 interface CustomerFormDialogProps {
   open: boolean;
@@ -73,14 +106,24 @@ export function CustomerFormDialog({ open, onOpenChange, customer }: CustomerFor
               address: customer.address ?? "",
               openingBalance: Number(customer.openingBalance),
               paymentTermDays: customer.paymentTermDays ?? 0,
+              commissionType: customer.commissionType ?? NO_COMMISSION,
+              commissionRate: Number(customer.commissionRate ?? 0),
             }
           : emptyValues
       );
     }
   }, [open, customer, form]);
 
+  const commissionType = form.watch("commissionType");
+
   function onSubmit(values: CustomerFormValues) {
-    const input = { ...values, email: values.email || undefined };
+    const type = parseCommissionType(values.commissionType);
+    const input = {
+      ...values,
+      email: values.email || undefined,
+      commissionType: type,
+      commissionRate: type ? values.commissionRate : null,
+    };
     const mutation = isEditing
       ? updateCustomer.mutateAsync({ id: customer.id, input })
       : createCustomer.mutateAsync(input);
@@ -187,6 +230,53 @@ export function CustomerFormDialog({ open, onOpenChange, customer }: CustomerFor
                 </FormItem>
               )}
             />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="commissionType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Commission</FormLabel>
+                    <Select value={field.value} onValueChange={(value) => field.onChange(String(value))}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue>
+                            {(value: string | null) => {
+                              const type = parseCommissionType(value);
+                              return type ? commissionTypeLabel(type) : "No commission";
+                            }}
+                          </SelectValue>
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value={NO_COMMISSION}>No commission</SelectItem>
+                        {COMMISSION_TYPES.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {commissionTypeLabel(type)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {parseCommissionType(commissionType) ? (
+                <FormField
+                  control={form.control}
+                  name="commissionRate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{rateLabel(commissionType)}</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" min="0" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : null}
+            </div>
             <FormField
               control={form.control}
               name="address"

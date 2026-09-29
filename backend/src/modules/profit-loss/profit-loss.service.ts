@@ -4,6 +4,7 @@ import { PIPE_SIZES_MM } from "../../lib/pipeSizes.js";
 import { resolveTaxPeriod } from "../gst/gst.service.js";
 import { loadPartnerExpensesSnapshot } from "../../lib/kirayaDelivery.js";
 import { loadRunningCostOverrides } from "../../lib/runningCostOverrides.js";
+import { loadLumpSumCommissionByMonth } from "../commission/commission.service.js";
 import {
   buildMonthPnl,
   businessMonthsThrough,
@@ -16,6 +17,8 @@ import {
 
 type InvoiceRow = {
   invoiceDate: Date;
+  isTrading: boolean;
+  commissionAmount: unknown;
   items: {
     productId: string | null;
     sizeMm: unknown;
@@ -39,6 +42,9 @@ function emptySizeRows(): { sizeMm: number; quantity: number }[] {
 }
 
 function addInvoiceToAgg(agg: MonthPnlInput, invoice: InvoiceRow) {
+  if (!invoice.isTrading) {
+    agg.commission = (agg.commission ?? 0) + (Number(invoice.commissionAmount) || 0);
+  }
   for (const item of invoice.items) {
     const qty = Number(item.quantity);
     const rate = Number(item.rate);
@@ -85,6 +91,8 @@ async function loadVouchers(from: Date, toExclusive: Date): Promise<{
       where: { ...activeOnly, invoiceDate: { gte: from, lt: toExclusive } },
       select: {
         invoiceDate: true,
+        isTrading: true,
+        commissionAmount: true,
         items: { select: { productId: true, sizeMm: true, quantity: true, rate: true } },
       },
     }),
@@ -106,14 +114,16 @@ function newAgg(year: number, month: number): MonthPnlInput {
 
 export async function getMonthProfitLoss(month: number, year: number): Promise<MonthPnl> {
   const period = resolveTaxPeriod(month, year);
-  const [{ invoices, bills }, expenses, overrides] = await Promise.all([
+  const [{ invoices, bills }, expenses, overrides, lumpSums] = await Promise.all([
     loadVouchers(period.periodGte, period.periodLt),
     loadPartnerExpensesSnapshot(),
     loadRunningCostOverrides(),
+    loadLumpSumCommissionByMonth(),
   ]);
   const agg = newAgg(year, month);
   agg.monthLabel = period.monthLabel;
   agg.costOverrides = overrides.get(monthKey(year, month));
+  agg.commission = lumpSums.get(monthKey(year, month)) ?? 0;
   const monthExpenses = expenses.byMonth[monthKey(year, month)];
   agg.delivery = monthExpenses?.delivery ?? 0;
   agg.otherExpenses = monthExpenses?.other ?? 0;
@@ -143,16 +153,18 @@ export async function getProfitLossSummary(): Promise<{
   const afterLast = last.month === 12 ? { year: last.year + 1, month: 1 } : { year: last.year, month: last.month + 1 };
   const endExclusive = resolveTaxPeriod(afterLast.month, afterLast.year).periodGte;
 
-  const [{ invoices, bills }, expenses, overrides] = await Promise.all([
+  const [{ invoices, bills }, expenses, overrides, lumpSums] = await Promise.all([
     loadVouchers(first.periodGte, endExclusive),
     loadPartnerExpensesSnapshot(),
     loadRunningCostOverrides(),
+    loadLumpSumCommissionByMonth(),
   ]);
   const buckets = new Map<string, MonthPnlInput>();
   for (const { year, month } of months) {
     const agg = newAgg(year, month);
     const key = monthKey(year, month);
     agg.costOverrides = overrides.get(key);
+    agg.commission = lumpSums.get(key) ?? 0;
     const monthExpenses = expenses.byMonth[key];
     agg.delivery = monthExpenses?.delivery ?? 0;
     agg.otherExpenses = monthExpenses?.other ?? 0;

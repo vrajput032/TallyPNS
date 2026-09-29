@@ -11,7 +11,22 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatInr } from "@/lib/formatInr";
-import type { CashBankBook } from "./types";
+import type { CashBankBook, CashBankEntry } from "./types";
+
+function entryTypeLabel(entry: CashBankEntry): string {
+  switch (entry.source) {
+    case "receipt":
+      return "Receipt";
+    case "payment":
+      return "Payment";
+    case "commission":
+      return "Commission";
+    default: {
+      const _exhaustive: never = entry.source;
+      return _exhaustive;
+    }
+  }
+}
 
 export function CashBankBookPage({
   title,
@@ -83,7 +98,7 @@ export function CashBankBookPage({
                     {new Date(entry.date).toLocaleDateString("en-GB")}
                   </TableCell>
                   <TableCell>{entry.voucherNo}</TableCell>
-                  <TableCell>{entry.kind === "IN" ? "Receipt" : "Payment"}</TableCell>
+                  <TableCell>{entryTypeLabel(entry)}</TableCell>
                   <TableCell>{entry.party}</TableCell>
                   <TableCell>{entry.against}</TableCell>
                   <TableCell className="text-right">

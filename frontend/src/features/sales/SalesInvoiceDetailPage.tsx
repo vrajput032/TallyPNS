@@ -1,6 +1,6 @@
 import { Banknote, Pencil, Printer, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ConfirmDeletePinDialog } from "@/components/ConfirmDeletePinDialog";
@@ -159,6 +159,16 @@ export function SalesInvoiceDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {Number(invoice.commissionAmount ?? 0) > 0 ? (
+        <p className="print:hidden text-sm text-muted-foreground">
+          Customer commission on this bill:{" "}
+          <span className="font-medium text-foreground">₹{formatInr(invoice.commissionAmount)}</span> ·{" "}
+          <Link to={`/commission/${invoice.customerId}`} className="text-primary underline-offset-2 hover:underline">
+            View commission
+          </Link>
+        </p>
+      ) : null}
 
       {(invoice.receipts?.length ?? 0) > 0 && (
         <div className="print:hidden min-w-0 overflow-x-auto rounded-md border bg-card">

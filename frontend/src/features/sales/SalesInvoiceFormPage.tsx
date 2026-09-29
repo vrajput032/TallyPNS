@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { calcInvoiceCommission, formatCommissionRate } from "@/features/commission/commission";
 import { useCustomers } from "@/features/customers/useCustomers";
 import { useProducts } from "@/features/products/useProducts";
 import {
@@ -116,6 +117,8 @@ export function SalesInvoiceFormPage() {
   );
   const createInvoice = useCreateSalesInvoice();
   const updateInvoice = useUpdateSalesInvoice();
+  /** Typed commission ₹; null follows the customer's rate. */
+  const [commissionOverride, setCommissionOverride] = useState<string | null>(null);
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
   const [pendingValues, setPendingValues] = useState<InvoiceFormValues | null>(null);
 
@@ -157,6 +160,7 @@ export function SalesInvoiceFormPage() {
         gstRate: Number(item.gstRate),
       })),
     });
+    setCommissionOverride(String(Number(existingInvoice.commissionAmount ?? 0)));
   }, [existingInvoice, form]);
 
   const { fields, append, remove } = useFieldArray({
@@ -169,6 +173,21 @@ export function SalesInvoiceFormPage() {
     const base = (item.quantity || 0) * (item.rate || 0);
     return sum + base + (base * (item.gstRate || 0)) / 100;
   }, 0);
+
+  const selectedCustomer = customers?.find((customer) => customer.id === form.watch("customerId"));
+  const isTrading = form.watch("isTrading");
+  const autoCommission = calcInvoiceCommission(
+    selectedCustomer?.commissionType ?? null,
+    selectedCustomer?.commissionRate ?? null,
+    items.map((item) => ({
+      productId: item.isManual ? null : item.productId,
+      quantity: Number(item.quantity) || 0,
+      rate: Number(item.rate) || 0,
+    })),
+    isTrading
+  );
+  const commissionValue = commissionOverride ?? String(autoCommission);
+  const commissionAmount = isTrading ? 0 : Math.max(Number(commissionValue) || 0, 0);
 
   function handleProductChange(index: number, productId: string) {
     const product = products?.find((p) => p.id === productId);
@@ -188,6 +207,7 @@ export function SalesInvoiceFormPage() {
       transport: values.transport,
       vehicleNo: values.vehicleNo,
       isTrading: values.isTrading,
+      commissionAmount,
       items: values.items.map((item) => {
         if (item.isManual) {
           return {
@@ -400,6 +420,36 @@ export function SalesInvoiceFormPage() {
               <div className="mt-4 flex justify-end text-lg font-semibold">
                 Grand Total: ₹{formatInr(grandTotal)}
               </div>
+              {selectedCustomer && !isTrading ? (
+                <div className="mt-3 flex flex-col gap-2 rounded-lg border bg-muted/40 p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="text-sm">
+                    <p className="font-medium">Customer commission</p>
+                    <p className="text-muted-foreground">
+                      {selectedCustomer.commissionType
+                        ? `Rate ${formatCommissionRate(selectedCustomer.commissionType, selectedCustomer.commissionRate)} → ₹${formatInr(autoCommission)}. Not printed on the invoice.`
+                        : "No rate set for this customer. Type an amount for this bill if needed."}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">₹</span>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step="0.01"
+                      className="w-32"
+                      aria-label="Commission amount"
+                      value={commissionValue}
+                      onChange={(e) => setCommissionOverride(e.target.value)}
+                    />
+                    {commissionOverride !== null && Number(commissionOverride) !== autoCommission ? (
+                      <Button type="button" variant="ghost" size="sm" onClick={() => setCommissionOverride(null)}>
+                        Use rate
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
 

@@ -147,7 +147,7 @@ export async function deleteVendorPayment(id: string) {
 }
 
 export async function listCashBankBook(mode: PaymentMode) {
-  const [receipts, payments] = await Promise.all([
+  const [receipts, payments, commissionPayments] = await Promise.all([
     prisma.paymentReceipt.findMany({
       where: { mode },
       include: {
@@ -162,6 +162,11 @@ export async function listCashBankBook(mode: PaymentMode) {
         vendor: { select: { id: true, name: true } },
         purchaseBill: { select: { id: true, billNo: true } },
       },
+      orderBy: { paymentDate: "desc" },
+    }),
+    prisma.commissionPayment.findMany({
+      where: { mode },
+      include: { customer: { select: { id: true, name: true } } },
       orderBy: { paymentDate: "desc" },
     }),
   ]);
@@ -190,6 +195,18 @@ export async function listCashBankBook(mode: PaymentMode) {
       reference: p.reference,
       narration: p.narration,
       source: "payment" as const,
+    })),
+    ...commissionPayments.map((p) => ({
+      id: p.id,
+      kind: "OUT" as const,
+      voucherNo: p.paymentNo,
+      date: p.paymentDate,
+      party: p.customer.name,
+      against: "Commission",
+      amount: Number(p.amount),
+      reference: p.reference,
+      narration: p.narration,
+      source: "commission" as const,
     })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 

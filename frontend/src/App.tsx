@@ -8,6 +8,8 @@ import { LoginPage } from "@/features/auth/LoginPage";
 import { ProtectedRoute } from "@/features/auth/ProtectedRoute";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { CustomersPage } from "@/features/customers/CustomersPage";
+import { CommissionPage } from "@/features/commission/CommissionPage";
+import { CommissionCustomerPage } from "@/features/commission/CommissionCustomerPage";
 import { LedgerPage } from "@/features/ledger/LedgerPage";
 import { LedgerDetailPage } from "@/features/ledger/LedgerDetailPage";
 import { LedgerPrintPage } from "@/features/ledger/LedgerPrintPage";
@@ -72,6 +74,8 @@ export default function App() {
                 <Route path="/profit-loss" element={<ProfitLossPage />} />
                 <Route path="/investments" element={<InvestmentsPage />} />
                 <Route path="/customers" element={<CustomersPage />} />
+                <Route path="/commission" element={<CommissionPage />} />
+                <Route path="/commission/:customerId" element={<CommissionCustomerPage />} />
                 <Route path="/ledger" element={<LedgerPage />} />
                 <Route path="/ledger/:customerId/print" element={<LedgerPrintPage />} />
                 <Route path="/ledger/:customerId" element={<LedgerDetailPage />} />

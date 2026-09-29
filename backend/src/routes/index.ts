@@ -21,12 +21,14 @@ import { recycleBinRouter } from "../modules/recycle-bin/recycle-bin.routes.js";
 import { rawMaterialRouter } from "../modules/raw-material/raw-material.routes.js";
 import { sheetsRouter } from "../modules/sheets/sheets.routes.js";
 import { activityRouter } from "../modules/activity/activity.routes.js";
+import { commissionRouter } from "../modules/commission/commission.routes.js";
 
 export const apiRouter = Router();
 
 apiRouter.use("/auth", authRouter);
 apiRouter.use("/dashboard", dashboardRouter);
 apiRouter.use("/customers", customerRouter);
+apiRouter.use("/commission", commissionRouter);
 apiRouter.use("/products", productRouter);
 apiRouter.use("/vendors", vendorRouter);
 apiRouter.use("/sales", salesRouter);

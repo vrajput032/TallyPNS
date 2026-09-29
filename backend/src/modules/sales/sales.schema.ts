@@ -35,5 +35,7 @@ export const createSalesInvoiceSchema = z.object({
   transport: z.string().trim().max(100).optional().nullable(),
   vehicleNo: z.string().trim().max(40).optional().nullable(),
   isTrading: z.boolean().optional(),
+  /** Omit to calculate from the customer's commission rate */
+  commissionAmount: z.number().min(0).max(100_000_000).optional().nullable(),
   items: z.array(salesInvoiceItemSchema).min(1, "At least one item is required"),
 });

@@ -56,11 +56,58 @@ model Customer {
   openingBalance  Decimal  @default(0) @db.Decimal(14, 2)
   /** Credit period in days from invoice date */
   paymentTermDays Int      @default(0)
+  /** Null = no commission for this customer */
+  commissionType  CommissionType?
+  /** ₹ per piece, % of taxable value, or ₹ per bill depending on commissionType */
+  commissionRate  Decimal? @db.Decimal(14, 4)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  salesInvoices  SalesInvoice[]
-  receipts       PaymentReceipt[]
+  salesInvoices      SalesInvoice[]
+  receipts           PaymentReceipt[]
+  commissionEntries  CommissionEntry[]
+  commissionPayments CommissionPayment[]
+}
+
+enum CommissionType {
+  PER_PIECE
+  PERCENT
+  PER_BILL
+}
+
+/** Manual lump-sum commission for a customer and month (on top of per-bill commission). */
+model CommissionEntry {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+  /** YYYY-MM */
+  month      String
+  amount     Decimal  @db.Decimal(14, 2)
+  note       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([month])
+}
+
+/** Commission paid out to a customer (cash or bank). Shows as money out in the cash / bank book. */
+model CommissionPayment {
+  id          String      @id @default(cuid())
+  paymentNo   String      @unique
+  customerId  String
+  customer    Customer    @relation(fields: [customerId], references: [id])
+  amount      Decimal     @db.Decimal(14, 2)
+  mode        PaymentMode
+  reference   String?
+  paymentDate DateTime    @default(now())
+  narration   String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([customerId])
+  @@index([paymentDate])
+  @@index([mode])
 }
 
 model Vendor {
@@ -121,6 +168,8 @@ model SalesInvoice {
   /** Traded goods (bought and resold) rather than manufactured */
   isTrading    Boolean   @default(false)
   totalAmount  Decimal   @default(0) @db.Decimal(14, 2)
+  /** Commission earned by the customer on this bill (saved at create/edit; 0 for trading) */
+  commissionAmount Decimal @default(0) @db.Decimal(14, 2)
   deletedAt    DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt

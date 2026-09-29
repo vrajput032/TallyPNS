@@ -79,6 +79,8 @@ export type MonthPnlInput = {
   delivery?: number;
   /** Other factory items parsed from partner expense notes. */
   otherExpenses?: number;
+  /** Customer commission: factory bills in the month + lump sums for the month. */
+  commission?: number;
   /** Electricity bills from pns-expenses; falls back to hardcoded month amounts. */
   electricityFromExpenses?: number;
   expenseEntries?: {
@@ -235,6 +237,7 @@ export function buildMonthPnl(input: MonthPnlInput): MonthPnl {
     runningCost("akshay-salary", salary),
     runningCost("delivery", delivery),
     runningCost("other-expenses", otherExpenses),
+    { id: "commission", label: "Customer commission", amount: round2(input.commission ?? 0) },
   ];
 
   const totalIncome = round2(income.reduce((sum, line) => sum + line.amount, 0));

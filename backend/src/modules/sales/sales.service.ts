@@ -4,6 +4,8 @@ import { ApiError } from "../../middleware/errorHandler.js";
 import { applySizeStockDelta } from "../../lib/sizeStock.js";
 import { withPaymentSummary } from "../payments/payment.utils.js";
 import { scheduleSheetsSync } from "../sheets/sheets.sync.js";
+import { calcInvoiceCommission } from "../../lib/commission.js";
+import { round2 } from "../../lib/manufacturingPnl.js";
 import type { createSalesInvoiceSchema } from "./sales.schema.js";
 import type { z } from "zod";
 
@@ -16,6 +18,17 @@ function isManualItem(item: CreateItem) {
 function lineAmount(quantity: number, rate: number, gstRate: number) {
   const base = quantity * rate;
   return base + (base * gstRate) / 100;
+}
+
+async function resolveCommission(data: z.infer<typeof createSalesInvoiceSchema>, isTrading: boolean) {
+  if (isTrading) return 0;
+  if (data.commissionAmount != null) return round2(data.commissionAmount);
+  const customer = await prisma.customer.findUnique({
+    where: { id: data.customerId },
+    select: { commissionType: true, commissionRate: true },
+  });
+  if (!customer) throw new ApiError(400, "Customer not found");
+  return calcInvoiceCommission(customer, data.items, false);
 }
 
 const invoiceInclude = {
@@ -125,6 +138,8 @@ export async function createSalesInvoice(data: z.infer<typeof createSalesInvoice
   if (existing) {
     throw new ApiError(409, `Invoice number ${invoiceNo} is already in use`);
   }
+  const isTrading = data.isTrading ?? false;
+  const commissionAmount = await resolveCommission(data, isTrading);
 
   const invoice = await prisma.$transaction(async (tx) => {
     const created = await tx.salesInvoice.create({
@@ -134,8 +149,9 @@ export async function createSalesInvoice(data: z.infer<typeof createSalesInvoice
         invoiceDate: data.invoiceDate ?? new Date(),
         transport: data.transport?.trim() || null,
         vehicleNo: data.vehicleNo?.trim() || null,
-        isTrading: data.isTrading ?? false,
+        isTrading,
         totalAmount,
+        commissionAmount,
         items: {
           create: data.items.map((item) => {
             if (isManualItem(item)) {
@@ -266,6 +282,8 @@ export async function updateSalesInvoice(
     (sum, item) => sum + lineAmount(item.quantity, item.rate, item.gstRate),
     0
   );
+  const isTrading = data.isTrading ?? existingInvoice.isTrading;
+  const commissionAmount = await resolveCommission(data, isTrading);
 
   const updated = await prisma.$transaction(async (tx) => {
     for (const item of existingInvoice.items) {
@@ -294,8 +312,9 @@ export async function updateSalesInvoice(
         invoiceDate: data.invoiceDate ?? existingInvoice.invoiceDate,
         transport: data.transport?.trim() || null,
         vehicleNo: data.vehicleNo?.trim() || null,
-        isTrading: data.isTrading ?? existingInvoice.isTrading,
+        isTrading,
         totalAmount,
+        commissionAmount,
         items: {
           create: data.items.map((item) => {
             if (isManualItem(item)) {

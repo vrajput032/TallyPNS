@@ -3,8 +3,8 @@ import { activeOnly } from "../../lib/activeRecords.js";
 import { monthKey, monthLabel, round2 } from "../../lib/manufacturingPnl.js";
 import { getProfitLossSummary } from "../profit-loss/profit-loss.service.js";
 
-/** P&L cost lines that are material, not monthly running cost. */
-const NON_RUNNING_COST_LINES = new Set(["raw-material"]);
+/** P&L cost lines that are not monthly running cost (material; commission has its own page). */
+const NON_RUNNING_COST_LINES = new Set(["raw-material", "commission"]);
 
 export type RunningCostLine = { id: string; label: string; amount: number; overridden: boolean };
 

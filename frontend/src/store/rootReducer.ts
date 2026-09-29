@@ -16,6 +16,7 @@ import reportsReducer from "./slices/reportsSlice";
 import recycleBinReducer from "./slices/recycleBinSlice";
 import usersReducer from "./slices/usersSlice";
 import activityReducer from "./slices/activitySlice";
+import commissionReducer from "./slices/commissionSlice";
 
 export const rootReducer = combineReducers({
   customers: customersReducer,
@@ -35,4 +36,5 @@ export const rootReducer = combineReducers({
   recycleBin: recycleBinReducer,
   users: usersReducer,
   activity: activityReducer,
+  commission: commissionReducer,
 });

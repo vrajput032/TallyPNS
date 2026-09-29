@@ -37,15 +37,20 @@ export async function getCustomer(id: string) {
   return customer;
 }
 
+/** No commission type means no rate either. */
+function withCommissionRule<T extends { commissionType?: string | null; commissionRate?: number | null }>(data: T): T {
+  return data.commissionType === null ? { ...data, commissionRate: null } : data;
+}
+
 export async function createCustomer(data: z.infer<typeof createCustomerSchema>) {
-  const customer = await prisma.customer.create({ data });
+  const customer = await prisma.customer.create({ data: withCommissionRule(data) });
   scheduleSheetsSync("customer create");
   return customer;
 }
 
 export async function updateCustomer(id: string, data: z.infer<typeof updateCustomerSchema>) {
   await getCustomer(id);
-  const customer = await prisma.customer.update({ where: { id }, data });
+  const customer = await prisma.customer.update({ where: { id }, data: withCommissionRule(data) });
   scheduleSheetsSync("customer update");
   return customer;
 }

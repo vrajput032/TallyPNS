@@ -26,6 +26,8 @@ export interface SalesInvoice {
   vehicleNo: string | null;
   isTrading: boolean;
   totalAmount: string;
+  /** Commission earned by the customer on this bill (not printed) */
+  commissionAmount: string;
   paidAmount: number;
   balanceAmount: number;
   paymentStatus: "PENDING" | "PARTIAL" | "PAID";
@@ -61,6 +63,8 @@ export interface SalesInvoiceInput {
   transport?: string | null;
   vehicleNo?: string | null;
   isTrading?: boolean;
+  /** Omit to use the customer's commission rate */
+  commissionAmount?: number;
   items: SalesInvoiceItemInput[];
 }
 
