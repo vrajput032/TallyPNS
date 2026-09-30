@@ -12,7 +12,11 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: false,
-      includeAssets: ["favicon.svg", "apple-touch-icon.png"],
+      devOptions: {
+        enabled: true,
+        type: "module",
+      },
+      includeAssets: ["favicon.svg", "apple-touch-icon.png", "sounds/money-money.mp3"],
       manifest: {
         name: "PNS ERP",
         short_name: "PNS ERP",
@@ -39,7 +43,7 @@ export default defineConfig({
         clientsClaim: true,
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/api\//],
-        globPatterns: ["**/*.{js,css,html,svg,png,ico}"],
+        globPatterns: ["**/*.{js,css,html,svg,png,ico,wav,mp3}"],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         importScripts: ["push-sw.js"],
         runtimeCaching: [

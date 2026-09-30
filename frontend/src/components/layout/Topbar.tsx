@@ -1,9 +1,6 @@
-import { ArrowLeft, Bell, CircleUser, LogOut, Menu } from "lucide-react";
+import { ArrowLeft, CircleUser, LogOut, Menu } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { PaymentRemindersSettings } from "@/features/notifications/PaymentRemindersSettings";
-import { unsubscribeOnLogout } from "@/lib/pushNotifications";
 import {
   Sheet,
   SheetContent,
@@ -16,6 +13,7 @@ import { ENABLE_3D } from "@/lib/featureFlags";
 import { cn } from "@/lib/utils";
 import { TiltCard } from "@/lib/useTilt.tsx";
 import { useAuthStore } from "@/store/authStore";
+import { PaymentRemindersMenu } from "@/features/notifications/PaymentRemindersMenu";
 import { AccountMenu } from "./AccountMenu";
 import { getMobileHeaderMeta } from "./mobileHeader";
 import { SidebarNav } from "./SidebarNav";
@@ -45,7 +43,6 @@ export function Topbar({
   });
 
   function handleLogout() {
-    void unsubscribeOnLogout();
     logout();
     navigate("/login", { replace: true });
   }
@@ -96,23 +93,8 @@ export function Topbar({
   );
 
   const desktopActions = (
-    <div className="flex items-center gap-1">
-      <Dialog>
-        <DialogTrigger
-          render={
-            <Button variant="ghost" size="icon" className="shrink-0">
-              <Bell className="size-4" />
-              <span className="sr-only">Payment reminders</span>
-            </Button>
-          }
-        />
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Payment reminders</DialogTitle>
-          </DialogHeader>
-          <PaymentRemindersSettings />
-        </DialogContent>
-      </Dialog>
+    <div className="flex shrink-0 items-center gap-0.5">
+      <PaymentRemindersMenu />
       <Button variant="ghost" size="icon" className="shrink-0" onClick={handleLogout}>
         <LogOut className="size-4" />
         <span className="sr-only">Log out</span>

@@ -10,6 +10,7 @@ import { GlobalBackground } from "@/components/effects/GlobalBackground";
 import { ENABLE_3D } from "@/lib/featureFlags";
 import { useEdgeSwipe } from "@/hooks/useEdgeSwipe";
 import { useIsCompactNav } from "@/hooks/useIsMobile";
+import { PaymentRemindersBootstrap } from "@/features/notifications/PaymentRemindersBootstrap";
 
 export function AppShell() {
   const isCompactNav = useIsCompactNav();
@@ -34,6 +35,7 @@ export function AppShell() {
   return (
     <div className="relative flex min-h-screen max-w-[100vw] overscroll-x-none">
       <SectionDataSync />
+      <PaymentRemindersBootstrap />
       {ENABLE_3D && <GlobalBackground />}
       {isCompactNav ? <EdgeSwipeGuards className="print:hidden" /> : null}
       <div className="print:hidden">

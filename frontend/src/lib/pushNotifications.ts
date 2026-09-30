@@ -4,7 +4,21 @@ import { useAuthStore } from "@/store/authStore";
 
 export type PushState = "unsupported" | "needs-install" | "denied" | "off" | "on";
 
-const SW_READY_TIMEOUT_MS = 5000;
+const SW_READY_TIMEOUT_MS = 15000;
+/** First paint in settings dialogs — do not block on a slow service worker. */
+const SW_READY_QUICK_MS = 2500;
+const PUSH_SUBSCRIBE_TIMEOUT_MS = 15000;
+const BOOTSTRAP_ATTEMPTS = 4;
+const BOOTSTRAP_DELAY_MS = 2000;
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error(message)), ms);
+    }),
+  ]);
+}
 
 function isIos(): boolean {
   const ua = navigator.userAgent;
@@ -29,14 +43,14 @@ function supportState(): "unsupported" | "needs-install" | "ok" {
   return hasPushApis() ? "ok" : "unsupported";
 }
 
-async function getRegistration(): Promise<ServiceWorkerRegistration | null> {
-  const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), SW_READY_TIMEOUT_MS));
+async function getRegistration(timeoutMs = SW_READY_TIMEOUT_MS): Promise<ServiceWorkerRegistration | null> {
+  const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs));
   return Promise.race([navigator.serviceWorker.ready, timeout]);
 }
 
-async function currentSubscription(): Promise<PushSubscription | null> {
+async function currentSubscription(swReadyMs = SW_READY_TIMEOUT_MS): Promise<PushSubscription | null> {
   if (supportState() !== "ok") return null;
-  const registration = await getRegistration();
+  const registration = await getRegistration(swReadyMs);
   return registration ? registration.pushManager.getSubscription() : null;
 }
 
@@ -55,20 +69,81 @@ async function saveSubscription(subscription: PushSubscription) {
   });
 }
 
-export async function getPushState(): Promise<PushState> {
+async function subscribeWithVapidKey(): Promise<PushSubscription> {
+  const { data } = await api.get<{ enabled: boolean; publicKey: string | null }>(
+    "/notifications/vapid-public-key"
+  );
+  if (!data.enabled || !data.publicKey) {
+    throw new Error("Reminders are not set up on the server yet");
+  }
+
+  const registration = await getRegistration();
+  if (!registration) {
+    throw new Error("App offline support is not ready. Reload the page and try again.");
+  }
+
+  const existing = await registration.pushManager.getSubscription();
+  if (existing) return existing;
+
+  return withTimeout(
+    registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(data.publicKey),
+    }),
+    PUSH_SUBSCRIBE_TIMEOUT_MS,
+    "Could not subscribe for push notifications"
+  );
+}
+
+export type GetPushStateOptions = {
+  /** Use a short service-worker wait so UI (dialogs) is not stuck on “Checking…”. */
+  quick?: boolean;
+};
+
+export async function getPushState(options?: GetPushStateOptions): Promise<PushState> {
   const support = supportState();
   if (support !== "ok") return support;
   if (Notification.permission === "denied") return "denied";
-  const subscription = await currentSubscription();
-  return subscription && Notification.permission === "granted" ? "on" : "off";
+  if (Notification.permission === "default") return "off";
+  const swMs = options?.quick ? SW_READY_QUICK_MS : SW_READY_TIMEOUT_MS;
+  const subscription = await currentSubscription(swMs);
+  return subscription ? "on" : "off";
 }
 
-/** Re-registers an existing subscription so the server has it under the signed-in user. */
-export async function syncPushSubscription(): Promise<void> {
-  const subscription = await currentSubscription();
-  if (subscription && Notification.permission === "granted") await saveSubscription(subscription);
+/** True when the browser has not been asked yet (show our Allow dialog). */
+export function needsPushPermissionPrompt(): boolean {
+  return supportState() === "ok" && Notification.permission === "default";
 }
 
+/** After permission is already granted: subscribe and register on the server. */
+export async function bootstrapPushIfGranted(): Promise<PushState> {
+  const support = supportState();
+  if (support !== "ok") return support;
+  if (Notification.permission === "denied") return "denied";
+  if (Notification.permission !== "granted") return "off";
+
+  const subscription = await subscribeWithVapidKey();
+  await saveSubscription(subscription);
+  return "on";
+}
+
+export async function bootstrapPushWithRetry(): Promise<PushState> {
+  let last: PushState = "off";
+  for (let attempt = 0; attempt < BOOTSTRAP_ATTEMPTS; attempt += 1) {
+    try {
+      last = await bootstrapPushIfGranted();
+      if (last !== "off" || Notification.permission === "default") return last;
+    } catch {
+      // Service worker or API not ready yet.
+    }
+    if (attempt < BOOTSTRAP_ATTEMPTS - 1) {
+      await new Promise((resolve) => setTimeout(resolve, BOOTSTRAP_DELAY_MS));
+    }
+  }
+  return last;
+}
+
+/** Call from a button click — shows the browser permission prompt, then stays subscribed. */
 export async function enablePush(): Promise<PushState> {
   const support = supportState();
   if (support !== "ok") return support;
@@ -77,20 +152,7 @@ export async function enablePush(): Promise<PushState> {
   if (permission === "denied") return "denied";
   if (permission !== "granted") return "off";
 
-  const { data } = await api.get<{ enabled: boolean; publicKey: string | null }>(
-    "/notifications/vapid-public-key"
-  );
-  if (!data.enabled || !data.publicKey) throw new Error("Reminders are not set up on the server yet");
-
-  const registration = await getRegistration();
-  if (!registration) throw new Error("App offline support is not ready. Reload the page and try again.");
-
-  const subscription =
-    (await registration.pushManager.getSubscription()) ??
-    (await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(data.publicKey),
-    }));
+  const subscription = await subscribeWithVapidKey();
   await saveSubscription(subscription);
   return "on";
 }

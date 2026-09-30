@@ -1,27 +1,28 @@
 import { useEffect, useState } from "react";
-import { BellOff, BellRing, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { apiErrorMessage } from "@/lib/apiError";
 import {
-  disablePush,
+  bootstrapPushWithRetry,
   enablePush,
   getPushState,
+  needsPushPermissionPrompt,
   sendTestPush,
-  syncPushSubscription,
   type PushState,
 } from "@/lib/pushNotifications";
+import { playReminderSound } from "@/lib/reminderSound";
 
 function stateMessage(state: PushState): string {
   switch (state) {
     case "on":
       return "On for this device. Daily at 11:00 AM when invoices are overdue or due within 7 days.";
     case "off":
-      return "Get a daily 11:00 AM alert on this device for overdue invoices and ones due within 7 days.";
+      return "Tap Allow below once. Reminders then stay on for this device.";
     case "denied":
-      return "Notifications are blocked for this site. Allow them in your browser or phone settings, then come back.";
+      return "Notifications are blocked. Allow PNS ERP in browser or phone settings, then reload.";
     case "needs-install":
-      return "On iPhone or iPad, first tap Share → Add to Home Screen, then open PNS ERP from the Home Screen and turn this on.";
+      return "On iPhone or iPad, add PNS ERP to the Home Screen and open it from there.";
     case "unsupported":
       return "This browser does not support notifications.";
     default: {
@@ -33,33 +34,31 @@ function stateMessage(state: PushState): string {
 
 export function PaymentRemindersSettings() {
   const [state, setState] = useState<PushState | null>(null);
-  const [busy, setBusy] = useState<"toggle" | "test" | null>(null);
+  const [busy, setBusy] = useState<"allow" | "test" | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    void getPushState().then((next) => {
-      if (cancelled) return;
-      setState(next);
-      if (next === "on") void syncPushSubscription().catch(() => undefined);
-    });
+    void (async () => {
+      const quick = await getPushState({ quick: true });
+      if (!cancelled) setState(quick);
+      const full = await getPushState();
+      if (!cancelled) setState(full);
+      const bootstrapped = await bootstrapPushWithRetry();
+      if (!cancelled) setState(bootstrapped);
+    })();
     return () => {
       cancelled = true;
     };
   }, []);
 
-  async function toggle() {
-    setBusy("toggle");
+  async function allow() {
+    setBusy("allow");
     try {
-      if (state === "on") {
-        setState(await disablePush());
-        toast.success("Payment reminders turned off for this device");
-      } else {
-        const next = await enablePush();
-        setState(next);
-        if (next === "on") toast.success("Payment reminders turned on for this device");
-      }
+      const next = await enablePush();
+      setState(next);
+      if (next === "on") toast.success("Payment reminders are on");
     } catch (error) {
-      toast.error(apiErrorMessage(error, "Could not update reminders"));
+      toast.error(apiErrorMessage(error, "Could not turn on reminders"));
     } finally {
       setBusy(null);
     }
@@ -69,6 +68,7 @@ export function PaymentRemindersSettings() {
     setBusy("test");
     try {
       await sendTestPush();
+      playReminderSound();
       toast.success("Test notification sent");
     } catch (error) {
       toast.error(apiErrorMessage(error, "Could not send test notification"));
@@ -78,33 +78,28 @@ export function PaymentRemindersSettings() {
     }
   }
 
-  const canToggle = state === "on" || state === "off";
-
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
         {state === null ? "Checking this device…" : stateMessage(state)}
       </p>
-      {canToggle ? (
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant={state === "on" ? "outline" : "default"}
-            disabled={busy !== null}
-            onClick={toggle}
-          >
-            {state === "on" ? <BellOff className="size-4" /> : <BellRing className="size-4" />}
-            {busy === "toggle" ? "Saving…" : state === "on" ? "Turn off" : "Turn on"}
+      <div className="flex flex-wrap gap-2">
+        {state === "off" ? (
+          <Button type="button" size="sm" disabled={busy !== null} onClick={allow}>
+            {busy === "allow"
+              ? "Waiting…"
+              : needsPushPermissionPrompt()
+                ? "Allow notifications"
+                : "Turn on reminders"}
           </Button>
-          {state === "on" ? (
-            <Button type="button" size="sm" variant="ghost" disabled={busy !== null} onClick={test}>
-              <Send className="size-4" />
-              {busy === "test" ? "Sending…" : "Send test"}
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
+        ) : null}
+        {state === "on" ? (
+          <Button type="button" size="sm" variant="ghost" disabled={busy !== null} onClick={test}>
+            <Send className="size-4" />
+            {busy === "test" ? "Sending…" : "Send test"}
+          </Button>
+        ) : null}
+      </div>
     </div>
   );
 }

@@ -3,6 +3,9 @@ const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
 /** Invoices due within this many days (inclusive) count as "due soon". */
 export const DUE_SOON_DAYS = 7;
 
+/** Bundled in frontend/public; used when the OS supports custom notification sounds. */
+export const PAYMENT_REMINDER_SOUND_URL = "/sounds/money-money.mp3";
+
 export type ReminderInvoice = {
   invoiceNo: string;
   invoiceDate: Date;
@@ -25,6 +28,9 @@ export type PushPayload = {
   body: string;
   url: string;
   tag: string;
+  /** Hint for the service worker; OS may still mute if Do Not Disturb is on. */
+  playSound?: boolean;
+  soundUrl?: string;
 };
 
 /** Calendar date in India (YYYY-MM-DD). */
@@ -114,5 +120,7 @@ export function reminderPayload(reminder: PaymentReminder): PushPayload {
     body: lines.join("\n"),
     url: reminder.overdueCount > 0 ? "/sales?due=overdue" : "/sales?due=week",
     tag: "payment-reminder",
+    playSound: true,
+    soundUrl: PAYMENT_REMINDER_SOUND_URL,
   };
 }

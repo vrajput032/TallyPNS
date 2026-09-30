@@ -5,6 +5,7 @@ import { activeOnly } from "../../lib/activeRecords.js";
 import {
   buildPaymentReminder,
   istDateKey,
+  PAYMENT_REMINDER_SOUND_URL,
   reminderPayload,
   type PushPayload,
 } from "../../lib/paymentReminder.js";
@@ -68,7 +69,7 @@ async function sendToSubscriptions(subs: PushSubscription[], payload: PushPayloa
         await webpush.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
           body,
-          { TTL: REMINDER_TTL_SECONDS, urgency: "normal", topic: payload.tag }
+          { TTL: REMINDER_TTL_SECONDS, urgency: "high", topic: payload.tag }
         );
         result.sent += 1;
         delivered.push(sub.id);
@@ -124,6 +125,8 @@ export async function sendTest(userId: string, endpoint: string) {
         body: "Nothing is overdue or due in the next 7 days. You'll get a reminder at 11:00 AM when something is.",
         url: "/sales",
         tag: "payment-reminder",
+        playSound: true,
+        soundUrl: PAYMENT_REMINDER_SOUND_URL,
       };
   const { result } = await sendToSubscriptions([sub], payload);
   if (result.removed > 0) throw new ApiError(410, "This device's subscription expired. Turn reminders on again.");
