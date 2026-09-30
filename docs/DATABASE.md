@@ -97,6 +97,22 @@ Cannot delete your own user or the last remaining ADMIN.
 
 ---
 
+### PushSubscription
+
+Web Push endpoint per device (payment reminders + operational alerts). Cascade delete when user is removed.
+
+| Column | Type | Notes |
+|--------|------|--------|
+| `id` | String PK | cuid |
+| `userId` | String FK → User | |
+| `endpoint` | String unique | Push service URL |
+| `p256dh` / `auth` | String | Subscription keys |
+| `deviceName` | String? | From login label |
+| `lastReminderOn` | String? | IST date of last daily payment reminder |
+| `createdAt` / `updatedAt` | DateTime | |
+
+---
+
 ### Customer
 
 | Column | Type | Notes |
