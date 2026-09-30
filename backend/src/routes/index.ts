@@ -22,6 +22,7 @@ import { rawMaterialRouter } from "../modules/raw-material/raw-material.routes.j
 import { sheetsRouter } from "../modules/sheets/sheets.routes.js";
 import { activityRouter } from "../modules/activity/activity.routes.js";
 import { commissionRouter } from "../modules/commission/commission.routes.js";
+import { notificationsRouter } from "../modules/notifications/notifications.routes.js";
 
 export const apiRouter = Router();
 
@@ -46,3 +47,4 @@ apiRouter.use("/bank", bankRouter);
 apiRouter.use("/recycle-bin", recycleBinRouter);
 apiRouter.use("/sheets", sheetsRouter);
 apiRouter.use("/activity", activityRouter);
+apiRouter.use("/notifications", notificationsRouter);

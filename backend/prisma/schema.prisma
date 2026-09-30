@@ -43,7 +43,25 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  activityLogs ActivityLog[]
+  activityLogs      ActivityLog[]
+  pushSubscriptions PushSubscription[]
+}
+
+/** One row per browser/device that turned on payment reminders (Web Push). */
+model PushSubscription {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint       String   @unique
+  p256dh         String
+  auth           String
+  deviceName     String?
+  /** IST date (YYYY-MM-DD) of the last daily reminder, so a retried cron does not send twice */
+  lastReminderOn String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model Customer {

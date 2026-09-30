@@ -41,6 +41,7 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api\//],
         globPatterns: ["**/*.{js,css,html,svg,png,ico}"],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        importScripts: ["push-sw.js"],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/tallypns-api\.onrender\.com\/.*/i,
