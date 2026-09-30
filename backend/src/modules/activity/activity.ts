@@ -2,6 +2,7 @@ import type { ActivityAction, ActivityModule } from "@prisma/client";
 import type { Request } from "express";
 import { prisma } from "../../lib/prisma.js";
 import type { AuthPayload } from "../../middleware/auth.js";
+import { broadcastOperationalNotification } from "../notifications/notifications.service.js";
 
 export type RecordActivityInput = {
   user?: AuthPayload | null;
@@ -14,7 +15,28 @@ export type RecordActivityInput = {
   summary: string;
   amount?: number | string | null;
   href?: string | null;
+  /** Push to all subscribed devices (inventory, sales, purchase, etc.). */
+  notifyDevices?: boolean;
 };
+
+function pushTitleForModule(module: ActivityModule): string {
+  switch (module) {
+    case "SALES":
+      return "Sales";
+    case "PURCHASE":
+      return "Purchase";
+    case "RAW_MATERIAL":
+      return "Raw material";
+    case "INVENTORY":
+      return "Inventory";
+    case "PAYMENT":
+      return "Payment";
+    default: {
+      const _exhaustive: never = module;
+      return _exhaustive;
+    }
+  }
+}
 
 function toAmount(value: number | string | null | undefined): number | null {
   if (value == null || value === "") return null;
@@ -39,11 +61,27 @@ async function writeActivity(input: RecordActivityInput) {
   });
 }
 
+function pushForActivity(input: RecordActivityInput): void {
+  if (!input.notifyDevices) return;
+  const actor = input.actorName?.trim() || input.user?.username || "Someone";
+  const body =
+    actor !== "Slack" && !input.summary.includes(actor)
+      ? `${actor}: ${input.summary}`
+      : input.summary;
+  broadcastOperationalNotification({
+    title: pushTitleForModule(input.module),
+    body,
+    url: input.href?.trim() || "/",
+    tag: `ops-${input.module.toLowerCase()}`,
+  });
+}
+
 /** Fire-and-forget. Must never fail the business request. */
 export function recordActivity(input: RecordActivityInput): void {
   void writeActivity(input).catch((error) => {
     console.error("[activity] failed to record", error);
   });
+  pushForActivity(input);
 }
 
 export function recordRequestActivity(

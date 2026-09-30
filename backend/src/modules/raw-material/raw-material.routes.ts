@@ -105,6 +105,7 @@ rawMaterialRouter.put(
       summary: `Updated raw material bill ${bill.billNo} from ${bill.supplierName}`,
       amount: Number(bill.totalAmount),
       href: `/raw-material/${bill.id}`,
+      notifyDevices: true,
     });
     res.json(bill);
   })

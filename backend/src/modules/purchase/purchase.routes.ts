@@ -146,6 +146,7 @@ purchaseRouter.put(
       summary: `Updated purchase bill ${bill.billNo} for ${party}`,
       amount: Number(bill.totalAmount),
       href: `/purchase/${bill.id}`,
+      notifyDevices: true,
     });
     res.json(bill);
   })

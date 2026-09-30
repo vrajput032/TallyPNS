@@ -431,6 +431,7 @@ export function registerBillHandlers(app: App, config: SlackConfig) {
         summary: `Created sales invoice ${invoice.invoiceNo} for ${invoice.customer.name} via Slack`,
         amount: Number(invoice.totalAmount),
         href: `/sales/${invoice.id}`,
+        notifyDevices: true,
       });
       clearSession(slackUserId);
       await postOrUpdateMessage(

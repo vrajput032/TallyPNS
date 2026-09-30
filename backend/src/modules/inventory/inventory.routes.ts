@@ -41,6 +41,7 @@ inventoryRouter.post(
       entityNo: movement.product.name,
       summary: `Adjusted stock for ${movement.product.name}${size} by ${signed} ${movement.product.unit}`,
       href: "/inventory",
+      notifyDevices: true,
     });
     res.status(201).json(movement);
   })

@@ -48,6 +48,7 @@ salesRouter.post(
       summary: `Created sales invoice ${invoice.invoiceNo} for ${invoice.customer.name}`,
       amount: Number(invoice.totalAmount),
       href: `/sales/${invoice.id}`,
+      notifyDevices: true,
     });
     res.status(201).json(invoice);
   })

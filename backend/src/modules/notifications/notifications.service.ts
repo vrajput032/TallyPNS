@@ -19,14 +19,21 @@ const REMINDER_TTL_SECONDS = 12 * 60 * 60;
 
 let vapidConfigured = false;
 
-function requirePush() {
+function configurePushIfEnabled(): boolean {
   const cfg = getPushConfig();
-  if (!cfg.enabled) throw new ApiError(503, "Push notifications are not configured on the server");
+  if (!cfg.enabled) return false;
   if (!vapidConfigured) {
     webpush.setVapidDetails(cfg.subject, cfg.publicKey, cfg.privateKey);
     vapidConfigured = true;
   }
-  return cfg;
+  return true;
+}
+
+function requirePush() {
+  if (!configurePushIfEnabled()) {
+    throw new ApiError(503, "Push notifications are not configured on the server");
+  }
+  return getPushConfig();
 }
 
 export function getPublicKey() {
@@ -58,7 +65,6 @@ type SendResult = { sent: number; removed: number; failed: number };
 
 /** Sends to each device; drops subscriptions the push service says are gone. */
 async function sendToSubscriptions(subs: PushSubscription[], payload: PushPayload) {
-  requirePush();
   const body = JSON.stringify(payload);
   const result: SendResult = { sent: 0, removed: 0, failed: 0 };
   const delivered: string[] = [];
@@ -144,6 +150,7 @@ export async function runDailyReminders({ force = false, now = new Date() } = {}
   const subs = await prisma.pushSubscription.findMany({
     where: force ? {} : { OR: [{ lastReminderOn: null }, { lastReminderOn: { not: today } }] },
   });
+  requirePush();
   const { result, delivered } = await sendToSubscriptions(subs, reminderPayload(reminder));
   if (delivered.length > 0) {
     await prisma.pushSubscription.updateMany({
@@ -172,4 +179,29 @@ export async function runTestBroadcastToAllDevices(now = new Date()) {
   };
   const { result } = await sendToSubscriptions(subs, payload);
   return { date: istDateKey(now), devices: subs.length, ...result };
+}
+
+/** Fire-and-forget: all devices with reminders on (no custom sound). */
+export function broadcastOperationalNotification(input: {
+  title: string;
+  body: string;
+  url: string;
+  tag?: string;
+}): void {
+  void (async () => {
+    if (!configurePushIfEnabled()) return;
+    const subs = await prisma.pushSubscription.findMany();
+    if (subs.length === 0) return;
+    const url = input.url.startsWith("/") ? input.url : `/${input.url}`;
+    const payload: PushPayload = {
+      title: input.title,
+      body: input.body,
+      url,
+      tag: input.tag ?? "operational",
+      playSound: false,
+    };
+    await sendToSubscriptions(subs, payload);
+  })().catch((error) => {
+    console.error("[push] operational notification failed", error);
+  });
 }
