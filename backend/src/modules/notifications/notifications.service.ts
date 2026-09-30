@@ -153,3 +153,23 @@ export async function runDailyReminders({ force = false, now = new Date() } = {}
   }
   return { date: today, reminder, ...result };
 }
+
+/** Scheduled test: every subscribed device gets a push (ignores invoice state and daily dedup). */
+export async function runTestBroadcastToAllDevices(now = new Date()) {
+  requirePush();
+  const subs = await prisma.pushSubscription.findMany();
+  if (subs.length === 0) {
+    return { date: istDateKey(now), skipped: "No devices subscribed", sent: 0, removed: 0, failed: 0 };
+  }
+
+  const payload: PushPayload = {
+    title: "PNS ERP — reminder test",
+    body: "2:00 PM IST test push. If you hear this, notifications are working on this device.",
+    url: "/",
+    tag: "payment-reminder-test",
+    playSound: true,
+    soundUrl: PAYMENT_REMINDER_SOUND_URL,
+  };
+  const { result } = await sendToSubscriptions(subs, payload);
+  return { date: istDateKey(now), devices: subs.length, ...result };
+}
