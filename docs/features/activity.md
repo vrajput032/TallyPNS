@@ -14,6 +14,7 @@
 - Writes are fire-and-forget after a successful business action; a failed log write never blocks the bill/payment/stock request.
 - Does **not** backfill history — only actions after the feature shipped are listed.
 - Slack-created sales and raw-material bills appear with actor `Slack`.
+- Some rows also trigger a **push notification** to all devices with reminders enabled (see [notifications.md](./notifications.md)).
 
 ## Device on login
 

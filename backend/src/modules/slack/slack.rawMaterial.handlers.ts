@@ -254,6 +254,7 @@ export function registerRawMaterialHandlers(app: App, config: SlackConfig) {
         summary: `Created raw material bill ${bill.billNo} from ${bill.supplierName} via Slack`,
         amount: Number(bill.totalAmount),
         href: `/raw-material/${bill.id}`,
+        notifyDevices: true,
       });
       await postOrUpdateMessage(
         client,

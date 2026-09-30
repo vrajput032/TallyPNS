@@ -126,6 +126,7 @@ purchaseRouter.post(
       summary: `Created purchase bill ${bill.billNo} for ${party}`,
       amount: Number(bill.totalAmount),
       href: `/purchase/${bill.id}`,
+      notifyDevices: true,
     });
     res.status(201).json(bill);
   })

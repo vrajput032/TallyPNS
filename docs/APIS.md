@@ -779,6 +779,38 @@ Optional one-way backup to Google Sheets. Disabled when env vars are missing. Do
 
 ---
 
+## Notifications (`/api/notifications`)
+
+Push subscriptions and schedulers. Requires VAPID env on the server. See [features/notifications.md](./features/notifications.md).
+
+### `GET /notifications/vapid-public-key`
+
+**Auth:** any logged-in user. `{ enabled, publicKey }`.
+
+### `POST /notifications/subscriptions`
+
+**Auth:** any user. Body: Web Push subscription JSON + optional `deviceName`. Upserts by `endpoint`. `201`.
+
+### `DELETE /notifications/subscriptions`
+
+**Auth:** any user. Body: `{ endpoint }`. `204`.
+
+### `POST /notifications/test`
+
+**Auth:** any user. Body: `{ endpoint }`. Test push to caller’s device. `200`.
+
+### `POST /notifications/cron`
+
+**Auth:** header `X-Notifications-Cron-Secret` = `NOTIFICATIONS_CRON_SECRET`. Daily payment reminders. Query `force=1` resends same IST day. `401` if secret wrong.
+
+### `POST /notifications/cron/test-broadcast`
+
+**Auth:** same cron secret. Test push to every subscription. `200`.
+
+Operational bill/stock pushes are sent from the activity layer (not these routes).
+
+---
+
 ## Route index
 
 | Prefix | Module |
@@ -800,6 +832,7 @@ Optional one-way backup to Google Sheets. Disabled when env vars are missing. Do
 | `/api/reports` | P&L, stock, BS, TB |
 | `/api/recycle-bin` | Admin deleted list |
 | `/api/activity` | Recent operational activity |
+| `/api/notifications` | Web push subscriptions + cron |
 | `/api/sheets` | Google Sheets backup sync |
 
 Frontend client: `frontend/src/lib/api.ts` (Axios + refresh interceptor). Production API URL is locked in `frontend/.env.production`, `scripts/deploy.sh`, and `frontend/src/lib/apiBaseUrl.ts`.
