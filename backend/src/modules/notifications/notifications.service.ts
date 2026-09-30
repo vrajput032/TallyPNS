@@ -63,9 +63,22 @@ export async function unsubscribe(userId: string, endpoint: string) {
 
 type SendResult = { sent: number; removed: number; failed: number };
 
+/** APNs only accepts certain Web Push topics; arbitrary tags like `ops-inventory` return 400 BadWebPushTopic. */
+function webPushRequestOptions(payload: PushPayload): Parameters<typeof webpush.sendNotification>[2] {
+  const options: Parameters<typeof webpush.sendNotification>[2] = {
+    TTL: REMINDER_TTL_SECONDS,
+    urgency: "high",
+  };
+  if (payload.tag.startsWith("payment-reminder")) {
+    options.topic = payload.tag;
+  }
+  return options;
+}
+
 /** Sends to each device; drops subscriptions the push service says are gone. */
 async function sendToSubscriptions(subs: PushSubscription[], payload: PushPayload) {
   const body = JSON.stringify(payload);
+  const pushOptions = webPushRequestOptions(payload);
   const result: SendResult = { sent: 0, removed: 0, failed: 0 };
   const delivered: string[] = [];
 
@@ -75,7 +88,7 @@ async function sendToSubscriptions(subs: PushSubscription[], payload: PushPayloa
         await webpush.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
           body,
-          { TTL: REMINDER_TTL_SECONDS, urgency: "high", topic: payload.tag }
+          pushOptions
         );
         result.sent += 1;
         delivered.push(sub.id);
@@ -197,8 +210,8 @@ export function broadcastOperationalNotification(input: {
       title: input.title,
       body: input.body,
       url,
-      tag: input.tag ?? "operational",
-      playSound: false,
+      tag: `${input.tag ?? "operational"}-${Date.now()}`,
+      playSound: true,
       silent: false,
     };
     await sendToSubscriptions(subs, payload);
