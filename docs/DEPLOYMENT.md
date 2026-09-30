@@ -67,7 +67,10 @@ Why:
 ```bash
 brew install libpq && brew link --force libpq
 echo 'export PATH="/opt/homebrew/opt/libpq/bin:$PATH"' >> ~/.zshrc
+brew install age   # encrypts/decrypts database backups
 ```
+
+Backend deploys also need the private dump repo cloned next to this project (`../DBDumps`) — see [Database backups](#database-backups).
 
 ---
 
@@ -85,9 +88,16 @@ What `npm run deploy` does:
 
 1. Warns if you have uncommitted changes.
 2. Pushes to `origin/main` if local HEAD differs from remote.
-3. Triggers Render deploy hook for current commit.
-4. Builds frontend with production `VITE_API_URL`.
-5. Deploys `frontend/dist` via Wrangler to Cloudflare Pages.
+3. Takes an encrypted database backup and pushes it to `DBDumps` (`npm run db:backup:push`). If the backup fails, the deploy stops.
+4. Triggers Render deploy hook for current commit.
+5. Builds frontend with production `VITE_API_URL`.
+6. Deploys `frontend/dist` via Wrangler to Cloudflare Pages.
+
+Steps 3–4 only run for backend deploys (`deploy` and `deploy:backend`). To deploy without the backup (for example when Supabase is unreachable):
+
+```bash
+SKIP_DB_BACKUP=1 npm run deploy
+```
 
 ---
 
@@ -122,15 +132,44 @@ If login says "Cannot reach the server", frontend was built with localhost API U
 
 ---
 
-## Database safety (separate from deploy)
+## Database backups
 
-Deploy does **not** backup data. Before risky changes:
+Backups are full `pg_dump` files, encrypted with [age](https://age-encryption.org) and stored in the private repo [`vrajput032/DBDumps`](https://github.com/vrajput032/DBDumps) as `tallypns-YYYYMMDD-HHMMSS.dump.age`. `tallypns-latest.dump.age` points at the newest one.
+
+| When | How |
+|------|-----|
+| Every night, 02:00 IST | GitHub Actions workflow `nightly-backup.yml` in `DBDumps` |
+| Every backend deploy | `npm run deploy` / `deploy:backend` runs `db:backup:push` first |
+| On demand | `npm run db:backup:push` (or **Run workflow** in the `DBDumps` Actions tab) |
+
+**Retention:** `DBDumps/prune.sh` keeps every backup from the last 30 days, plus the oldest backup of each earlier month.
+
+### Encryption keys
+
+- **Public key** — `DBDumps/age-recipient.txt`. Used to encrypt; safe to commit.
+- **Private key** — `~/.config/tallypns/age-backup.key` on the admin Mac, with a copy in the password manager. Never commit it or add it to GitHub. **Without it, no backup can be restored.**
+
+### Secrets
+
+The nightly workflow needs the `DIRECT_URL` repository secret in `DBDumps`: the Supabase session-pooler URL on port **5432** (GitHub runners have no IPv6, so the direct `db.<ref>.supabase.co` host will not work). If the Supabase password changes, update it:
 
 ```bash
-npm run db:backup
+cd backend && node --input-type=module -e "import 'dotenv/config'; process.stdout.write(process.env.DIRECT_URL)" \
+  | gh secret set DIRECT_URL -R vrajput032/DBDumps
 ```
 
-Copy `backups/tallypns-latest.dump` to Drive/iCloud/USB. See README **Database backups** section.
+### Restore
+
+```bash
+# Into local Docker Postgres (port 5433)
+npm run db:restore -- ../DBDumps/tallypns-latest.dump.age
+
+# Into a new Supabase project (disaster recovery)
+RESTORE_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres" \
+  npm run db:restore -- ../DBDumps/tallypns-latest.dump.age
+```
+
+`.age` files are decrypted automatically; set `AGE_IDENTITY` if the private key is not at the default path. Restore the latest backup into local Docker about once a month to confirm backups still work.
 
 ---
 

@@ -127,17 +127,19 @@ npm run db:backup
 ```
 Creates `backups/tallypns-YYYYMMDD-HHMMSS.dump` and updates `backups/tallypns-latest.dump`.
 
-Dump **and** push to the private GitHub repo [`vrajput032/DBDumps`](https://github.com/vrajput032/DBDumps):
+Dump, encrypt, **and** push to the private GitHub repo [`vrajput032/DBDumps`](https://github.com/vrajput032/DBDumps):
 ```bash
 npm run db:backup:push
 ```
-Needs a local clone at `../DBDumps` (next to this project).
+Needs a local clone at `../DBDumps` (next to this project) and `brew install age`. The same backup also runs nightly from GitHub Actions and before every backend deploy — see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#database-backups) for keys, retention, and secrets.
 
 ### 3. Restore if something is lost
 Local Docker copy:
 ```bash
 docker compose up -d
 npm run db:restore -- backups/tallypns-latest.dump
+# or an encrypted backup from DBDumps:
+npm run db:restore -- ../DBDumps/tallypns-latest.dump.age
 ```
 
 Into a **new** Supabase database (disaster recovery):
