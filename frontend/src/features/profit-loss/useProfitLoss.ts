@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useBlockingLoader } from "@/store/hooks/useReduxData";
 import { isValueLoading } from "@/store/slices/helpers";
 import { fetchMonthProfitLoss, fetchPnlSummary, pnlPeriodKey } from "@/store/slices/profitLossSlice";
 
@@ -19,9 +20,12 @@ export function useMonthProfitLoss(month: number, year: number) {
     dispatch(fetchMonthProfitLoss({ month, year, silent: true }));
   }, [dispatch, month, year]);
 
+  const isLoading = !slot || isValueLoading(slot);
+  useBlockingLoader(isLoading);
+
   return {
     data: slot?.value ?? undefined,
-    isLoading: !slot || isValueLoading(slot),
+    isLoading,
     isFetching: slot?.status === "loading",
     isError: slot?.status === "failed",
     error: slot?.error ?? null,
@@ -44,9 +48,12 @@ export function usePnlSummary(enabled: boolean) {
     dispatch(fetchPnlSummary({ silent: true }));
   }, [dispatch]);
 
+  const isLoading = isValueLoading(slot);
+  useBlockingLoader(enabled && isLoading);
+
   return {
     data: slot.value ?? undefined,
-    isLoading: isValueLoading(slot),
+    isLoading,
     isFetching: slot.status === "loading",
     isError: slot.status === "failed",
     error: slot.error ?? null,

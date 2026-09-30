@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { useValueQuery } from "@/store/hooks/useReduxData";
+import { useBlockingLoader, useValueQuery } from "@/store/hooks/useReduxData";
 import { isValueLoading } from "@/store/slices/helpers";
 import { fetchCustomerLedger, fetchLedgerList } from "@/store/slices/ledgerSlice";
 import type { CustomerLedger, LedgerList } from "./types";
@@ -24,9 +24,12 @@ export function useCustomerLedger(customerId: string | undefined) {
     if (customerId) dispatch(fetchCustomerLedger({ id: customerId, silent: true }));
   }, [dispatch, customerId]);
 
+  const isLoading = !customerId || !slot || isValueLoading(slot);
+  useBlockingLoader(Boolean(customerId) && isLoading);
+
   return {
     data: slot?.value ?? undefined,
-    isLoading: !customerId || !slot || isValueLoading(slot),
+    isLoading,
     isFetching: slot?.status === "loading",
     isError: slot?.status === "failed",
     error: slot?.error ?? null,

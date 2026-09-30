@@ -30,7 +30,8 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  const release = registerColdStartRequest();
+  const method = (config.method ?? "get").toLowerCase();
+  const release = registerColdStartRequest({ blocking: method !== "get" && method !== "head" });
   (config as ApiRequestConfig)._releaseColdStart = release;
   return config;
 });

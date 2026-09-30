@@ -1,9 +1,9 @@
 import { ColdStartLoader } from "@/components/loading/ColdStartLoader";
-import { useColdStartStore } from "@/store/coldStartStore";
+import { selectColdStartOverlayVisible, useColdStartStore } from "@/store/coldStartStore";
 
-/** Lottie overlay — only when Render server is waking from sleep, not every API call. */
+/** Lottie overlay — only when Render server is waking from sleep and the screen has nothing cached to show. */
 export function SlowApiOverlay() {
-  const visible = useColdStartStore((s) => s.visible);
+  const visible = useColdStartStore(selectColdStartOverlayVisible);
 
   if (!visible) return null;
 

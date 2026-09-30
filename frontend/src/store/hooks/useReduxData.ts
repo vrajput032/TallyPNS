@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { AsyncThunk } from "@reduxjs/toolkit";
+import { registerBlockingLoader } from "@/store/coldStartStore";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import type { RootState } from "@/store/store";
 import {
@@ -11,6 +12,14 @@ import {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyThunk = AsyncThunk<any, any, any>;
+
+/** Lets the server-waking overlay appear only while a screen has nothing cached to show. */
+export function useBlockingLoader(isLoading: boolean) {
+  useEffect(() => {
+    if (!isLoading) return;
+    return registerBlockingLoader();
+  }, [isLoading]);
+}
 
 export function useListQuery<T>(
   selector: (state: RootState) => ListState<T>,
@@ -29,9 +38,12 @@ export function useListQuery<T>(
     dispatch(fetchThunk({ silent: true }));
   }, [dispatch, fetchThunk]);
 
+  const isLoading = isListLoading(slice);
+  useBlockingLoader(isLoading);
+
   return {
     data: slice.items,
-    isLoading: isListLoading(slice),
+    isLoading,
     isFetching: slice.status === "loading",
     isError: slice.status === "failed",
     error: slice.error,
@@ -58,9 +70,12 @@ export function useValueQuery<T>(
     dispatch(fetchThunk({ silent: true }));
   }, [dispatch, fetchThunk]);
 
+  const isLoading = isValueLoading(slot);
+  useBlockingLoader(isLoading && !options?.skip);
+
   return {
     data: slot.value ?? undefined,
-    isLoading: isValueLoading(slot),
+    isLoading,
     isFetching: slot.status === "loading",
     isError: slot.status === "failed",
     error: slot.error,
@@ -120,9 +135,12 @@ export function useEntityQuery<T>(
     if (id) dispatch(fetchThunk({ id, silent: true }));
   }, [dispatch, fetchThunk, id]);
 
+  const isLoading = !slot || isValueLoading(slot);
+  useBlockingLoader(Boolean(id) && isLoading);
+
   return {
     data: slot?.value ?? undefined,
-    isLoading: !slot || isValueLoading(slot),
+    isLoading,
     isFetching: slot?.status === "loading",
     isError: slot?.status === "failed",
     error: slot?.error ?? null,

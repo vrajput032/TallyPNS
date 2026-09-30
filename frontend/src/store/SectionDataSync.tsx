@@ -25,6 +25,7 @@ import { fetchMonthProfitLoss, fetchPnlSummary } from "@/store/slices/profitLoss
 import { fetchInvestments } from "@/store/slices/investmentsSlice";
 import { fetchUsers } from "@/store/slices/usersSlice";
 import { fetchActivity } from "@/store/slices/activitySlice";
+import { fetchCommissionStatement } from "@/store/slices/commissionSlice";
 
 const silent = { silent: true } as const;
 
@@ -108,6 +109,13 @@ export function SectionDataSync() {
       case "products":
         dispatch(fetchProducts(silent));
         break;
+      case "commission": {
+        const commissionCustomerId = pathname.match(/^\/commission\/([^/]+)/)?.[1];
+        if (commissionCustomerId) {
+          dispatch(fetchCommissionStatement({ id: commissionCustomerId, silent: true }));
+        }
+        break;
+      }
       case "profit-loss": {
         const now = new Date();
         const month = now.getMonth() + 1;

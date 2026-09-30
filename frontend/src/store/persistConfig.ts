@@ -41,6 +41,10 @@ function rehydrateSliceState(state: unknown): unknown {
   if ("value" in record && record.value != null) {
     return { ...record, status: "succeeded", error: null };
   }
+  // A request cut off by a reload has nothing to show; reset it so the screen fetches again.
+  if ("status" in record && (record.status === "loading" || record.status === "failed")) {
+    return { ...record, status: "idle", error: null };
+  }
 
   let changed = false;
   const next: Record<string, unknown> = {};

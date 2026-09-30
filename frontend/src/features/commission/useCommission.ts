@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { useAsyncMutation, useEntityQuery } from "@/store/hooks/useReduxData";
+import { useAsyncMutation, useBlockingLoader, useEntityQuery } from "@/store/hooks/useReduxData";
 import { isValueLoading } from "@/store/slices/helpers";
 import {
   commissionSummaryKey,
@@ -31,9 +31,12 @@ export function useCommissionSummary(month?: string) {
     dispatch(fetchCommissionSummary({ month, silent: true }));
   }, [dispatch, month]);
 
+  const isLoading = !slot || isValueLoading(slot);
+  useBlockingLoader(isLoading);
+
   return {
     data: slot?.value ?? undefined,
-    isLoading: !slot || isValueLoading(slot),
+    isLoading,
     refetch,
   };
 }

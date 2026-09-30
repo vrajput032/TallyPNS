@@ -4,6 +4,7 @@ import {
   useListQuery,
   useEntityQuery,
   useAsyncMutation,
+  useBlockingLoader,
 } from "@/store/hooks/useReduxData";
 import { isValueLoading } from "@/store/slices/helpers";
 import type { SalesInvoice, SalesInvoiceInput } from "@/features/sales/types";
@@ -40,9 +41,12 @@ export function useNextInvoiceNo() {
     dispatch(fetchNextInvoiceNo());
   }, [dispatch]);
 
+  const isLoading = isValueLoading(slot);
+  useBlockingLoader(isLoading);
+
   return {
     data: slot.value ?? undefined,
-    isLoading: isValueLoading(slot),
+    isLoading,
     isFetching: slot.status === "loading",
     isError: slot.status === "failed",
     error: slot.error,

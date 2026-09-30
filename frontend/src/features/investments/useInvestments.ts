@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useBlockingLoader } from "@/store/hooks/useReduxData";
 import { isValueLoading } from "@/store/slices/helpers";
 import { fetchInvestments } from "@/store/slices/investmentsSlice";
 
@@ -17,9 +18,12 @@ export function useInvestments() {
     dispatch(fetchInvestments({ silent: true }));
   }, [dispatch]);
 
+  const isLoading = isValueLoading(slot);
+  useBlockingLoader(isLoading);
+
   return {
     data: slot.value ?? undefined,
-    isLoading: isValueLoading(slot),
+    isLoading,
     isFetching: slot.status === "loading",
     isError: slot.status === "failed",
     error: slot.error,
