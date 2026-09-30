@@ -20,6 +20,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import {
   Sheet,
   SheetContent,
@@ -141,8 +142,7 @@ export function UserFormDialog({ open, onOpenChange }: UserFormDialogProps) {
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input
-                  type="password"
+                <PasswordInput
                   autoComplete="new-password"
                   className="h-11 text-base"
                   {...field}

@@ -3,7 +3,13 @@ import { asyncHandler } from "../../middleware/asyncHandler.js";
 import { requireAdmin, requireAuth } from "../../middleware/auth.js";
 import { authRateLimit } from "../../middleware/authRateLimit.js";
 import { ApiError } from "../../middleware/errorHandler.js";
-import { createUserSchema, loginSchema, refreshSchema, registerSchema } from "./auth.schema.js";
+import {
+  createUserSchema,
+  loginSchema,
+  refreshSchema,
+  registerSchema,
+  resetUserPasswordSchema,
+} from "./auth.schema.js";
 import * as authService from "./auth.service.js";
 import { routeParam } from "../../lib/routeParam.js";
 
@@ -52,6 +58,17 @@ authRouter.delete(
     }
     await authService.deleteUser(routeParam(req.params.id), req.user.sub);
     res.status(204).send();
+  })
+);
+
+authRouter.patch(
+  "/users/:id/password",
+  requireAuth,
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const { password } = resetUserPasswordSchema.parse(req.body);
+    const user = await authService.resetUserPassword(routeParam(req.params.id), password);
+    res.json(user);
   })
 );
 

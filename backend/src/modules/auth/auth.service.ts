@@ -104,6 +104,22 @@ export async function deleteUser(id: string, actorId: string) {
   await prisma.user.delete({ where: { id } });
 }
 
+/** Admin sets a new password; clears stored refresh token so other sessions must sign in again. */
+export async function resetUserPassword(userId: string, password: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash, refreshToken: null },
+  });
+
+  return toPublicUser({ ...user, passwordHash, refreshToken: null });
+}
+
 export async function register(username: string, email: string, password: string, name: string) {
   const normalized = username.toLowerCase();
   const existingUsername = await prisma.user.findUnique({ where: { username: normalized } });

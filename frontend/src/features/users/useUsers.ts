@@ -1,6 +1,6 @@
 import { useListQuery, useAsyncMutation } from "@/store/hooks/useReduxData";
 import type { AppUser, UserRole } from "@/features/users/types";
-import { createUser, deleteUser, fetchUsers } from "@/store/slices/usersSlice";
+import { createUser, deleteUser, fetchUsers, resetUserPassword } from "@/store/slices/usersSlice";
 
 export function useUsers() {
   return useListQuery<AppUser>((s) => s.users, fetchUsers);
@@ -15,4 +15,8 @@ export function useCreateUser() {
 
 export function useDeleteUser() {
   return useAsyncMutation<string, string>(deleteUser);
+}
+
+export function useResetUserPassword() {
+  return useAsyncMutation<{ id: string; password: string }, AppUser>(resetUserPassword);
 }

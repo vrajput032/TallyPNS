@@ -1,4 +1,4 @@
-import { Plus, RefreshCw, Trash2 } from "lucide-react";
+import { KeyRound, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -19,6 +19,7 @@ import { api } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useAuthStore } from "@/store/authStore";
 import { UserFormDialog } from "./UserFormDialog";
+import { UserResetPasswordDialog } from "./UserResetPasswordDialog";
 import { useDeleteUser, useUsers } from "./useUsers";
 import type { AppUser, UserRole } from "./types";
 
@@ -54,12 +55,14 @@ function MobileUserCards({
   currentUserId,
   deleting,
   onDelete,
+  onResetPassword,
 }: {
   users: AppUser[];
   isLoading: boolean;
   currentUserId: string | undefined;
   deleting: boolean;
   onDelete: (user: AppUser) => void;
+  onResetPassword: (user: AppUser) => void;
 }) {
   if (isLoading) {
     return (
@@ -102,18 +105,29 @@ function MobileUserCards({
                   <RoleBadge role={user.role} />
                 </div>
               </div>
-              {isYou ? null : (
+              <div className="flex shrink-0 items-center">
                 <Button
                   variant="ghost"
                   size="icon-lg"
-                  className="size-11 shrink-0"
-                  onClick={() => onDelete(user)}
-                  disabled={deleting}
-                  aria-label={`Delete ${user.username}`}
+                  className="size-11"
+                  onClick={() => onResetPassword(user)}
+                  aria-label={`Reset password for ${user.username}`}
                 >
-                  <Trash2 className="size-5" />
+                  <KeyRound className="size-5" />
                 </Button>
-              )}
+                {isYou ? null : (
+                  <Button
+                    variant="ghost"
+                    size="icon-lg"
+                    className="size-11"
+                    onClick={() => onDelete(user)}
+                    disabled={deleting}
+                    aria-label={`Delete ${user.username}`}
+                  >
+                    <Trash2 className="size-5" />
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         );
@@ -128,6 +142,7 @@ export function UsersPage() {
   const currentUserId = useAuthStore((state) => state.user?.id);
   const isMobile = useIsMobile();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [resetUser, setResetUser] = useState<AppUser | null>(null);
   const [sheetsSyncing, setSheetsSyncing] = useState(false);
   const list = users ?? [];
 
@@ -207,6 +222,7 @@ export function UsersPage() {
             currentUserId={currentUserId}
             deleting={deleteUser.isPending}
             onDelete={handleDelete}
+            onResetPassword={setResetUser}
           />
         </>
       ) : (
@@ -217,7 +233,7 @@ export function UsersPage() {
                 <TableHead>Username</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Access</TableHead>
-                <TableHead className="w-16 text-right">Actions</TableHead>
+                <TableHead className="w-24 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -236,16 +252,27 @@ export function UsersPage() {
                     <TableCell>{user.name}</TableCell>
                     <TableCell>{accessLabel(user.role)}</TableCell>
                     <TableCell className="text-right">
-                      {user.id === currentUserId ? null : (
+                      <div className="flex justify-end gap-0.5">
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleDelete(user)}
-                          disabled={deleteUser.isPending}
+                          onClick={() => setResetUser(user)}
+                          aria-label={`Reset password for ${user.username}`}
                         >
-                          <Trash2 className="size-4" />
+                          <KeyRound className="size-4" />
                         </Button>
-                      )}
+                        {user.id === currentUserId ? null : (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(user)}
+                            disabled={deleteUser.isPending}
+                            aria-label={`Delete ${user.username}`}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -256,6 +283,13 @@ export function UsersPage() {
       )}
 
       <UserFormDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+      <UserResetPasswordDialog
+        user={resetUser}
+        open={resetUser !== null}
+        onOpenChange={(open) => {
+          if (!open) setResetUser(null);
+        }}
+      />
     </div>
   );
 }

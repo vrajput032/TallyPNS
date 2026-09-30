@@ -46,6 +46,23 @@ export const deleteUser = createAsyncThunk(
   }
 );
 
+export const resetUserPassword = createAsyncThunk(
+  "users/resetPassword",
+  async (
+    input: { id: string; password: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const { data } = await api.patch<AppUser>(`/auth/users/${input.id}/password`, {
+        password: input.password,
+      });
+      return data;
+    } catch (error) {
+      return rejectWithValue(apiErrorMessage(error));
+    }
+  }
+);
+
 const usersSlice = createSlice({
   name: "users",
   initialState: initialListState<AppUser>(),
