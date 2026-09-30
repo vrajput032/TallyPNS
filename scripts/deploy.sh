@@ -9,6 +9,9 @@
 #   npm run deploy:frontend     # frontend only (rare)
 #   npm run deploy:backend      # backend only (rare)
 #   bash scripts/deploy.sh all|frontend|backend
+#
+# Backend deploys first take an encrypted database backup (npm run db:backup:push).
+# Set SKIP_DB_BACKUP=1 to skip it.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -60,6 +63,20 @@ ensure_pushed() {
   fi
 }
 
+# Backend deploys can run Prisma migrations, so snapshot the database first.
+backup_before_deploy() {
+  if [[ "${SKIP_DB_BACKUP:-}" == "1" ]]; then
+    echo "Skipping pre-deploy database backup (SKIP_DB_BACKUP=1)."
+    return 0
+  fi
+  echo
+  echo "==> Backing up the database before deploying..."
+  if ! bash "${ROOT}/scripts/db-backup-push.sh"; then
+    echo "Pre-deploy backup failed; not deploying. Re-run with SKIP_DB_BACKUP=1 to deploy anyway."
+    exit 1
+  fi
+}
+
 deploy_frontend() {
   echo
   echo "==> Deploying frontend to Cloudflare Pages (${PAGES_PROJECT})..."
@@ -79,6 +96,7 @@ deploy_backend() {
   fi
 
   ensure_pushed
+  backup_before_deploy
   local sha
   sha="$(git rev-parse HEAD)"
   local url="${RENDER_DEPLOY_HOOK_URL}"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Dump Postgres, copy into the private DBDumps repo, commit, and push.
+# Dump Postgres, encrypt it with age, copy into the private DBDumps repo, commit, and push.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -30,11 +30,24 @@ if [[ ! -d "${DUMP_REPO}/.git" ]]; then
   exit 1
 fi
 
-cp -p "${SOURCE}" "${DUMP_REPO}/${TARGET_NAME}"
-ln -sfn "${TARGET_NAME}" "${DUMP_REPO}/tallypns-latest.dump"
+if ! command -v age >/dev/null 2>&1; then
+  echo "age not found. Install with: brew install age"
+  exit 1
+fi
+
+RECIPIENTS="${DUMP_REPO}/age-recipient.txt"
+if [[ ! -f "${RECIPIENTS}" ]]; then
+  echo "Missing ${RECIPIENTS} (public key used to encrypt backups)."
+  exit 1
+fi
+
+ENCRYPTED_NAME="${TARGET_NAME}.age"
+age --encrypt --recipients-file "${RECIPIENTS}" --output "${DUMP_REPO}/${ENCRYPTED_NAME}" "${SOURCE}"
+ln -sfn "${ENCRYPTED_NAME}" "${DUMP_REPO}/tallypns-latest.dump.age"
 
 cd "${DUMP_REPO}"
-git add "${TARGET_NAME}" tallypns-latest.dump
+bash prune.sh
+git add -A
 if git diff --cached --quiet; then
   echo "No new dump to push (already on GitHub)."
   exit 0

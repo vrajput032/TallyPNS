@@ -7,6 +7,10 @@
 # New Supabase / recovery target:
 #   RESTORE_URL="postgresql://postgres:...@db.<ref>.supabase.co:5432/postgres" \
 #     npm run db:restore -- backups/tallypns-latest.dump
+#
+# Encrypted backups from DBDumps (*.dump.age) are decrypted with AGE_IDENTITY
+# (default ~/.config/tallypns/age-backup.key):
+#   npm run db:restore -- ../DBDumps/tallypns-latest.dump.age
 set -euo pipefail
 
 export PATH="/opt/homebrew/opt/libpq/bin:/usr/local/opt/libpq/bin:${PATH}"
@@ -15,12 +19,28 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DUMP_FILE="${1:-${ROOT}/backups/tallypns-latest.dump}"
 LOCAL_URL="postgresql://postgres:postgres@127.0.0.1:5433/tallypns"
 TARGET_URL="${RESTORE_URL:-${LOCAL_URL}}"
+AGE_IDENTITY="${AGE_IDENTITY:-${HOME}/.config/tallypns/age-backup.key}"
 
 if [[ ! -f "${DUMP_FILE}" ]]; then
   echo "Dump not found: ${DUMP_FILE}"
-  echo "Usage: $0 [path/to/backup.dump]"
+  echo "Usage: $0 [path/to/backup.dump | path/to/backup.dump.age]"
   echo "Create one first with: npm run db:backup"
   exit 1
+fi
+
+if [[ "${DUMP_FILE}" == *.age ]]; then
+  if ! command -v age >/dev/null 2>&1; then
+    echo "age not found. Install with: brew install age"
+    exit 1
+  fi
+  if [[ ! -f "${AGE_IDENTITY}" ]]; then
+    echo "Private key not found at ${AGE_IDENTITY} (set AGE_IDENTITY to its path)."
+    exit 1
+  fi
+  DECRYPTED="$(mktemp "${TMPDIR:-/tmp}/tallypns-restore.XXXXXX")"
+  trap 'rm -f "${DECRYPTED}"' EXIT
+  age --decrypt --identity "${AGE_IDENTITY}" --output "${DECRYPTED}" "${DUMP_FILE}"
+  DUMP_FILE="${DECRYPTED}"
 fi
 
 if ! command -v pg_restore >/dev/null 2>&1; then
