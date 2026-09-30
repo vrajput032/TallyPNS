@@ -199,6 +199,7 @@ export function broadcastOperationalNotification(input: {
       url,
       tag: input.tag ?? "operational",
       playSound: false,
+      silent: false,
     };
     await sendToSubscriptions(subs, payload);
   })().catch((error) => {

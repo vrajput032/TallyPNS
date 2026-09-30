@@ -28,9 +28,11 @@ export type PushPayload = {
   body: string;
   url: string;
   tag: string;
-  /** Hint for the service worker; OS may still mute if Do Not Disturb is on. */
+  /** When true with soundUrl, use custom clip (payment reminders). */
   playSound?: boolean;
   soundUrl?: string;
+  /** When true, OS may hide the banner (avoid for operational alerts). */
+  silent?: boolean;
 };
 
 /** Calendar date in India (YYYY-MM-DD). */

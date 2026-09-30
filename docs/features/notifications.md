@@ -39,6 +39,6 @@ Failed push delivery never blocks saving bills or stock.
 ## Sound
 
 - Payment reminders may include custom sound on Android/desktop when the app is open; iOS uses the system notification tone and does not play in-app MP3 on push (avoids lock-screen media controls).
-- Operational alerts use `playSound: false` in the payload.
+- Operational alerts use the **system notification sound** (`silent: false`, no custom MP3).
 
 See also [activity.md](./activity.md) for the in-app feed.
