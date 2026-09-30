@@ -1,4 +1,5 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
+import { clearLocalAppCache } from "@/lib/clearLocalAppCache";
 import { useAuthStore } from "@/store/authStore";
 import { markApiSuccess, registerColdStartRequest } from "@/store/coldStartStore";
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
@@ -85,6 +86,7 @@ api.interceptors.response.use(
       } catch (refreshError) {
         refreshPromise = null;
         if (isSessionRejected(refreshError)) {
+          void clearLocalAppCache();
           useAuthStore.getState().logout();
         }
       }

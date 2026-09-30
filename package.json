@@ -12,6 +12,7 @@
     "deploy": "bash scripts/deploy.sh all",
     "deploy:frontend": "bash scripts/deploy.sh frontend",
     "deploy:backend": "bash scripts/deploy.sh backend",
+    "db:local": "docker compose up -d db",
     "db:backup": "bash scripts/db-backup.sh",
     "db:backup:push": "bash scripts/db-backup-push.sh",
     "db:restore": "bash scripts/db-restore.sh",

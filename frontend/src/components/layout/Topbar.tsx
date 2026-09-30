@@ -12,6 +12,7 @@ import { useScrollHideHeader } from "@/hooks/useScrollHideHeader";
 import { ENABLE_3D } from "@/lib/featureFlags";
 import { cn } from "@/lib/utils";
 import { TiltCard } from "@/lib/useTilt.tsx";
+import { clearLocalAppCache } from "@/lib/clearLocalAppCache";
 import { useAuthStore } from "@/store/authStore";
 import { PaymentRemindersMenu } from "@/features/notifications/PaymentRemindersMenu";
 import { AccountMenu } from "./AccountMenu";
@@ -43,6 +44,7 @@ export function Topbar({
   });
 
   function handleLogout() {
+    void clearLocalAppCache();
     logout();
     navigate("/login", { replace: true });
   }

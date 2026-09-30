@@ -1,4 +1,5 @@
 import { Provider } from "react-redux";
+import { PersistGate } from "redux-persist/integration/react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { AppShell } from "@/components/layout/AppShell";
@@ -37,13 +38,14 @@ import { RawMaterialBillsPage } from "@/features/raw-material/RawMaterialBillsPa
 import { RawMaterialBillFormPage } from "@/features/raw-material/RawMaterialBillFormPage";
 import { RawMaterialBillDetailPage } from "@/features/raw-material/RawMaterialBillDetailPage";
 import { SlowApiOverlay } from "@/components/loading/SlowApiOverlay";
-import { store } from "@/store/store";
+import { persistor, store } from "@/store/store";
 import { ThemeProvider } from "@/lib/theme";
 
 
 export default function App() {
   return (
     <Provider store={store}>
+      <PersistGate persistor={persistor} loading={null}>
       <ThemeProvider>
         <BrowserRouter>
           <LoginBackGuard />
@@ -93,6 +95,7 @@ export default function App() {
         <SlowApiOverlay />
         <Toaster />
       </ThemeProvider>
+      </PersistGate>
     </Provider>
   );
 }
