@@ -37,6 +37,7 @@ import { UsersPage } from "@/features/users/UsersPage";
 import { RawMaterialBillsPage } from "@/features/raw-material/RawMaterialBillsPage";
 import { RawMaterialBillFormPage } from "@/features/raw-material/RawMaterialBillFormPage";
 import { RawMaterialBillDetailPage } from "@/features/raw-material/RawMaterialBillDetailPage";
+import { RawMaterialSummaryPrintPage } from "@/features/raw-material/RawMaterialSummaryPrintPage";
 import { SlowApiOverlay } from "@/components/loading/SlowApiOverlay";
 import { persistor, store } from "@/store/store";
 import { ThemeProvider } from "@/lib/theme";
@@ -68,6 +69,7 @@ export default function App() {
                 <Route path="/inventory" element={<InventoryPage />} />
                 <Route path="/raw-material" element={<RawMaterialBillsPage />} />
                 <Route path="/raw-material/new" element={<RawMaterialBillFormPage />} />
+                <Route path="/raw-material/print-totals" element={<RawMaterialSummaryPrintPage />} />
                 <Route path="/raw-material/:id/edit" element={<RawMaterialBillFormPage />} />
                 <Route path="/raw-material/:id" element={<RawMaterialBillDetailPage />} />
                 <Route path="/cash" element={<CashPage />} />

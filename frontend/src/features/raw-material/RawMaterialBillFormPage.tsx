@@ -23,11 +23,13 @@ import { formatInr } from "@/lib/formatInr";
 import { piecesFromKg } from "@/lib/rawMaterialYield";
 import { apiErrorMessage } from "@/lib/apiError";
 import type { ParsedRawMaterialBill } from "./types";
+import { RawMaterialAttachmentsPanel } from "./RawMaterialAttachmentsPanel";
 import {
   useCreateRawMaterialBill,
   useParseRawMaterialBill,
   useRawMaterialBill,
   useUpdateRawMaterialBill,
+  useUploadRawMaterialAttachment,
 } from "./useRawMaterial";
 
 const lineItemSchema = z.object({
@@ -85,9 +87,11 @@ export function RawMaterialBillFormPage() {
   const createBill = useCreateRawMaterialBill();
   const updateBill = useUpdateRawMaterialBill();
   const parseBill = useParseRawMaterialBill();
+  const uploadAttachment = useUploadRawMaterialAttachment();
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
   const [pendingValues, setPendingValues] = useState<BillFormValues | null>(null);
   const [parseWarnings, setParseWarnings] = useState<string[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
   const form = useForm<BillFormValues>({
     resolver: zodResolver(billFormSchema),
@@ -206,6 +210,9 @@ export function RawMaterialBillFormPage() {
     try {
       const parsed = await parseBill.mutateAsync(file);
       applyParsed(parsed);
+      if (!isEditing) {
+        setPendingFiles((files) => (files.includes(file) ? files : [file, ...files]));
+      }
     } catch (error) {
       toast.error(errorMessage(error, "Could not read this PDF"));
     }
@@ -237,6 +244,17 @@ export function RawMaterialBillFormPage() {
     };
   }
 
+  async function uploadPending(billId: string) {
+    for (const file of pendingFiles) {
+      try {
+        await uploadAttachment.mutateAsync({ id: billId, file });
+      } catch {
+        toast.error(`Bill saved, but failed to upload ${file.name}`);
+      }
+    }
+    setPendingFiles([]);
+  }
+
   function onSubmit(values: BillFormValues) {
     if (isEditing) {
       setPendingValues(values);
@@ -244,8 +262,9 @@ export function RawMaterialBillFormPage() {
       return;
     }
     createBill.mutate(toInput(values), {
-      onSuccess: (bill) => {
+      onSuccess: async (bill) => {
         toast.success(`Bill ${bill.billNo} saved`);
+        await uploadPending(bill.id);
         navigate(`/raw-material/${bill.id}`);
       },
       onError: (error) => toast.error(errorMessage(error, "Failed to save bill")),
@@ -314,6 +333,24 @@ export function RawMaterialBillFormPage() {
               ))}
             </ul>
           ) : null}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Bill copy (PDF / photo)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isEditing && id ? (
+            <RawMaterialAttachmentsPanel billId={id} attachments={existingBill?.attachments} />
+          ) : (
+            <RawMaterialAttachmentsPanel
+              billId="new"
+              attachments={undefined}
+              pendingFiles={pendingFiles}
+              onPendingFilesChange={setPendingFiles}
+            />
+          )}
         </CardContent>
       </Card>
 
@@ -599,8 +636,13 @@ export function RawMaterialBillFormPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button type="submit" disabled={createBill.isPending || updateBill.isPending}>
-              {createBill.isPending || updateBill.isPending ? "Saving..." : "Save bill"}
+            <Button
+              type="submit"
+              disabled={createBill.isPending || updateBill.isPending || uploadAttachment.isPending}
+            >
+              {createBill.isPending || updateBill.isPending || uploadAttachment.isPending
+                ? "Saving..."
+                : "Save bill"}
             </Button>
             <Button type="button" variant="outline" onClick={() => navigate("/raw-material")}>
               Cancel

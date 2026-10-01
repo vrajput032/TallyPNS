@@ -3,6 +3,12 @@ import type { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import { activeOnly } from "../../lib/activeRecords.js";
 import { piecesFromKg } from "../../lib/rawMaterialYield.js";
+import {
+  deleteObject,
+  publicObjectUrl,
+  RAW_MATERIAL_BUCKET,
+  uploadObject,
+} from "../../lib/storage.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import { paymentStatus } from "../payments/payment.utils.js";
 import { scheduleSheetsSync } from "../sheets/sheets.sync.js";
@@ -14,6 +20,7 @@ import type {
 const billInclude = {
   items: true,
   payments: { orderBy: { paymentDate: "desc" as const } },
+  attachments: { orderBy: { createdAt: "desc" as const } },
 };
 
 function money(value: number): number {
@@ -29,6 +36,7 @@ function withSummary<
     totalAmount: { toString(): string } | number | string;
     totalKg: { toString(): string } | number | string;
     payments?: { amount: unknown }[];
+    attachments?: { storagePath: string }[];
   },
 >(bill: T) {
   const totalAmount = Number(bill.totalAmount);
@@ -37,6 +45,10 @@ function withSummary<
   const totalKg = Number(bill.totalKg);
   return {
     ...bill,
+    attachments: (bill.attachments ?? []).map((attachment) => ({
+      ...attachment,
+      url: publicObjectUrl(RAW_MATERIAL_BUCKET, attachment.storagePath),
+    })),
     paidAmount,
     balanceAmount,
     paymentStatus: paymentStatus(totalAmount, paidAmount),
@@ -173,7 +185,55 @@ export async function deleteRawMaterialBill(id: string) {
     throw new ApiError(400, "Cannot delete bill with payments. Delete payments first.");
   }
   await prisma.rawMaterialBill.delete({ where: { id } });
+  for (const attachment of bill.attachments) {
+    await deleteObject(RAW_MATERIAL_BUCKET, attachment.storagePath);
+  }
   scheduleSheetsSync("raw material delete");
+}
+
+export async function addRawMaterialAttachment(billId: string, file: Express.Multer.File) {
+  const bill = await prisma.rawMaterialBill.findUnique({ where: { id: billId } });
+  if (!bill || bill.deletedAt) {
+    throw new ApiError(404, "Raw material bill not found");
+  }
+
+  const safeName = file.originalname.replace(/[^\w.\-()+ ]+/g, "_").slice(0, 120);
+  const storagePath = `${billId}/${Date.now()}-${safeName}`;
+  const mimeType = file.mimetype || "application/octet-stream";
+
+  await uploadObject({
+    bucket: RAW_MATERIAL_BUCKET,
+    path: storagePath,
+    buffer: file.buffer,
+    mimeType,
+  });
+
+  const attachment = await prisma.rawMaterialAttachment.create({
+    data: {
+      billId,
+      fileName: file.originalname.slice(0, 200),
+      mimeType,
+      storagePath,
+      sizeBytes: file.size,
+    },
+  });
+
+  return {
+    ...attachment,
+    url: publicObjectUrl(RAW_MATERIAL_BUCKET, storagePath),
+  };
+}
+
+export async function deleteRawMaterialAttachment(billId: string, attachmentId: string) {
+  const attachment = await prisma.rawMaterialAttachment.findFirst({
+    where: { id: attachmentId, billId },
+  });
+  if (!attachment) {
+    throw new ApiError(404, "Attachment not found");
+  }
+
+  await deleteObject(RAW_MATERIAL_BUCKET, attachment.storagePath);
+  await prisma.rawMaterialAttachment.delete({ where: { id: attachmentId } });
 }
 
 const PAYMENT_PREFIX = "RMP-";

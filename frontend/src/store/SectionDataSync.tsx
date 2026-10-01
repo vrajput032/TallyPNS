@@ -29,6 +29,9 @@ import { fetchCommissionStatement } from "@/store/slices/commissionSlice";
 
 const silent = { silent: true } as const;
 
+/** Route segments under /sales and /raw-material that are pages, not bill ids. */
+const NON_BILL_SEGMENTS = new Set(["new", "print-month", "print-totals"]);
+
 /** Silently refresh Redux slice data when navigating between sections. */
 export function SectionDataSync() {
   const dispatch = useAppDispatch();
@@ -63,7 +66,7 @@ export function SectionDataSync() {
       case "sales": {
         dispatch(fetchSalesInvoices(silent));
         const salesId = pathname.match(/^\/sales\/([^/]+)/)?.[1];
-        if (salesId && salesId !== "new") {
+        if (salesId && !NON_BILL_SEGMENTS.has(salesId)) {
           dispatch(fetchSalesInvoice({ id: salesId, silent: true }));
         }
         break;
@@ -84,7 +87,7 @@ export function SectionDataSync() {
       case "raw-material": {
         dispatch(fetchRawMaterialBills(silent));
         const rmId = pathname.match(/^\/raw-material\/([^/]+)/)?.[1];
-        if (rmId && rmId !== "new") {
+        if (rmId && !NON_BILL_SEGMENTS.has(rmId)) {
           dispatch(fetchRawMaterialBill({ id: rmId, silent: true }));
         }
         break;

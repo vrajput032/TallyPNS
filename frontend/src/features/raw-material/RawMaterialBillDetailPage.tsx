@@ -24,6 +24,7 @@ import { piecesFromKg } from "@/lib/rawMaterialYield";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useAuthStore } from "@/store/authStore";
 import type { RawMaterialPayment } from "./types";
+import { RawMaterialAttachmentsPanel } from "./RawMaterialAttachmentsPanel";
 import { RecordRawMaterialPaymentDialog } from "./RecordRawMaterialPaymentDialog";
 import { useDeleteRawMaterialBill, useDeleteRawMaterialPayment, useRawMaterialBill } from "./useRawMaterial";
 
@@ -156,6 +157,15 @@ export function RawMaterialBillDetailPage() {
             <span className="text-muted-foreground">Vehicle: </span>
             {bill.vehicleNo || "—"}
           </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Bill copy (PDF / photo)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <RawMaterialAttachmentsPanel billId={bill.id} attachments={bill.attachments} />
         </CardContent>
       </Card>
 

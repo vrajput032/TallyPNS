@@ -2,12 +2,14 @@ import { useListQuery, useEntityQuery, useAsyncMutation } from "@/store/hooks/us
 import type {
   CreateRawMaterialPaymentInput,
   ParsedRawMaterialBill,
+  RawMaterialAttachment,
   RawMaterialBill,
   RawMaterialBillInput,
 } from "@/features/raw-material/types";
 import {
   createRawMaterialBill,
   createRawMaterialPayment,
+  deleteRawMaterialAttachment,
   deleteRawMaterialBill,
   deleteRawMaterialPayment,
   fetchRawMaterialBill,
@@ -15,6 +17,7 @@ import {
   parseRawMaterialBill,
   updateRawMaterialBill,
   updateRawMaterialPayment,
+  uploadRawMaterialAttachment,
 } from "@/store/slices/rawMaterialSlice";
 
 export function useRawMaterialBills() {
@@ -46,6 +49,18 @@ export function useUpdateRawMaterialBill() {
 
 export function useDeleteRawMaterialBill() {
   return useAsyncMutation<{ id: string; pin: string }, string>(deleteRawMaterialBill);
+}
+
+export function useUploadRawMaterialAttachment() {
+  return useAsyncMutation<{ id: string; file: File }, RawMaterialAttachment>(
+    uploadRawMaterialAttachment
+  );
+}
+
+export function useDeleteRawMaterialAttachment() {
+  return useAsyncMutation<{ billId: string; attachmentId: string }, string>(
+    deleteRawMaterialAttachment
+  );
 }
 
 export function useCreateRawMaterialPayment() {

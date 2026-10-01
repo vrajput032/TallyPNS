@@ -47,7 +47,9 @@ model User {
   pushSubscriptions PushSubscription[]
 }
 
-/** One row per browser/device that turned on payment reminders (Web Push). */
+/**
+ * One row per browser/device that turned on payment reminders (Web Push).
+ */
 model PushSubscription {
   id             String   @id @default(cuid())
   userId         String
@@ -56,7 +58,9 @@ model PushSubscription {
   p256dh         String
   auth           String
   deviceName     String?
-  /** IST date (YYYY-MM-DD) of the last daily reminder, so a retried cron does not send twice */
+  /**
+   * IST date (YYYY-MM-DD) of the last daily reminder, so a retried cron does not send twice
+   */
   lastReminderOn String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -65,21 +69,27 @@ model PushSubscription {
 }
 
 model Customer {
-  id              String   @id @default(cuid())
+  id              String          @id @default(cuid())
   name            String
   phone           String?
   email           String?
   gstin           String?
   address         String?
-  openingBalance  Decimal  @default(0) @db.Decimal(14, 2)
-  /** Credit period in days from invoice date */
-  paymentTermDays Int      @default(0)
-  /** Null = no commission for this customer */
+  openingBalance  Decimal         @default(0) @db.Decimal(14, 2)
+  /**
+   * Credit period in days from invoice date
+   */
+  paymentTermDays Int             @default(0)
+  /**
+   * Null = no commission for this customer
+   */
   commissionType  CommissionType?
-  /** ₹ per piece, % of taxable value, or ₹ per bill depending on commissionType */
-  commissionRate  Decimal? @db.Decimal(14, 4)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  /**
+   * ₹ per piece, % of taxable value, or ₹ per bill depending on commissionType
+   */
+  commissionRate  Decimal?        @db.Decimal(14, 4)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   salesInvoices      SalesInvoice[]
   receipts           PaymentReceipt[]
@@ -93,12 +103,16 @@ enum CommissionType {
   PER_BILL
 }
 
-/** Manual lump-sum commission for a customer and month (on top of per-bill commission). */
+/**
+ * Manual lump-sum commission for a customer and month (on top of per-bill commission).
+ */
 model CommissionEntry {
   id         String   @id @default(cuid())
   customerId String
   customer   Customer @relation(fields: [customerId], references: [id])
-  /** YYYY-MM */
+  /**
+   * YYYY-MM
+   */
   month      String
   amount     Decimal  @db.Decimal(14, 2)
   note       String?
@@ -109,7 +123,9 @@ model CommissionEntry {
   @@index([month])
 }
 
-/** Commission paid out to a customer (cash or bank). Shows as money out in the cash / bank book. */
+/**
+ * Commission paid out to a customer (cash or bank). Shows as money out in the cash / bank book.
+ */
 model CommissionPayment {
   id          String      @id @default(cuid())
   paymentNo   String      @unique
@@ -139,29 +155,31 @@ model Vendor {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  purchaseBills  PurchaseBill[]
-  payments       VendorPayment[]
+  purchaseBills PurchaseBill[]
+  payments      VendorPayment[]
 }
 
 model Product {
-  id            String   @id @default(cuid())
-  name          String
-  hsn           String?
-  gstRate       Decimal  @default(0) @db.Decimal(5, 2)
-  unit          String   @default("PCS")
-  price         Decimal  @default(0) @db.Decimal(14, 2)
-  openingStock  Decimal  @default(0) @db.Decimal(14, 2)
-  currentStock  Decimal  @default(0) @db.Decimal(14, 2)
-  /** Supabase Storage path in bucket `pns-products` */
-  imagePath     String?
-  imageMime     String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  hsn          String?
+  gstRate      Decimal  @default(0) @db.Decimal(5, 2)
+  unit         String   @default("PCS")
+  price        Decimal  @default(0) @db.Decimal(14, 2)
+  openingStock Decimal  @default(0) @db.Decimal(14, 2)
+  currentStock Decimal  @default(0) @db.Decimal(14, 2)
+  /**
+   * Supabase Storage path in bucket `pns-products`
+   */
+  imagePath    String?
+  imageMime    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  salesInvoiceItems    SalesInvoiceItem[]
-  purchaseBillItems    PurchaseBillItem[]
-  stockMovements       StockMovement[]
-  sizeStocks           ProductSizeStock[]
+  salesInvoiceItems SalesInvoiceItem[]
+  purchaseBillItems PurchaseBillItem[]
+  stockMovements    StockMovement[]
+  sizeStocks        ProductSizeStock[]
 }
 
 model ProductSizeStock {
@@ -176,24 +194,28 @@ model ProductSizeStock {
 }
 
 model SalesInvoice {
-  id           String   @id @default(cuid())
-  invoiceNo    String   @unique
-  customerId   String
-  customer     Customer @relation(fields: [customerId], references: [id])
-  invoiceDate  DateTime @default(now())
-  transport    String?
-  vehicleNo    String?
-  /** Traded goods (bought and resold) rather than manufactured */
-  isTrading    Boolean   @default(false)
-  totalAmount  Decimal   @default(0) @db.Decimal(14, 2)
-  /** Commission earned by the customer on this bill (saved at create/edit; 0 for trading) */
-  commissionAmount Decimal @default(0) @db.Decimal(14, 2)
-  deletedAt    DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id               String    @id @default(cuid())
+  invoiceNo        String    @unique
+  customerId       String
+  customer         Customer  @relation(fields: [customerId], references: [id])
+  invoiceDate      DateTime  @default(now())
+  transport        String?
+  vehicleNo        String?
+  /**
+   * Traded goods (bought and resold) rather than manufactured
+   */
+  isTrading        Boolean   @default(false)
+  totalAmount      Decimal   @default(0) @db.Decimal(14, 2)
+  /**
+   * Commission earned by the customer on this bill (saved at create/edit; 0 for trading)
+   */
+  commissionAmount Decimal   @default(0) @db.Decimal(14, 2)
+  deletedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  items        SalesInvoiceItem[]
-  receipts     PaymentReceipt[]
+  items    SalesInvoiceItem[]
+  receipts PaymentReceipt[]
 
   @@index([deletedAt])
 }
@@ -202,16 +224,26 @@ model SalesInvoiceItem {
   id             String       @id @default(cuid())
   salesInvoiceId String
   salesInvoice   SalesInvoice @relation(fields: [salesInvoiceId], references: [id], onDelete: Cascade)
-  /** Null for manual/non-stock lines (scraps, construction, electricity, etc.) */
+  /**
+   * Null for manual/non-stock lines (scraps, construction, electricity, etc.)
+   */
   productId      String?
   product        Product?     @relation(fields: [productId], references: [id])
-  /** Free-text description for manual lines; unused when productId is set */
+  /**
+   * Free-text description for manual lines; unused when productId is set
+   */
   description    String?
-  /** Optional HSN/SAC for manual lines (print + GSTR-1) */
+  /**
+   * Optional HSN/SAC for manual lines (print + GSTR-1)
+   */
   hsn            String?
-  /** Unit for manual lines (e.g. NOS, LOT, KWH); unused when productId is set */
+  /**
+   * Unit for manual lines (e.g. NOS, LOT, KWH); unused when productId is set
+   */
   unit           String?
-  /** Optional pipe/material size in mm (e.g. 95) — catalog sales only */
+  /**
+   * Optional pipe/material size in mm (e.g. 95) — catalog sales only
+   */
   sizeMm         Decimal?     @db.Decimal(10, 2)
   quantity       Decimal      @db.Decimal(14, 2)
   rate           Decimal      @db.Decimal(14, 2)
@@ -222,9 +254,13 @@ model SalesInvoiceItem {
 enum PurchaseBillKind {
   CATALOG
   EQUIPMENT
-  /** Goods bought to resell as-is (no pipe stock change) */
+  /**
+   * Goods bought to resell as-is (no pipe stock change)
+   */
   TRADING
-  /** Monthly factory expenses (rent, diesel, maintenance, …) */
+  /**
+   * Monthly factory expenses (rent, diesel, maintenance, …)
+   */
   RUNNING_COST
 }
 
@@ -234,15 +270,23 @@ model PurchaseBill {
   vendorId          String?
   vendor            Vendor?          @relation(fields: [vendorId], references: [id])
   billDate          DateTime         @default(now())
-  /** CATALOG = legacy pipe stock-in; new bills are EQUIPMENT, TRADING or RUNNING_COST */
+  /**
+   * CATALOG = legacy pipe stock-in; new bills are EQUIPMENT, TRADING or RUNNING_COST
+   */
   kind              PurchaseBillKind @default(EQUIPMENT)
   transport         String?
   vehicleNo         String?
-  /** Their invoice number if written on the uploaded bill */
+  /**
+   * Their invoice number if written on the uploaded bill
+   */
   supplierInvoiceNo String?
-  /** Seller GSTIN when not linked to a vendor record */
+  /**
+   * Seller GSTIN when not linked to a vendor record
+   */
   supplierGstin     String?
-  /** Short name for the bill (CNC, Traub, caliper, …) */
+  /**
+   * Short name for the bill (CNC, Traub, caliper, …)
+   */
   title             String?
   notes             String?
   totalAmount       Decimal          @default(0) @db.Decimal(14, 2)
@@ -258,12 +302,18 @@ model PurchaseBill {
   @@index([kind])
 }
 
-/** Manual ₹ for one P&L running-cost line (rent, salary, …) in one month; replaces the default amount. */
+/**
+ * Manual ₹ for one P&L running-cost line (rent, salary, …) in one month; replaces the default amount.
+ */
 model RunningCostOverride {
   id        String   @id @default(cuid())
-  /** P&L cost line id: rent, akshay-salary, electricity, thekedar, delivery, other-expenses */
+  /**
+   * P&L cost line id: rent, akshay-salary, electricity, thekedar, delivery, other-expenses
+   */
   lineId    String
-  /** YYYY-MM */
+  /**
+   * YYYY-MM
+   */
   month     String
   amount    Decimal  @db.Decimal(14, 2)
   createdAt DateTime @default(now())
@@ -277,10 +327,14 @@ model PurchaseBillItem {
   id             String       @id @default(cuid())
   purchaseBillId String
   purchaseBill   PurchaseBill @relation(fields: [purchaseBillId], references: [id], onDelete: Cascade)
-  /** Null for equipment / free-text lines (CNC, Traub, etc.) */
+  /**
+   * Null for equipment / free-text lines (CNC, Traub, etc.)
+   */
   productId      String?
   product        Product?     @relation(fields: [productId], references: [id], onDelete: SetNull)
-  /** Free-text description when productId is null */
+  /**
+   * Free-text description when productId is null
+   */
   description    String?
   quantity       Decimal      @db.Decimal(14, 3) // Tons (or product unit qty)
   pricePerKg     Decimal?     @db.Decimal(14, 4)
@@ -295,7 +349,9 @@ model PurchaseAttachment {
   purchaseBill   PurchaseBill @relation(fields: [purchaseBillId], references: [id], onDelete: Cascade)
   fileName       String
   mimeType       String
-  /** Path inside Supabase Storage bucket `pns-purchase` */
+  /**
+   * Path inside Supabase Storage bucket `pns-purchase`
+   */
   storagePath    String
   sizeBytes      Int
   createdAt      DateTime     @default(now())
@@ -330,21 +386,23 @@ enum PaymentMode {
   BANK
 }
 
-/** Money received from customer against a sales invoice */
+/**
+ * Money received from customer against a sales invoice
+ */
 model PaymentReceipt {
-  id             String        @id @default(cuid())
-  receiptNo      String        @unique
+  id             String       @id @default(cuid())
+  receiptNo      String       @unique
   customerId     String
-  customer       Customer      @relation(fields: [customerId], references: [id])
+  customer       Customer     @relation(fields: [customerId], references: [id])
   salesInvoiceId String
-  salesInvoice   SalesInvoice  @relation(fields: [salesInvoiceId], references: [id])
-  amount         Decimal       @db.Decimal(14, 2)
+  salesInvoice   SalesInvoice @relation(fields: [salesInvoiceId], references: [id])
+  amount         Decimal      @db.Decimal(14, 2)
   mode           PaymentMode
   reference      String?
-  receiptDate    DateTime      @default(now())
+  receiptDate    DateTime     @default(now())
   narration      String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   @@index([salesInvoiceId])
   @@index([customerId])
@@ -352,7 +410,9 @@ model PaymentReceipt {
   @@index([mode])
 }
 
-/** Money paid to vendor against a purchase bill */
+/**
+ * Money paid to vendor against a purchase bill
+ */
 model VendorPayment {
   id             String       @id @default(cuid())
   paymentNo      String       @unique
@@ -384,7 +444,9 @@ model LedgerEntry {
   createdAt   DateTime        @default(now())
 }
 
-/** Supplier steel / MS tube bills (kg in, yield to pipe pieces). Separate from catalog PurchaseBill. */
+/**
+ * Supplier steel / MS tube bills (kg in, yield to pipe pieces). Separate from catalog PurchaseBill.
+ */
 model RawMaterialBill {
   id             String    @id @default(cuid())
   billNo         String    @unique
@@ -406,12 +468,29 @@ model RawMaterialBill {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  items    RawMaterialBillItem[]
-  payments RawMaterialPayment[]
+  items       RawMaterialBillItem[]
+  payments    RawMaterialPayment[]
+  attachments RawMaterialAttachment[]
 
   @@index([deletedAt])
   @@index([billDate])
   @@index([supplierName])
+}
+
+model RawMaterialAttachment {
+  id          String          @id @default(cuid())
+  billId      String
+  bill        RawMaterialBill @relation(fields: [billId], references: [id], onDelete: Cascade)
+  fileName    String
+  mimeType    String
+  /**
+   * Path inside Supabase Storage bucket `pns-raw-material`
+   */
+  storagePath String
+  sizeBytes   Int
+  createdAt   DateTime        @default(now())
+
+  @@index([billId])
 }
 
 model RawMaterialBillItem {

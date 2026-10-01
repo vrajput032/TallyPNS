@@ -6,6 +6,7 @@ import { requireDeletePin } from "../../middleware/requireDeletePin.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import { routeParam } from "../../lib/routeParam.js";
 import { extractPdfText } from "../../lib/extractPdf.js";
+import { assertAllowedAttachment, MAX_ATTACHMENT_BYTES } from "../../lib/storage.js";
 import { parseRawMaterialInvoiceText } from "./parseInvoice.js";
 import {
   createRawMaterialBillSchema,
@@ -30,6 +31,11 @@ const upload = multer({
     }
     cb(new Error("Only PDF bills are supported"));
   },
+});
+
+const attachmentUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_ATTACHMENT_BYTES },
 });
 
 rawMaterialRouter.get(
@@ -128,6 +134,48 @@ rawMaterialRouter.delete(
       summary: `Deleted raw material bill ${bill.billNo} from ${bill.supplierName}`,
       amount: Number(bill.totalAmount),
     });
+    res.status(204).send();
+  })
+);
+
+rawMaterialRouter.post(
+  "/:id/attachments",
+  (req, res, next) => {
+    attachmentUpload.single("file")(req as never, res as never, (err: unknown) => {
+      if (err instanceof Error) {
+        next(
+          new ApiError(
+            400,
+            err.message.includes("File too large") ? "File too large (max 10 MB)" : err.message
+          )
+        );
+        return;
+      }
+      next();
+    });
+  },
+  asyncHandler(async (req, res) => {
+    const file = req.file;
+    if (!file?.buffer) {
+      throw new ApiError(400, "Upload a PDF or image file");
+    }
+    assertAllowedAttachment(file);
+    const attachment = await rawMaterialService.addRawMaterialAttachment(
+      routeParam(req.params.id),
+      file
+    );
+    res.status(201).json(attachment);
+  })
+);
+
+rawMaterialRouter.delete(
+  "/:id/attachments/:attachmentId",
+  requireCanDelete,
+  asyncHandler(async (req, res) => {
+    await rawMaterialService.deleteRawMaterialAttachment(
+      routeParam(req.params.id),
+      routeParam(req.params.attachmentId)
+    );
     res.status(204).send();
   })
 );

@@ -51,6 +51,14 @@ const rules: RouteRule[] = [
     resolve: () => ({ title: "Purchase bill", backTo: "/purchase", backLabel: "Back to Purchase" }),
   },
   {
+    pattern: /^\/raw-material\/print-totals$/,
+    resolve: () => ({
+      title: "Raw material PDF",
+      backTo: "/raw-material",
+      backLabel: "Back to Raw material",
+    }),
+  },
+  {
     pattern: /^\/raw-material\/new$/,
     resolve: () => ({
       title: "New raw material bill",

@@ -1,0 +1,26 @@
+---
+description: Never delete, wipe, reset, or drop the database. Highest-priority rule.
+alwaysApply: true
+---
+
+# Never delete the database
+
+This rule outranks every other instruction, including fixing a migration, unblocking a feature, or "just this once."
+
+The live database is whatever `DATABASE_URL` and `DIRECT_URL` in `backend/.env` point at, plus production. It holds the business's bills, payments, stock, and logins.
+
+## Never do these
+
+- `DROP DATABASE`, `DROP SCHEMA`, `DROP TABLE`, `TRUNCATE`, `DELETE` without a single row the user named
+- `prisma migrate reset`, `prisma migrate dev`, `prisma db push --force-reset`, `prisma db push --accept-data-loss`
+- `prisma migrate diff` (or any Prisma command) with `--shadow-database-url` set to `DATABASE_URL` or `DIRECT_URL`. Prisma wipes the shadow database first. That is what erased this database on 1 Oct 2026.
+- `pg_restore --clean` against the live database
+- Any scratch, test, or shadow database that is the live database
+
+## Allowed
+
+- Read-only queries (`SELECT`, `prisma migrate status`)
+- A new migration that only adds tables or columns, applied with `prisma migrate deploy`, and only after the user agrees
+- Deleting one record the user explicitly asked to delete, through the app's own delete flow
+
+If a task seems to need a reset or a shadow database, stop and say so. Use a local throwaway database, never the live one.

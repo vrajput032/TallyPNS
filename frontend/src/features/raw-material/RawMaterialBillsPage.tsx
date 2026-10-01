@@ -1,4 +1,4 @@
-import { Banknote, Eye, Pencil, Plus, Trash2 } from "lucide-react";
+import { Banknote, Eye, FileText, Paperclip, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -30,6 +30,30 @@ import { useDeleteRawMaterialBill, useRawMaterialBills } from "./useRawMaterial"
 function yieldLabel(bill: RawMaterialBill) {
   const rows = bill.yield?.length ? bill.yield : piecesFromKg(Number(bill.totalKg));
   return rows.map((row) => `${row.sizeMm}mm ${row.pieces.toLocaleString("en-IN")}`).join(" · ");
+}
+
+function BillCopyLink({ bill }: { bill: RawMaterialBill }) {
+  const attachments = bill.attachments ?? [];
+  const latest = attachments[0];
+  if (!latest?.url) {
+    return <span className="text-muted-foreground">—</span>;
+  }
+  return (
+    <a
+      href={latest.url}
+      target="_blank"
+      rel="noreferrer"
+      title={latest.fileName}
+      onClick={(event) => event.stopPropagation()}
+      className="inline-flex items-center gap-1 text-sm text-primary underline-offset-2 hover:underline"
+    >
+      <Paperclip className="size-4" />
+      Bill
+      {attachments.length > 1 ? (
+        <span className="text-xs text-muted-foreground">+{attachments.length - 1}</span>
+      ) : null}
+    </a>
+  );
 }
 
 function MobileBillCards({
@@ -79,6 +103,11 @@ function MobileBillCards({
                   ) : null}
                 </p>
                 <p className="mt-1 text-[11px] text-muted-foreground">{yieldLabel(bill)}</p>
+                {(bill.attachments?.length ?? 0) > 0 ? (
+                  <div className="mt-2">
+                    <BillCopyLink bill={bill} />
+                  </div>
+                ) : null}
               </div>
               <div className="flex items-center gap-1" onClick={(event) => event.stopPropagation()}>
                 {balance > 0 ? (
@@ -146,10 +175,20 @@ export function RawMaterialBillsPage() {
         backTo="/"
         backLabel="Back to Dashboard"
         actions={
-          <Button onClick={() => navigate("/raw-material/new")}>
-            <Plus className="size-4" />
-            Add bill
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/raw-material/print-totals")}
+              disabled={(bills ?? []).length === 0}
+            >
+              <FileText className="size-4" />
+              Download PDF
+            </Button>
+            <Button onClick={() => navigate("/raw-material/new")}>
+              <Plus className="size-4" />
+              Add bill
+            </Button>
+          </>
         }
       />
 
@@ -226,13 +265,14 @@ export function RawMaterialBillsPage() {
                 <TableHead className="text-right">Total</TableHead>
                 <TableHead className="text-right">Left to pay</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Bill</TableHead>
                 <TableHead className="w-40 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {(bills ?? []).length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground">
+                  <TableCell colSpan={10} className="text-center text-muted-foreground">
                     No raw material bills yet. Upload a supplier invoice to start.
                   </TableCell>
                 </TableRow>
@@ -259,6 +299,9 @@ export function RawMaterialBillsPage() {
                       </TableCell>
                       <TableCell>
                         <PaymentStatusBadge status={bill.paymentStatus ?? "PENDING"} />
+                      </TableCell>
+                      <TableCell>
+                        <BillCopyLink bill={bill} />
                       </TableCell>
                       <TableCell className="text-right">
                         {(bill.balanceAmount ?? 0) > 0 ? (

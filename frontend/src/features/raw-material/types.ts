@@ -43,8 +43,20 @@ export interface RawMaterialBill {
   yield: YieldRow[];
   items: RawMaterialBillItem[];
   payments?: RawMaterialPayment[];
+  attachments?: RawMaterialAttachment[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface RawMaterialAttachment {
+  id: string;
+  billId: string;
+  fileName: string;
+  mimeType: string;
+  storagePath: string;
+  sizeBytes: number;
+  url?: string;
+  createdAt: string;
 }
 
 export interface RawMaterialBillItemInput {

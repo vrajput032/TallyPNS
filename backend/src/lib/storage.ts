@@ -4,6 +4,7 @@ import { ApiError } from "../middleware/errorHandler.js";
 
 export const PURCHASE_BUCKET = "pns-purchase";
 export const PRODUCT_BUCKET = "pns-products";
+export const RAW_MATERIAL_BUCKET = "pns-raw-material";
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 
@@ -45,7 +46,8 @@ async function ensureBucketsAndPolicies() {
     INSERT INTO storage.buckets (id, name, public, file_size_limit)
     VALUES
       ('${PURCHASE_BUCKET}', '${PURCHASE_BUCKET}', true, ${MAX_ATTACHMENT_BYTES}),
-      ('${PRODUCT_BUCKET}', '${PRODUCT_BUCKET}', true, ${MAX_ATTACHMENT_BYTES})
+      ('${PRODUCT_BUCKET}', '${PRODUCT_BUCKET}', true, ${MAX_ATTACHMENT_BYTES}),
+      ('${RAW_MATERIAL_BUCKET}', '${RAW_MATERIAL_BUCKET}', true, ${MAX_ATTACHMENT_BYTES})
     ON CONFLICT (id) DO NOTHING
   `);
 
@@ -69,6 +71,15 @@ async function ensureBucketsAndPolicies() {
           FOR ALL
           USING (bucket_id = '${PRODUCT_BUCKET}')
           WITH CHECK (bucket_id = '${PRODUCT_BUCKET}');
+      END IF;
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'pns_raw_material_all'
+      ) THEN
+        CREATE POLICY pns_raw_material_all ON storage.objects
+          FOR ALL
+          USING (bucket_id = '${RAW_MATERIAL_BUCKET}')
+          WITH CHECK (bucket_id = '${RAW_MATERIAL_BUCKET}');
       END IF;
     END
     $$;

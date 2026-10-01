@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/tool
 import type {
   CreateRawMaterialPaymentInput,
   ParsedRawMaterialBill,
+  RawMaterialAttachment,
   RawMaterialBill,
   RawMaterialBillInput,
 } from "@/features/raw-material/types";
@@ -108,6 +109,42 @@ export const deleteRawMaterialBill = createAsyncThunk(
       dispatch(fetchRawMaterialBills({ silent: true }));
       dispatch(fetchDashboardSummary({ silent: true }));
       return id;
+    } catch (error) {
+      return rejectWithValue(apiErrorMessage(error));
+    }
+  }
+);
+
+export const uploadRawMaterialAttachment = createAsyncThunk(
+  "rawMaterial/uploadAttachment",
+  async ({ id, file }: { id: string; file: File }, { rejectWithValue, dispatch }) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const { data } = await api.post<RawMaterialAttachment>(
+        `/raw-material/${id}/attachments`,
+        formData
+      );
+      dispatch(fetchRawMaterialBill({ id, silent: true }));
+      dispatch(fetchRawMaterialBills({ silent: true }));
+      return data;
+    } catch (error) {
+      return rejectWithValue(apiErrorMessage(error));
+    }
+  }
+);
+
+export const deleteRawMaterialAttachment = createAsyncThunk(
+  "rawMaterial/deleteAttachment",
+  async (
+    { billId, attachmentId }: { billId: string; attachmentId: string },
+    { rejectWithValue, dispatch }
+  ) => {
+    try {
+      await api.delete(`/raw-material/${billId}/attachments/${attachmentId}`);
+      dispatch(fetchRawMaterialBill({ id: billId, silent: true }));
+      dispatch(fetchRawMaterialBills({ silent: true }));
+      return attachmentId;
     } catch (error) {
       return rejectWithValue(apiErrorMessage(error));
     }
