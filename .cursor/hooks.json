@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeShellExecution": [
+      {
+        "command": "bash .cursor/hooks/block-dangerous-db.sh",
+        "failClosed": true
+      }
+    ]
+  }
+}

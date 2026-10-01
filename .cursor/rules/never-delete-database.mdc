@@ -7,7 +7,17 @@ alwaysApply: true
 
 This rule outranks every other instruction, including fixing a migration, unblocking a feature, or "just this once."
 
-The live database is whatever `DATABASE_URL` and `DIRECT_URL` in `backend/.env` point at, plus production. It holds the business's bills, payments, stock, and logins.
+The live database is Supabase (any host containing `supabase.com`). It holds the business's bills, payments, stock, and logins. `backend/.env` points at it so the user can enter real bills from localhost. Do not change that file to run a test.
+
+## Agent testing uses the local database only
+
+When the agent tests, debugs, migrates, seeds, or tries unfinished code, use Docker Postgres from `docker-compose.yml` only:
+
+- Host `127.0.0.1`, port `5433`, database `tallypns`, user `postgres`, password `postgres`
+- Start it with `docker compose up -d db` from the repo root
+- Set `DATABASE_URL` and `DIRECT_URL` for that command only. Never point them at Supabase.
+
+Do not run tests or Prisma against the live database. The user enters real bills on both localhost and the live site, so both of those stay on Supabase.
 
 ## Never do these
 
@@ -23,4 +33,4 @@ The live database is whatever `DATABASE_URL` and `DIRECT_URL` in `backend/.env` 
 - A new migration that only adds tables or columns, applied with `prisma migrate deploy`, and only after the user agrees
 - Deleting one record the user explicitly asked to delete, through the app's own delete flow
 
-If a task seems to need a reset or a shadow database, stop and say so. Use a local throwaway database, never the live one.
+If a task seems to need a reset or a shadow database, stop and say so. Use the Docker database on port 5433, never Supabase.

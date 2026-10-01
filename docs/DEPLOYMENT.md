@@ -138,7 +138,7 @@ Backups are full `pg_dump` files, encrypted with [age](https://age-encryption.or
 
 | When | How |
 |------|-----|
-| Every night, 02:00 IST | GitHub Actions workflow `nightly-backup.yml` in `DBDumps` |
+| Twice daily: **11:00 AM** and **02:00 AM** IST | GitHub Actions workflow `nightly-backup.yml` in `DBDumps` |
 | Every backend deploy | `npm run deploy` / `deploy:backend` runs `db:backup:push` first |
 | On demand | `npm run db:backup:push` (or **Run workflow** in the `DBDumps` Actions tab) |
 
@@ -170,6 +170,18 @@ RESTORE_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/
 ```
 
 `.age` files are decrypted automatically; set `AGE_IDENTITY` if the private key is not at the default path. Restore the latest backup into local Docker about once a month to confirm backups still work.
+
+### Database safety (free protections)
+
+| Protection | Status |
+|------------|--------|
+| Cursor rule: never wipe Supabase; agent tests on Docker `:5433` | In `.cursor/rules/never-delete-database.mdc` |
+| Cursor hook: block destructive Prisma/pg commands | `.cursor/hooks.json` (reload Cursor after pull) |
+| Live schema changes | `npm run db:migrate` only (backup + type `YES` on Supabase) |
+| Row-count alarm | `db:backup:push` and GitHub backup workflow fail if counts drop |
+| Backups | Twice daily (11 AM + 2 AM IST) + before each backend deploy |
+| Read-only DB user for the app | **You run once:** `scripts/supabase-create-app-role.sql` in Supabase, then point Render `DATABASE_URL` at `tallypns_app` |
+| Monthly restore drill | **You:** `npm run db:restore` into Docker once a month |
 
 ---
 

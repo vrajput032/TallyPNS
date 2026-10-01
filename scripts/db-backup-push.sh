@@ -7,6 +7,7 @@ DUMP_REPO="${DUMP_REPO:-$(cd "${ROOT}/.." && pwd)/DBDumps}"
 REMOTE_URL="git@github.com:vrajput032/DBDumps.git"
 
 bash "${ROOT}/scripts/db-backup.sh"
+bash "${ROOT}/scripts/db-backup-count-check.sh"
 
 LATEST="${ROOT}/backups/tallypns-latest.dump"
 if [[ ! -L "${LATEST}" && ! -f "${LATEST}" ]]; then
