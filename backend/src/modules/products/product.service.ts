@@ -6,6 +6,7 @@ import {
   publicObjectUrl,
   uploadObject,
 } from "../../lib/storage.js";
+import { scheduleSheetsSync } from "../sheets/sheets.sync.js";
 import type { createProductSchema, updateProductSchema } from "./product.schema.js";
 import type { z } from "zod";
 
@@ -31,12 +32,14 @@ export async function getProduct(id: string) {
 
 export async function createProduct(data: z.infer<typeof createProductSchema>) {
   const product = await prisma.product.create({ data });
+  scheduleSheetsSync("product create");
   return withImageUrl(product);
 }
 
 export async function updateProduct(id: string, data: z.infer<typeof updateProductSchema>) {
   await getProduct(id);
   const product = await prisma.product.update({ where: { id }, data });
+  scheduleSheetsSync("product update");
   return withImageUrl(product);
 }
 
@@ -46,6 +49,7 @@ export async function deleteProduct(id: string) {
     await deleteObject(PRODUCT_BUCKET, product.imagePath);
   }
   await prisma.product.delete({ where: { id } });
+  scheduleSheetsSync("product delete");
 }
 
 export async function setProductImage(productId: string, file: Express.Multer.File) {
@@ -75,6 +79,7 @@ export async function setProductImage(productId: string, file: Express.Multer.Fi
     where: { id: productId },
     data: { imagePath: storagePath, imageMime: mimeType },
   });
+  scheduleSheetsSync("product image");
 
   return withImageUrl(updated);
 }
@@ -91,5 +96,6 @@ export async function clearProductImage(productId: string) {
     where: { id: productId },
     data: { imagePath: null, imageMime: null },
   });
+  scheduleSheetsSync("product image clear");
   return withImageUrl(updated);
 }

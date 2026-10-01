@@ -55,25 +55,33 @@ async function ensureTabsExist(tabs: SheetTabName[]): Promise<void> {
   for (const title of missing) knownTabs.add(title);
 }
 
-async function writeTab(tab: SheetTabName): Promise<number> {
+/**
+ * Loads every tab before touching the sheet, then clears + writes in two batch calls.
+ * Google allows ~60 write requests/min per user, so per-tab calls would throttle with 20 tabs.
+ */
+async function writeTabs(tabs: SheetTabName[]): Promise<Record<string, number>> {
   const cfg = getSheetsConfig();
   const sheets = sheetsClient();
-  const values = await loadSheetValues(tab);
-  const range = `'${tab}'!A:Z`;
 
-  await sheets.spreadsheets.values.clear({
+  const loaded: { tab: SheetTabName; values: (string | number)[][] }[] = [];
+  for (const tab of tabs) {
+    loaded.push({ tab, values: await loadSheetValues(tab) });
+  }
+
+  await sheets.spreadsheets.values.batchClear({
     spreadsheetId: cfg.spreadsheetId,
-    range,
+    requestBody: { ranges: tabs.map((tab) => `'${tab}'`) },
   });
 
-  await sheets.spreadsheets.values.update({
+  await sheets.spreadsheets.values.batchUpdate({
     spreadsheetId: cfg.spreadsheetId,
-    range: `'${tab}'!A1`,
-    valueInputOption: "RAW",
-    requestBody: { values },
+    requestBody: {
+      valueInputOption: "RAW",
+      data: loaded.map(({ tab, values }) => ({ range: `'${tab}'!A1`, values })),
+    },
   });
 
-  return Math.max(0, values.length - 1);
+  return Object.fromEntries(loaded.map(({ tab, values }) => [tab, Math.max(0, values.length - 1)]));
 }
 
 export async function syncGoogleSheets(tabs: SheetTabName[] = ALL_SHEET_TABS): Promise<SheetsSyncResult> {
@@ -92,10 +100,7 @@ export async function syncGoogleSheets(tabs: SheetTabName[] = ALL_SHEET_TABS): P
 
   syncInFlight = (async () => {
     await ensureTabsExist(tabs);
-    const resultTabs: Record<string, number> = {};
-    for (const tab of tabs) {
-      resultTabs[tab] = await writeTab(tab);
-    }
+    const resultTabs = await writeTabs(tabs);
     const syncedAt = new Date().toISOString();
     console.log(`[sheets] synced ${tabs.join(", ")} at ${syncedAt}`);
     return { ok: true, tabs: resultTabs, syncedAt };

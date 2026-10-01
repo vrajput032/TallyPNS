@@ -3,6 +3,7 @@ import { prisma } from "../../lib/prisma.js";
 import { activeOnly } from "../../lib/activeRecords.js";
 import { monthKey, monthLabel, round2 } from "../../lib/manufacturingPnl.js";
 import { ApiError } from "../../middleware/errorHandler.js";
+import { scheduleSheetsSync } from "../sheets/sheets.sync.js";
 import type { commissionEntrySchema, commissionPaymentSchema } from "./commission.schema.js";
 
 const PAYMENT_PREFIX = "COM-";
@@ -235,21 +236,25 @@ async function assertCustomer(customerId: string) {
 
 export async function createCommissionEntry(data: z.infer<typeof commissionEntrySchema>) {
   await assertCustomer(data.customerId);
-  return prisma.commissionEntry.create({
+  const entry = await prisma.commissionEntry.create({
     data: { ...data, note: data.note?.trim() || null },
     include: { customer: { select: { id: true, name: true } } },
   });
+  scheduleSheetsSync("commission entry create");
+  return entry;
 }
 
 export async function updateCommissionEntry(id: string, data: z.infer<typeof commissionEntrySchema>) {
   const existing = await prisma.commissionEntry.findUnique({ where: { id } });
   if (!existing) throw new ApiError(404, "Lump sum not found");
   await assertCustomer(data.customerId);
-  return prisma.commissionEntry.update({
+  const entry = await prisma.commissionEntry.update({
     where: { id },
     data: { ...data, note: data.note?.trim() || null },
     include: { customer: { select: { id: true, name: true } } },
   });
+  scheduleSheetsSync("commission entry update");
+  return entry;
 }
 
 export async function deleteCommissionEntry(id: string) {
@@ -259,6 +264,7 @@ export async function deleteCommissionEntry(id: string) {
   });
   if (!existing) throw new ApiError(404, "Lump sum not found");
   await prisma.commissionEntry.delete({ where: { id } });
+  scheduleSheetsSync("commission entry delete");
   return existing;
 }
 
@@ -280,7 +286,7 @@ export async function createCommissionPayment(data: z.infer<typeof commissionPay
   if (data.amount > due + 0.009) {
     throw new ApiError(400, `Amount exceeds commission due (₹${Math.max(due, 0).toFixed(2)})`);
   }
-  return prisma.commissionPayment.create({
+  const payment = await prisma.commissionPayment.create({
     data: {
       paymentNo: await nextPaymentNo(),
       customerId: data.customerId,
@@ -292,6 +298,8 @@ export async function createCommissionPayment(data: z.infer<typeof commissionPay
     },
     include: { customer: { select: { id: true, name: true } } },
   });
+  scheduleSheetsSync("commission payment");
+  return payment;
 }
 
 export async function deleteCommissionPayment(id: string) {
@@ -301,6 +309,7 @@ export async function deleteCommissionPayment(id: string) {
   });
   if (!payment) throw new ApiError(404, "Commission payment not found");
   await prisma.commissionPayment.delete({ where: { id } });
+  scheduleSheetsSync("commission payment delete");
   return payment;
 }
 

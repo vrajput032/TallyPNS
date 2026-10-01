@@ -2,6 +2,7 @@ import { prisma } from "../../lib/prisma.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import { applySizeStockDelta } from "../../lib/sizeStock.js";
 import { PRODUCT_BUCKET, publicObjectUrl } from "../../lib/storage.js";
+import { scheduleSheetsSync } from "../sheets/sheets.sync.js";
 import type { createAdjustmentSchema } from "./inventory.schema.js";
 import type { z } from "zod";
 
@@ -49,7 +50,7 @@ export async function createAdjustment(data: z.infer<typeof createAdjustmentSche
     throw new ApiError(400, "Adjustment would result in negative stock");
   }
 
-  return prisma.$transaction(async (tx) => {
+  const movement = await prisma.$transaction(async (tx) => {
     await applySizeStockDelta(tx, {
       productId: data.productId,
       sizeMm: data.sizeMm,
@@ -72,4 +73,6 @@ export async function createAdjustment(data: z.infer<typeof createAdjustmentSche
       include: { product: { select: { id: true, name: true, unit: true } } },
     });
   });
+  scheduleSheetsSync("stock adjustment");
+  return movement;
 }

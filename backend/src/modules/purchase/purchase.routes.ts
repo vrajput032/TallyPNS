@@ -21,6 +21,7 @@ import { getMonthlyRunningCosts } from "./runningCosts.js";
 import { RUNNING_COST_LINE_LABELS } from "../../lib/manufacturingPnl.js";
 import { routeParam } from "../../lib/routeParam.js";
 import { recordRequestActivity } from "../activity/activity.js";
+import { scheduleSheetsSync } from "../sheets/sheets.sync.js";
 
 export const purchaseRouter = Router();
 
@@ -52,6 +53,7 @@ purchaseRouter.put(
   asyncHandler(async (req, res) => {
     const data = setRunningCostSchema.parse(req.body);
     const months = await setRunningCostOverrides(data);
+    scheduleSheetsSync("running cost set");
     recordRequestActivity(req, {
       module: "PURCHASE",
       action: "UPDATED",
@@ -70,6 +72,7 @@ purchaseRouter.post(
   asyncHandler(async (req, res) => {
     const data = resetRunningCostSchema.parse(req.body);
     const months = await resetRunningCostOverrides(data);
+    scheduleSheetsSync("running cost reset");
     recordRequestActivity(req, {
       module: "PURCHASE",
       action: "UPDATED",
