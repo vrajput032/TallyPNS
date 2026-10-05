@@ -34,7 +34,7 @@ app.use("/api", (_req, res, next) => {
 });
 
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", release: "login-activity" });
+  res.json({ status: "ok", release: "shared-sessions" });
 });
 
 app.use("/api", apiRouter);

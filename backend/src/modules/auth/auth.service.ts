@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import type { User } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
-import { revokedSessionValue } from "../../lib/sessionRevocation.js";
+import { revokedSessionValue, sessionIsRevoked } from "../../lib/sessionRevocation.js";
 import type { AuthPayload } from "../../middleware/auth.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import { recordActivity } from "../activity/activity.js";
@@ -191,12 +191,10 @@ export async function refresh(refreshToken: string, deviceName?: string) {
   }
 
   const user = await prisma.user.findUnique({ where: { id: payload.sub } });
-  if (!user || user.refreshToken !== refreshToken) {
+  if (!user || sessionIsRevoked(user.refreshToken, payload.iat)) {
     throw new ApiError(401, "Refresh token revoked");
   }
 
   const nextDevice = deviceName || payload.deviceName;
-  const tokens = signTokens(toPayload(user, nextDevice));
-  await prisma.user.update({ where: { id: user.id }, data: { refreshToken: tokens.refreshToken } });
-  return tokens;
+  return signTokens(toPayload(user, nextDevice));
 }
