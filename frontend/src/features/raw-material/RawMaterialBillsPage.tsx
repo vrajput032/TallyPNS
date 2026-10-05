@@ -17,19 +17,56 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PaymentStatusBadge } from "@/features/payments/PaymentStatusBadge";
+import {
+  PAYMENT_STATUS_LABEL,
+  payableTileTone,
+  paymentTileClass,
+  paymentTileInk,
+} from "@/features/payments/paymentTile";
+import type { PaymentStatus } from "@/features/payments/types";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { formatInr } from "@/lib/formatInr";
 import { canDelete } from "@/lib/permissions";
 import { piecesFromKg } from "@/lib/rawMaterialYield";
 import { apiErrorMessage } from "@/lib/apiError";
+import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 import { RecordRawMaterialPaymentDialog } from "./RecordRawMaterialPaymentDialog";
 import type { RawMaterialBill } from "./types";
 import { useDeleteRawMaterialBill, useRawMaterialBills } from "./useRawMaterial";
 
+function paymentRowClass(status: PaymentStatus) {
+  switch (status) {
+    case "PAID":
+      return "bg-emerald-500/10 hover:bg-emerald-500/15";
+    case "PARTIAL":
+      return "bg-amber-400/20 hover:bg-amber-400/25";
+    case "PENDING":
+      return undefined;
+    default: {
+      const _exhaustive: never = status;
+      return _exhaustive;
+    }
+  }
+}
+
 function yieldLabel(bill: RawMaterialBill) {
   const rows = bill.yield?.length ? bill.yield : piecesFromKg(Number(bill.totalKg));
   return rows.map((row) => `${row.sizeMm}mm ${row.pieces.toLocaleString("en-IN")}`).join(" · ");
+}
+
+function formatBillDate(value: string) {
+  return new Date(value).toLocaleDateString("en-GB");
+}
+
+function lastPaymentDateLabel(bill: RawMaterialBill): string | null {
+  const payments = bill.payments ?? [];
+  if (payments.length === 0) return null;
+  let latest = payments[0].paymentDate;
+  for (const payment of payments) {
+    if (payment.paymentDate > latest) latest = payment.paymentDate;
+  }
+  return formatBillDate(latest);
 }
 
 function BillCopyLink({ bill }: { bill: RawMaterialBill }) {
@@ -79,53 +116,83 @@ function MobileBillCards({
     <div className="grid gap-3">
       {bills.map((bill) => {
         const balance = bill.balanceAmount ?? 0;
+        const status = bill.paymentStatus ?? "PENDING";
+        const lastPaid = lastPaymentDateLabel(bill);
+        const tone = payableTileTone(status);
+        const ink = paymentTileInk(tone);
         return (
           <div
             key={bill.id}
             onClick={() => onView(bill)}
-            className="overflow-hidden rounded-2xl border bg-card shadow-sm active:scale-[0.99]"
+            className={cn(
+              "relative overflow-hidden rounded-3xl border active:scale-[0.99]",
+              paymentTileClass(tone)
+            )}
           >
-            <div className="flex items-start justify-between gap-2 p-4">
-              <div className="min-w-0">
-                <p className="truncate font-semibold">{bill.billNo}</p>
-                <p className="truncate text-sm text-muted-foreground">{bill.supplierName}</p>
+            <div
+              className={cn(
+                "pointer-events-none absolute -right-10 -top-12 size-36 rounded-full blur-2xl",
+                ink.glow
+              )}
+            />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent dark:via-white/25" />
+
+            <div className="relative flex flex-col gap-3 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className={cn("truncate text-xl font-semibold leading-tight tracking-tight", ink.title)}>
+                    {bill.supplierName}
+                  </p>
+                  {lastPaid ? (
+                    <p className={cn("mt-1 text-sm", ink.meta)}>Last paid {lastPaid}</p>
+                  ) : null}
+                </div>
+                <span
+                  className={cn(
+                    "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide",
+                    ink.chip
+                  )}
+                >
+                  {PAYMENT_STATUS_LABEL[status]}
+                </span>
               </div>
-              <PaymentStatusBadge status={bill.paymentStatus ?? "PENDING"} />
-            </div>
-            <div className="mx-4 border-t" />
-            <div className="flex items-end justify-between gap-2 p-4">
+
               <div>
-                <p className="text-lg font-bold tabular-nums">₹{formatInr(bill.totalAmount)}</p>
-                <p className="text-xs text-muted-foreground">
+                <p className={cn("text-[2rem] font-bold leading-none tracking-tight tabular-nums", ink.title)}>
+                  ₹{formatInr(bill.totalAmount)}
+                </p>
+                <p className={cn("mt-2 text-sm font-medium", ink.meta)}>
                   {Number(bill.totalKg).toLocaleString("en-IN")} kg
                   {balance > 0 ? (
-                    <span className="font-medium text-red-600"> · ₹{formatInr(balance)} left</span>
+                    <span className="font-semibold text-red-600 dark:text-red-400">
+                      {" "}
+                      · ₹{formatInr(balance)} left
+                    </span>
                   ) : null}
                 </p>
-                <p className="mt-1 text-[11px] text-muted-foreground">{yieldLabel(bill)}</p>
-                {(bill.attachments?.length ?? 0) > 0 ? (
-                  <div className="mt-2">
-                    <BillCopyLink bill={bill} />
-                  </div>
-                ) : null}
+                <p className={cn("mt-1 text-sm", ink.meta)}>{yieldLabel(bill)}</p>
               </div>
-              <div className="flex items-center gap-1" onClick={(event) => event.stopPropagation()}>
-                {balance > 0 ? (
-                  <Button size="sm" onClick={() => onPay(bill)}>
-                    <Banknote className="size-4" />
-                    Pay
-                  </Button>
-                ) : null}
-                {(bill.payments?.length ?? 0) === 0 && (
-                  <Button variant="ghost" size="icon" onClick={() => onEdit(bill)}>
-                    <Pencil className="size-4" />
-                  </Button>
-                )}
-                {allowDelete ? (
-                  <Button variant="ghost" size="icon" onClick={() => onDelete(bill)}>
-                    <Trash2 className="size-4" />
-                  </Button>
-                ) : null}
+
+              <div className="flex items-end justify-between gap-2">
+                {(bill.attachments?.length ?? 0) > 0 ? <BillCopyLink bill={bill} /> : <span />}
+                <div className="flex items-center gap-1" onClick={(event) => event.stopPropagation()}>
+                  {balance > 0 ? (
+                    <Button size="sm" onClick={() => onPay(bill)}>
+                      <Banknote className="size-4" />
+                      Pay
+                    </Button>
+                  ) : null}
+                  {(bill.payments?.length ?? 0) === 0 && (
+                    <Button variant="ghost" size="icon" onClick={() => onEdit(bill)}>
+                      <Pencil className="size-4" />
+                    </Button>
+                  )}
+                  {allowDelete ? (
+                    <Button variant="ghost" size="icon" onClick={() => onDelete(bill)}>
+                      <Trash2 className="size-4" />
+                    </Button>
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>
@@ -265,6 +332,7 @@ export function RawMaterialBillsPage() {
                 <TableHead className="text-right">Total</TableHead>
                 <TableHead className="text-right">Left to pay</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Last paid</TableHead>
                 <TableHead>Bill</TableHead>
                 <TableHead className="w-40 text-right">Actions</TableHead>
               </TableRow>
@@ -272,7 +340,7 @@ export function RawMaterialBillsPage() {
             <TableBody>
               {(bills ?? []).length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center text-muted-foreground">
+                  <TableCell colSpan={11} className="text-center text-muted-foreground">
                     No raw material bills yet. Upload a supplier invoice to start.
                   </TableCell>
                 </TableRow>
@@ -280,8 +348,9 @@ export function RawMaterialBillsPage() {
                 (bills ?? []).map((bill) => {
                   const yield95 = bill.yield?.find((row) => row.sizeMm === 95)?.pieces ?? 0;
                   const yield110 = bill.yield?.find((row) => row.sizeMm === 110)?.pieces ?? 0;
+                  const status = bill.paymentStatus ?? "PENDING";
                   return (
-                    <TableRow key={bill.id}>
+                    <TableRow key={bill.id} className={paymentRowClass(status)}>
                       <TableCell className="font-medium">{bill.billNo}</TableCell>
                       <TableCell>{new Date(bill.billDate).toLocaleDateString("en-GB")}</TableCell>
                       <TableCell>{bill.supplierName}</TableCell>
@@ -299,6 +368,9 @@ export function RawMaterialBillsPage() {
                       </TableCell>
                       <TableCell>
                         <PaymentStatusBadge status={bill.paymentStatus ?? "PENDING"} />
+                      </TableCell>
+                      <TableCell className="tabular-nums text-muted-foreground">
+                        {lastPaymentDateLabel(bill) ?? "—"}
                       </TableCell>
                       <TableCell>
                         <BillCopyLink bill={bill} />

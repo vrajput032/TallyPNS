@@ -65,10 +65,18 @@ import {
 import { useDeleteSalesInvoice, useSalesInvoices } from "./useSales";
 import { daysUntilDue, invoicePieces, type SalesInvoice } from "./types";
 import { PaymentStatusBadge } from "@/features/payments/PaymentStatusBadge";
+import {
+  dueAwareTileTone,
+  paymentTileChipLabel,
+  paymentTileClass,
+  paymentTileInk,
+  type PaymentTileTone,
+} from "@/features/payments/paymentTile";
 import { TradingBadge } from "./TradingBadge";
 import { formatInr } from "@/lib/formatInr";
 import { canDelete } from "@/lib/permissions";
 import { apiErrorMessage } from "@/lib/apiError";
+import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 
 const SORT_OPTIONS: { value: string; label: string; id: string; desc: boolean }[] = [
@@ -100,7 +108,15 @@ function DueStatus({ invoice }: { invoice: SalesInvoice }) {
   );
 }
 
-function DueBanner({ invoice, balance }: { invoice: SalesInvoice; balance: number }) {
+function DueBanner({
+  invoice,
+  balance,
+  tileTone,
+}: {
+  invoice: SalesInvoice;
+  balance: number;
+  tileTone?: PaymentTileTone;
+}) {
   const days = daysUntilDue(invoice);
 
   let dayLabel: string | null = null;
@@ -119,16 +135,22 @@ function DueBanner({ invoice, balance }: { invoice: SalesInvoice; balance: numbe
   }
 
   const toneClasses =
-    tone === "overdue"
-      ? "bg-red-600 text-white"
-      : tone === "warn"
-        ? "bg-amber-500 text-white"
-        : "bg-slate-800 text-white dark:bg-slate-700";
+    tileTone === "OVERDUE"
+      ? "bg-black/12 text-red-950 dark:text-red-50"
+      : tileTone === "DUE"
+        ? "bg-black/12 text-orange-950 dark:text-orange-50"
+        : tone === "overdue"
+          ? "bg-red-600 text-white"
+          : tone === "warn"
+            ? "bg-amber-500 text-white"
+            : "bg-slate-800 text-white dark:bg-slate-700";
 
   const badgeClasses =
-    tone === "overdue" || tone === "warn"
-      ? "bg-black/20 text-white"
-      : "bg-white/15 text-white";
+    tileTone === "OVERDUE" || tileTone === "DUE"
+      ? "bg-black/15"
+      : tone === "overdue" || tone === "warn"
+        ? "bg-black/20 text-white"
+        : "bg-white/15 text-white";
 
   return (
     <div className={`flex items-center justify-between gap-2 px-4 py-3 pl-5 ${toneClasses}`}>
@@ -240,51 +262,75 @@ function MobileInvoiceCards({
       {invoices.map((invoice) => {
         const balance = invoice.balanceAmount ?? 0;
         const status = invoice.paymentStatus ?? "PENDING";
-        const accent =
-          status === "PAID" ? "bg-emerald-500" : status === "PARTIAL" ? "bg-amber-500" : "bg-red-400";
+        const days = daysUntilDue(invoice);
+        const tone = dueAwareTileTone({ status, balance, daysUntilDue: days });
+        const ink = paymentTileInk(tone);
         const initial = invoice.customer.name.trim().charAt(0).toUpperCase() || "?";
 
         return (
           <div
             key={invoice.id}
             onClick={() => onView(invoice)}
-            className="relative overflow-hidden rounded-2xl border bg-card shadow-sm transition-all active:scale-[0.99] active:bg-muted/60"
+            className={cn(
+              "relative overflow-hidden rounded-3xl border transition-transform active:scale-[0.99]",
+              paymentTileClass(tone)
+            )}
           >
-            <div className={`absolute inset-y-0 left-0 w-1 ${accent}`} />
+            <div
+              className={cn(
+                "pointer-events-none absolute -right-10 -top-12 size-36 rounded-full blur-2xl",
+                ink.glow
+              )}
+            />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent dark:via-white/25" />
 
-            <div className="flex items-center gap-3 p-4 pl-5">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+            <div className="relative flex items-center gap-3 p-4">
+              <div
+                className={cn(
+                  "flex size-10 shrink-0 items-center justify-center rounded-full bg-white/50 text-sm font-bold backdrop-blur-md dark:bg-black/20",
+                  ink.title
+                )}
+              >
                 {initial}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="truncate font-semibold leading-tight">{invoice.invoiceNo}</p>
+                  <p className={cn("truncate font-semibold leading-tight", ink.title)}>
+                    {invoice.invoiceNo}
+                  </p>
                   <div className="flex shrink-0 items-center gap-1.5">
                     {invoice.isTrading ? <TradingBadge /> : null}
-                    <PaymentStatusBadge status={status} />
+                    <span
+                      className={cn(
+                        "rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide",
+                        ink.chip
+                      )}
+                    >
+                      {paymentTileChipLabel(tone, days)}
+                    </span>
                   </div>
                 </div>
-                <p className="truncate text-sm text-muted-foreground">{invoice.customer.name}</p>
+                <p className={cn("truncate text-sm", ink.meta)}>{invoice.customer.name}</p>
               </div>
             </div>
 
-            <div className="mx-4 border-t" />
+            <div className="relative mx-4 border-t border-black/10 dark:border-white/10" />
 
-            <div className="flex items-center justify-between gap-2 p-4 pl-5">
+            <div className="relative flex items-center justify-between gap-2 p-4">
               <div className="flex min-w-0 items-center gap-2">
-                <div className="flex flex-col items-center rounded-xl bg-muted px-3 py-1.5">
-                  <span className="text-base font-bold leading-none tabular-nums">
+                <div className="flex flex-col items-center rounded-xl bg-white/45 px-3 py-1.5 backdrop-blur-md dark:bg-black/20">
+                  <span className={cn("text-base font-bold leading-none tabular-nums", ink.title)}>
                     {invoicePieces(invoice).toLocaleString("en-IN")}
                   </span>
-                  <span className="mt-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                  <span className={cn("mt-1 text-[10px] font-medium uppercase tracking-wider", ink.meta)}>
                     Pcs
                   </span>
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-lg font-bold leading-tight tabular-nums">
+                  <p className={cn("truncate text-lg font-bold leading-tight tabular-nums", ink.title)}>
                     ₹{formatInr(invoice.totalAmount)}
                   </p>
-                  <p className="truncate text-xs text-muted-foreground">
+                  <p className={cn("truncate text-xs", ink.meta)}>
                     {new Date(invoice.invoiceDate).toLocaleDateString("en-GB")}
                   </p>
                 </div>
@@ -301,11 +347,13 @@ function MobileInvoiceCards({
                     <Trash2 className="size-4" />
                   </Button>
                 ) : null}
-                <ChevronRight className="size-4 text-muted-foreground" />
+                <ChevronRight className={cn("size-4", ink.meta)} />
               </div>
             </div>
 
-            {balance > 0 && <DueBanner invoice={invoice} balance={balance} />}
+            {balance > 0 && (
+              <DueBanner invoice={invoice} balance={balance} tileTone={tone} />
+            )}
           </div>
         );
       })}

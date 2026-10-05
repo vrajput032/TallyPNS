@@ -2,6 +2,7 @@ import { prisma } from "../../lib/prisma.js";
 import { activeOnly } from "../../lib/activeRecords.js";
 import { businessMonthsThrough, monthKey, round2 } from "../../lib/manufacturingPnl.js";
 import { PIPE_SIZES_MM, quantityForCatalogSize } from "../../lib/pipeSizes.js";
+import { getIndusPoProgress } from "./indusPo.js";
 
 const LOW_STOCK_THRESHOLD = 10;
 
@@ -151,7 +152,7 @@ async function getTradingPnl() {
 }
 
 export async function getDashboardSummary() {
-  const [customerCount, productCount, products, salesAgg, tradingAgg, receiptsAgg, sizeStocks, trading] = await Promise.all([
+  const [customerCount, productCount, products, salesAgg, tradingAgg, receiptsAgg, sizeStocks, trading, indusPo] = await Promise.all([
     prisma.customer.count(),
     prisma.product.count(),
     prisma.product.findMany({ select: { price: true, currentStock: true } }),
@@ -171,6 +172,7 @@ export async function getDashboardSummary() {
       select: { sizeMm: true, quantity: true },
     }),
     getTradingPnl(),
+    getIndusPoProgress(),
   ]);
 
   const stockValue = products.reduce(
@@ -224,6 +226,7 @@ export async function getDashboardSummary() {
     tradingSales,
     tradingInvoiceCount: tradingAgg._count,
     trading,
+    indusPo,
     totalReceived: Number(receiptsAgg._sum.amount ?? 0),
     rawMaterial: {
       totalBilled: Math.round(rawMaterialTotal),

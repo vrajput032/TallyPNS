@@ -11,6 +11,7 @@ import {
 } from "../../lib/paymentReminder.js";
 import { prisma } from "../../lib/prisma.js";
 import { ApiError } from "../../middleware/errorHandler.js";
+import { getIndusPoProgress, indusPoPushPayload } from "../dashboard/indusPo.js";
 import { withPaymentSummary } from "../payments/payment.utils.js";
 import { getPushConfig } from "./notifications.config.js";
 import type { pushSubscriptionSchema } from "./notifications.schema.js";
@@ -192,6 +193,19 @@ export async function runTestBroadcastToAllDevices(now = new Date()) {
   };
   const { result } = await sendToSubscriptions(subs, payload);
   return { date: istDateKey(now), devices: subs.length, ...result };
+}
+
+/** 8:00 PM IST daily: remaining pieces on the active Indus PO. */
+export async function runDailyIndusPoRemaining(now = new Date()) {
+  requirePush();
+  const summary = await getIndusPoProgress();
+  const payload: PushPayload = { ...indusPoPushPayload(summary), silent: false };
+  const subs = await prisma.pushSubscription.findMany();
+  if (subs.length === 0) {
+    return { date: istDateKey(now), skipped: "No devices subscribed", remaining: summary.remaining, sent: 0, removed: 0, failed: 0 };
+  }
+  const { result } = await sendToSubscriptions(subs, payload);
+  return { date: istDateKey(now), remaining: summary.remaining, devices: subs.length, ...result };
 }
 
 /** Fire-and-forget: all devices with reminders on (no custom sound). */

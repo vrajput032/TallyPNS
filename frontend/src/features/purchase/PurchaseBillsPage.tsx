@@ -33,6 +33,19 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PaymentStatusBadge } from "@/features/payments/PaymentStatusBadge";
+import {
+  PAYMENT_STATUS_LABEL,
+  payableTileTone,
+  paymentTileClass,
+  paymentTileInk,
+} from "@/features/payments/paymentTile";
+import { useIsMobile } from "@/hooks/useIsMobile";
+import { formatInr } from "@/lib/formatInr";
+import { canDelete } from "@/lib/permissions";
+import { apiErrorMessage } from "@/lib/apiError";
+import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/store/authStore";
 import { MonthlyRunningCostsPanel } from "./MonthlyRunningCostsPanel";
 import { useDeletePurchaseBill, usePurchaseBills } from "./usePurchase";
 import {
@@ -59,12 +72,6 @@ function newBillLabel(section: PurchaseSection) {
     }
   }
 }
-import { PaymentStatusBadge } from "@/features/payments/PaymentStatusBadge";
-import { useIsMobile } from "@/hooks/useIsMobile";
-import { formatInr } from "@/lib/formatInr";
-import { canDelete } from "@/lib/permissions";
-import { apiErrorMessage } from "@/lib/apiError";
-import { useAuthStore } from "@/store/authStore";
 
 function SortableHeader({ label, sorted }: { label: string; sorted: false | "asc" | "desc" }) {
   const Icon = sorted === "asc" ? ArrowUp : sorted === "desc" ? ArrowDown : ArrowUpDown;
@@ -104,8 +111,8 @@ function MobilePurchaseBillCards({
       {bills.map((bill) => {
         const balance = bill.balanceAmount ?? 0;
         const status = bill.paymentStatus ?? "PENDING";
-        const accent =
-          status === "PAID" ? "bg-emerald-500" : status === "PARTIAL" ? "bg-amber-500" : "bg-red-400";
+        const tone = payableTileTone(status);
+        const ink = paymentTileInk(tone);
         const files = bill.attachments ?? [];
         const firstFile = files[0];
 
@@ -113,17 +120,35 @@ function MobilePurchaseBillCards({
           <div
             key={bill.id}
             onClick={() => onView(bill)}
-            className="relative overflow-hidden rounded-2xl border bg-card shadow-sm transition-all active:scale-[0.99] active:bg-muted/60"
+            className={cn(
+              "relative overflow-hidden rounded-3xl border transition-transform active:scale-[0.99]",
+              paymentTileClass(tone)
+            )}
           >
-            <div className={`absolute inset-y-0 left-0 w-1 ${accent}`} />
+            <div
+              className={cn(
+                "pointer-events-none absolute -right-10 -top-12 size-36 rounded-full blur-2xl",
+                ink.glow
+              )}
+            />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent dark:via-white/25" />
 
-            <div className="flex items-start justify-between gap-2 p-4 pl-5">
+            <div className="relative flex items-start justify-between gap-2 p-4">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="truncate font-semibold leading-tight">{billTitle(bill)}</p>
-                  <PaymentStatusBadge status={status} />
+                  <p className={cn("truncate font-semibold leading-tight", ink.title)}>
+                    {billTitle(bill)}
+                  </p>
+                  <span
+                    className={cn(
+                      "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide",
+                      ink.chip
+                    )}
+                  >
+                    {PAYMENT_STATUS_LABEL[status]}
+                  </span>
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className={cn("text-sm", ink.meta)}>
                   {new Date(bill.billDate).toLocaleDateString("en-GB")}
                 </p>
                 {firstFile ? (
@@ -139,19 +164,23 @@ function MobilePurchaseBillCards({
                     {files.length > 1 ? ` (+${files.length - 1})` : ""}
                   </a>
                 ) : (
-                  <p className="mt-1 text-xs text-muted-foreground">No bill file</p>
+                  <p className={cn("mt-1 text-xs", ink.meta)}>No bill file</p>
                 )}
               </div>
             </div>
 
-            <div className="mx-4 border-t" />
+            <div className="relative mx-4 border-t border-black/10 dark:border-white/10" />
 
-            <div className="flex items-end justify-between gap-2 p-4 pl-5">
+            <div className="relative flex items-end justify-between gap-2 p-4">
               <div>
-                <p className="text-lg font-bold tabular-nums">₹{formatInr(bill.totalAmount)}</p>
-                <p className="text-xs text-muted-foreground">
+                <p className={cn("text-lg font-bold tabular-nums", ink.title)}>
+                  ₹{formatInr(bill.totalAmount)}
+                </p>
+                <p className={cn("text-xs", ink.meta)}>
                   {balance > 0 ? (
-                    <span className="font-medium text-red-600">₹{formatInr(balance)} left</span>
+                    <span className="font-semibold text-red-600 dark:text-red-400">
+                      ₹{formatInr(balance)} left
+                    </span>
                   ) : (
                     "Paid in full"
                   )}
@@ -168,7 +197,7 @@ function MobilePurchaseBillCards({
                     <Trash2 className="size-4" />
                   </Button>
                 ) : null}
-                <ChevronRight className="size-4 text-muted-foreground" />
+                <ChevronRight className={cn("size-4", ink.meta)} />
               </div>
             </div>
           </div>

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/table";
 import { formatInr } from "@/lib/formatInr";
 import { cn } from "@/lib/utils";
+import { DashboardWash } from "./DashboardWash";
 import type { TradingPnlSummary } from "./useDashboardSummary";
 
 function profitTone(value: number) {
@@ -63,6 +64,7 @@ export function TradingPnlCard({ data, isLoading }: TradingPnlCardProps) {
 
   return (
     <Card className={cardClass}>
+      <DashboardWash tint={data.profit < 0 ? "rose" : "mint"} />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent dark:via-white/20" />
       <CardHeader>
         <CardTitle className="text-base font-medium">Trading Profit &amp; Loss</CardTitle>
@@ -80,7 +82,7 @@ export function TradingPnlCard({ data, isLoading }: TradingPnlCardProps) {
       </CardHeader>
       <CardContent className="grid gap-4">
         <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4">
-          <div className="min-w-0 overflow-hidden rounded-xl bg-muted/60 px-2 py-3 text-center sm:px-3">
+          <div className="relative min-w-0 overflow-hidden rounded-xl bg-gradient-to-br from-sky-200/40 via-muted/50 to-indigo-100/25 px-2 py-3 text-center dark:from-sky-500/15 dark:via-muted/40 dark:to-transparent sm:px-3">
             <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-[11px]">
               Sold
             </p>
@@ -91,7 +93,7 @@ export function TradingPnlCard({ data, isLoading }: TradingPnlCardProps) {
               {data.invoiceCount} invoice{data.invoiceCount === 1 ? "" : "s"}
             </p>
           </div>
-          <div className="min-w-0 overflow-hidden rounded-xl bg-muted/60 px-2 py-3 text-center sm:px-3">
+          <div className="relative min-w-0 overflow-hidden rounded-xl bg-gradient-to-br from-orange-200/40 via-muted/50 to-amber-100/25 px-2 py-3 text-center dark:from-orange-500/15 dark:via-muted/40 dark:to-transparent sm:px-3">
             <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-[11px]">
               Bought
             </p>
@@ -102,7 +104,7 @@ export function TradingPnlCard({ data, isLoading }: TradingPnlCardProps) {
               {data.billCount} bill{data.billCount === 1 ? "" : "s"}
             </p>
           </div>
-          <div className="min-w-0 overflow-hidden rounded-xl bg-muted/60 px-2 py-3 text-center sm:px-3">
+          <div className="relative min-w-0 overflow-hidden rounded-xl bg-gradient-to-br from-violet-200/40 via-muted/50 to-fuchsia-100/25 px-2 py-3 text-center dark:from-violet-500/15 dark:via-muted/40 dark:to-transparent sm:px-3">
             <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-[11px]">
               {data.gst < 0 ? "GST credit" : "GST payable"}
             </p>
@@ -115,8 +117,10 @@ export function TradingPnlCard({ data, isLoading }: TradingPnlCardProps) {
           </div>
           <div
             className={cn(
-              "min-w-0 overflow-hidden rounded-xl px-2 py-3 text-center sm:px-3",
-              data.profit < 0 ? "bg-red-500/10" : "bg-green-500/10"
+              "relative min-w-0 overflow-hidden rounded-xl px-2 py-3 text-center sm:px-3",
+              data.profit < 0
+                ? "bg-gradient-to-br from-rose-200/55 via-pink-100/35 to-red-50/30 dark:from-rose-500/20 dark:via-rose-900/15 dark:to-transparent"
+                : "bg-gradient-to-br from-emerald-200/55 via-green-100/35 to-teal-50/30 dark:from-emerald-500/20 dark:via-emerald-900/15 dark:to-transparent"
             )}
           >
             <p

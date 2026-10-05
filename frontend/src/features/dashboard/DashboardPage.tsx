@@ -22,6 +22,8 @@ import { RawMaterialPaymentCard } from "./RawMaterialPaymentCard";
 import { StatCard } from "./StatCard";
 import { SalesChart } from "./SalesChart";
 import { SalesByCustomerChart } from "./SalesByCustomerChart";
+import { DashboardWash, STOCK_TINT } from "./DashboardWash";
+import { IndusPoCard } from "./IndusPoCard";
 import { TradingPnlCard } from "./TradingPnlCard";
 import { useDashboardSummary } from "./useDashboardSummary";
 
@@ -208,6 +210,7 @@ export function DashboardPage() {
           }
           icon={TrendingUp}
           isLoading={isLoading}
+          tint="sky"
         />
         <StatCard
           label="Payment Received"
@@ -220,6 +223,7 @@ export function DashboardPage() {
           }
           icon={CircleDollarSign}
           isLoading={isLoading}
+          tint="mint"
         />
         <StatCard
           label="PNS Sales"
@@ -232,6 +236,7 @@ export function DashboardPage() {
           }
           icon={Factory}
           isLoading={isLoading}
+          tint="lilac"
         />
         <StatCard
           label="Trading"
@@ -244,8 +249,13 @@ export function DashboardPage() {
           }
           icon={ArrowLeftRight}
           isLoading={isLoading}
+          tint="teal"
         />
       </div>
+
+      <RevealCard className="min-w-0">
+        <IndusPoCard data={data?.indusPo} stockBySize={stockBySize} isLoading={isLoading} />
+      </RevealCard>
 
       <RevealCard className="min-w-0">
         <TradingPnlCard data={data?.trading} isLoading={isLoading} />
@@ -267,6 +277,7 @@ export function DashboardPage() {
               icon={Package}
               isLoading={isLoading}
               valueClassName={row.quantity < LOW_STOCK_QTY ? "text-red-600" : undefined}
+              tint={row.quantity < LOW_STOCK_QTY ? "rose" : STOCK_TINT[row.sizeMm] ?? "sky"}
             />
           ))}
         </div>
@@ -278,9 +289,10 @@ export function DashboardPage() {
 
       <div className="min-w-0">
         <Card className="relative min-w-0 overflow-hidden border-border/40 bg-card/60 shadow-[0_4px_30px_rgba(0,0,0,0.04)] backdrop-blur-xl">
+          <DashboardWash tint="sky" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent dark:via-white/20" />
           <CardHeader>
-            <CardTitle className="text-base font-medium">Sales Overview</CardTitle>
+            <CardTitle className="relative text-base font-medium">Sales Overview</CardTitle>
           </CardHeader>
           <CardContent className="min-w-0 overflow-hidden">
             <SalesChart />
@@ -290,9 +302,10 @@ export function DashboardPage() {
 
       <div className="min-w-0">
         <Card className="relative min-w-0 overflow-hidden border-border/40 bg-card/60 shadow-[0_4px_30px_rgba(0,0,0,0.04)] backdrop-blur-xl">
+          <DashboardWash tint="lilac" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent dark:via-white/20" />
           <CardHeader>
-            <CardTitle className="text-base font-medium">Sales by Customer</CardTitle>
+            <CardTitle className="relative text-base font-medium">Sales by Customer</CardTitle>
           </CardHeader>
           <CardContent className="min-w-0 overflow-hidden">
             <SalesByCustomerChart />

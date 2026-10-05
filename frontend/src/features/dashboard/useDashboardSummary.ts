@@ -29,6 +29,32 @@ export interface TradingPnlSummary {
   months: TradingPnlMonth[];
 }
 
+export interface IndusPoLineProgress {
+  sizeMm: number;
+  description: string;
+  ordered: number;
+  supplied: number;
+}
+
+export interface IndusPoSummary {
+  poNo: string;
+  poDate: string;
+  customerName: string | null;
+  customerId: string | null;
+  previousPoQuantity: number;
+  previousPoFrom: string;
+  previousPoTo: string;
+  previousSupplied: number;
+  lastMonthLeft: number;
+  poQuantity: number;
+  target: number;
+  supplied: number;
+  remaining: number;
+  invoiceCount: number;
+  lines: IndusPoLineProgress[];
+  otherSupplied: number;
+}
+
 export interface DashboardSummary {
   customerCount: number;
   productCount: number;
@@ -40,6 +66,7 @@ export interface DashboardSummary {
   tradingSales: number;
   tradingInvoiceCount: number;
   trading?: TradingPnlSummary;
+  indusPo?: IndusPoSummary;
   totalReceived: number;
   rawMaterial?: RawMaterialSummary;
 }

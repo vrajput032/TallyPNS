@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ENABLE_3D } from "@/lib/featureFlags";
 import { cn } from "@/lib/utils";
 import { TiltCard } from "@/lib/useTilt.tsx";
+import { DashboardWash, type DashboardTint } from "./DashboardWash";
 
 interface StatCardProps {
   label: string;
@@ -12,9 +13,10 @@ interface StatCardProps {
   icon: LucideIcon;
   isLoading: boolean;
   valueClassName?: string;
+  tint?: DashboardTint;
 }
 
-export function StatCard({ label, value, icon: Icon, isLoading, valueClassName }: StatCardProps) {
+export function StatCard({ label, value, icon: Icon, isLoading, valueClassName, tint }: StatCardProps) {
   const card = (
     <Card
       className={cn(
@@ -23,11 +25,10 @@ export function StatCard({ label, value, icon: Icon, isLoading, valueClassName }
         "dark:shadow-[0_4px_30px_rgba(0,0,0,0.2)] dark:hover:shadow-[0_8px_40px_rgba(0,0,0,0.35),0_0_0_1px_rgba(var(--primary),0.3)]",
       )}
     >
-      {/* iOS glass refraction shimmer */}
+      {tint ? <DashboardWash tint={tint} /> : null}
       <div className="pointer-events-none absolute inset-0 opacity-60">
         <div className="absolute -top-1/2 -left-1/2 h-[200%] w-[200%] bg-gradient-to-br from-white/20 via-transparent to-transparent dark:from-white/5" />
       </div>
-      {/* Top inner highlight */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent dark:via-white/20" />
 
       <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">

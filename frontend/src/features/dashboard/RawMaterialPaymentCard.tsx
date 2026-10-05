@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { DashboardWash } from "./DashboardWash";
 import type { RawMaterialSummary } from "./useDashboardSummary";
 
 function formatInr(value: number) {
@@ -37,6 +38,7 @@ export function RawMaterialPaymentCard({ data, isLoading }: RawMaterialPaymentCa
 
   return (
     <Card className="relative overflow-hidden border-border/40 bg-card/60 shadow-[0_4px_30px_rgba(0,0,0,0.04)] backdrop-blur-xl">
+      <DashboardWash tint={data.balance > 0 ? "orange" : "mint"} />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent dark:via-white/20" />
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="text-base font-medium">Raw Material Payments</CardTitle>
@@ -73,7 +75,7 @@ export function RawMaterialPaymentCard({ data, isLoading }: RawMaterialPaymentCa
 
         {/* Stats row */}
         <div className="grid min-w-0 grid-cols-3 gap-2">
-          <div className="min-w-0 overflow-hidden rounded-xl bg-muted/60 px-2 py-3 text-center sm:px-3">
+          <div className="relative min-w-0 overflow-hidden rounded-xl bg-gradient-to-br from-sky-200/40 via-muted/50 to-indigo-100/25 px-2 py-3 text-center dark:from-sky-500/15 dark:via-muted/40 dark:to-transparent sm:px-3">
             <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-[11px]">
               Total billed
             </p>
@@ -81,7 +83,7 @@ export function RawMaterialPaymentCard({ data, isLoading }: RawMaterialPaymentCa
               ₹{formatInr(data.totalBilled)}
             </p>
           </div>
-          <div className="min-w-0 overflow-hidden rounded-xl bg-green-500/10 px-2 py-3 text-center sm:px-3">
+          <div className="relative min-w-0 overflow-hidden rounded-xl bg-gradient-to-br from-emerald-200/55 via-green-100/35 to-teal-50/30 px-2 py-3 text-center dark:from-emerald-500/20 dark:via-emerald-900/15 dark:to-transparent sm:px-3">
             <p className="truncate text-[10px] font-medium uppercase tracking-wider text-green-600 dark:text-green-400 sm:text-[11px]">
               Paid
             </p>
@@ -89,7 +91,7 @@ export function RawMaterialPaymentCard({ data, isLoading }: RawMaterialPaymentCa
               ₹{formatInr(data.totalPaid)}
             </p>
           </div>
-          <div className="min-w-0 overflow-hidden rounded-xl bg-red-500/10 px-2 py-3 text-center sm:px-3">
+          <div className="relative min-w-0 overflow-hidden rounded-xl bg-gradient-to-br from-rose-200/55 via-pink-100/35 to-red-50/30 px-2 py-3 text-center dark:from-rose-500/20 dark:via-rose-900/15 dark:to-transparent sm:px-3">
             <p className="truncate text-[10px] font-medium uppercase tracking-wider text-red-600 dark:text-red-400 sm:text-[11px]">
               Balance
             </p>

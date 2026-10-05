@@ -69,3 +69,16 @@ notificationsRouter.post(
     res.json(await notificationsService.runTestBroadcastToAllDevices());
   })
 );
+
+/** 8 PM IST Indus PO remaining (GitHub Actions): same cron secret as `/cron`. */
+notificationsRouter.post(
+  "/cron/indus-po",
+  asyncHandler(async (req, res) => {
+    const cfg = getPushConfig();
+    const secret = req.header("x-notifications-cron-secret")?.trim() ?? "";
+    if (!cfg.cronSecret || secret !== cfg.cronSecret) {
+      throw new ApiError(401, "Invalid cron secret");
+    }
+    res.json(await notificationsService.runDailyIndusPoRemaining());
+  })
+);
