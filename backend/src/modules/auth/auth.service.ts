@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import type { User } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
+import { revokedSessionValue, sessionIsRevoked } from "../../lib/sessionRevocation.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import type { AuthPayload } from "../../middleware/auth.js";
 
@@ -114,7 +115,7 @@ export async function resetUserPassword(userId: string, password: string) {
   const passwordHash = await bcrypt.hash(password, 10);
   await prisma.user.update({
     where: { id: userId },
-    data: { passwordHash, refreshToken: null },
+    data: { passwordHash, refreshToken: revokedSessionValue() },
   });
 
   return toPublicUser({ ...user, passwordHash, refreshToken: null });
@@ -168,10 +169,8 @@ export async function refresh(refreshToken: string, deviceName?: string) {
     throw new ApiError(401, "Invalid or expired refresh token");
   }
 
-  // Not compared with user.refreshToken: that column holds only the latest login,
-  // so checking it would sign out every other device and racing tabs.
   const user = await prisma.user.findUnique({ where: { id: payload.sub } });
-  if (!user) {
+  if (!user || sessionIsRevoked(user.refreshToken, payload.iat)) {
     throw new ApiError(401, "Refresh token revoked");
   }
 

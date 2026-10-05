@@ -1,5 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import { prisma } from "../lib/prisma.js";
+import { sessionIsRevoked } from "../lib/sessionRevocation.js";
 import { ApiError } from "./errorHandler.js";
 
 export type RoleName = "ADMIN" | "STAFF";
@@ -11,6 +13,7 @@ export interface AuthPayload {
   role: RoleName;
   /** Client-reported device/browser label from login (optional on older tokens). */
   deviceName?: string;
+  iat?: number;
 }
 
 declare global {
@@ -22,20 +25,34 @@ declare global {
 }
 
 export function requireAuth(req: Request, _res: Response, next: NextFunction) {
-  const header = req.headers.authorization;
-  const token = header?.startsWith("Bearer ") ? header.slice(7) : undefined;
+  void (async () => {
+    const header = req.headers.authorization;
+    const token = header?.startsWith("Bearer ") ? header.slice(7) : undefined;
 
-  if (!token) {
-    throw new ApiError(401, "Missing access token");
-  }
+    if (!token) {
+      throw new ApiError(401, "Missing access token");
+    }
 
-  try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET!) as AuthPayload;
+    let payload: AuthPayload;
+    try {
+      payload = jwt.verify(token, process.env.JWT_SECRET!) as AuthPayload;
+    } catch {
+      throw new ApiError(401, "Invalid or expired access token");
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { refreshToken: true },
+    });
+    if (!user || sessionIsRevoked(user.refreshToken, payload.iat)) {
+      throw new ApiError(401, "Session expired. Please log in again.");
+    }
+
     req.user = payload;
     next();
-  } catch {
-    throw new ApiError(401, "Invalid or expired access token");
-  }
+  })().catch((error) => {
+    next(error instanceof ApiError ? error : new ApiError(401, "Invalid or expired access token"));
+  });
 }
 
 export function requireAdmin(req: Request, _res: Response, next: NextFunction) {
