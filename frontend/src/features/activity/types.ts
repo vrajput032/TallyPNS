@@ -3,7 +3,8 @@ export type ActivityModule =
   | "PURCHASE"
   | "RAW_MATERIAL"
   | "INVENTORY"
-  | "PAYMENT";
+  | "PAYMENT"
+  | "AUTH";
 
 export type ActivityAction =
   | "CREATED"
@@ -13,7 +14,8 @@ export type ActivityAction =
   | "PAYMENT_RECORDED"
   | "PAYMENT_UPDATED"
   | "PAYMENT_DELETED"
-  | "STOCK_ADJUSTED";
+  | "STOCK_ADJUSTED"
+  | "LOGGED_IN";
 
 export interface ActivityLog {
   id: string;
@@ -48,6 +50,8 @@ export function activityModuleLabel(module: ActivityModule): string {
       return "Inventory";
     case "PAYMENT":
       return "Payment";
+    case "AUTH":
+      return "Login";
     default: {
       const _exhaustive: never = module;
       return _exhaustive;
@@ -73,6 +77,8 @@ export function activityActionLabel(action: ActivityAction): string {
       return "Payment deleted";
     case "STOCK_ADJUSTED":
       return "Stock adjusted";
+    case "LOGGED_IN":
+      return "Logged in";
     default: {
       const _exhaustive: never = action;
       return _exhaustive;

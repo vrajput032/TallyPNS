@@ -33,6 +33,7 @@ const FILTERS: { id: FilterId; label: string }[] = [
   { id: "RAW_MATERIAL", label: "Raw material" },
   { id: "INVENTORY", label: "Inventory" },
   { id: "PAYMENT", label: "Payments" },
+  { id: "AUTH", label: "Logins" },
 ];
 
 function formatWhen(iso: string) {
@@ -57,6 +58,8 @@ function moduleBadgeClass(module: ActivityModule): string {
       return "border-violet-200 bg-violet-50 text-violet-800 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-200";
     case "PAYMENT":
       return "border-teal-200 bg-teal-50 text-teal-800 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-200";
+    case "AUTH":
+      return "border-slate-200 bg-slate-50 text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200";
     default: {
       const _exhaustive: never = module;
       return _exhaustive;
@@ -66,7 +69,7 @@ function moduleBadgeClass(module: ActivityModule): string {
 
 function emptyMessage(filter: FilterId) {
   if (filter === "ALL") {
-    return "No activity recorded yet. New bills, payments, and stock changes will show up here.";
+    return "No activity recorded yet. New bills, payments, stock changes, and logins will show up here.";
   }
   const label = FILTERS.find((item) => item.id === filter)?.label.toLowerCase() ?? "matching";
   return `No ${label} activity yet.`;

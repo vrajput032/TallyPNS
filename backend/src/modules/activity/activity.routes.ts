@@ -9,7 +9,7 @@ export const activityRouter = Router();
 
 activityRouter.use(requireAuth);
 
-const MODULES = ["SALES", "PURCHASE", "RAW_MATERIAL", "INVENTORY", "PAYMENT"] as const;
+const MODULES = ["SALES", "PURCHASE", "RAW_MATERIAL", "INVENTORY", "PAYMENT", "AUTH"] as const;
 const MODULE_SET = new Set<string>(MODULES);
 
 function parseModule(raw: unknown): ActivityModule | undefined {

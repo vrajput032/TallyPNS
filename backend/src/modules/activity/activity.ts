@@ -31,6 +31,8 @@ function pushTitleForModule(module: ActivityModule): string {
       return "Inventory";
     case "PAYMENT":
       return "Payment";
+    case "AUTH":
+      return "Login";
     default: {
       const _exhaustive: never = module;
       return _exhaustive;

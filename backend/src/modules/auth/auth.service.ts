@@ -2,13 +2,17 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import type { User } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
-import { revokedSessionValue, sessionIsRevoked } from "../../lib/sessionRevocation.js";
-import { ApiError } from "../../middleware/errorHandler.js";
+import { revokedSessionValue } from "../../lib/sessionRevocation.js";
 import type { AuthPayload } from "../../middleware/auth.js";
+import { ApiError } from "../../middleware/errorHandler.js";
+import { recordActivity } from "../activity/activity.js";
 
 function signTokens(payload: AuthPayload) {
-  const accessToken = jwt.sign(payload, process.env.JWT_SECRET!, { expiresIn: "12h" });
-  const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET!, { expiresIn: "30d" });
+  const iat = Math.floor(Date.now() / 1000);
+  const accessToken = jwt.sign({ ...payload, iat }, process.env.JWT_SECRET!, { expiresIn: "12h" });
+  const refreshToken = jwt.sign({ ...payload, iat }, process.env.JWT_REFRESH_SECRET!, {
+    expiresIn: "30d",
+  });
   return { accessToken, refreshToken };
 }
 
@@ -158,6 +162,23 @@ export async function login(username: string, password: string, deviceName?: str
   const tokens = signTokens(toPayload(user, deviceName));
   await prisma.user.update({ where: { id: user.id }, data: { refreshToken: tokens.refreshToken } });
 
+  recordActivity({
+    user: {
+      sub: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      deviceName,
+    },
+    actorName: user.username,
+    deviceName: deviceName ?? null,
+    module: "AUTH",
+    action: "LOGGED_IN",
+    entityId: user.id,
+    entityNo: user.username,
+    summary: deviceName ? `Logged in from ${deviceName}` : "Logged in",
+  });
+
   return { user: toPublicUser(user), ...tokens };
 }
 
@@ -170,10 +191,12 @@ export async function refresh(refreshToken: string, deviceName?: string) {
   }
 
   const user = await prisma.user.findUnique({ where: { id: payload.sub } });
-  if (!user || sessionIsRevoked(user.refreshToken, payload.iat)) {
+  if (!user || user.refreshToken !== refreshToken) {
     throw new ApiError(401, "Refresh token revoked");
   }
 
   const nextDevice = deviceName || payload.deviceName;
-  return signTokens(toPayload(user, nextDevice));
+  const tokens = signTokens(toPayload(user, nextDevice));
+  await prisma.user.update({ where: { id: user.id }, data: { refreshToken: tokens.refreshToken } });
+  return tokens;
 }

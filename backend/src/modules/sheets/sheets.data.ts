@@ -597,6 +597,7 @@ async function recycleBinValues(): Promise<SheetValues> {
 
 async function activityValues(): Promise<SheetValues> {
   const logs = await prisma.activityLog.findMany({
+    where: { module: { not: "AUTH" } },
     orderBy: { createdAt: "desc" },
     take: ACTIVITY_ROW_LIMIT,
   });

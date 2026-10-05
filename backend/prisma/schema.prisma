@@ -19,6 +19,7 @@ enum ActivityModule {
   RAW_MATERIAL
   INVENTORY
   PAYMENT
+  AUTH
 }
 
 enum ActivityAction {
@@ -30,6 +31,7 @@ enum ActivityAction {
   PAYMENT_UPDATED
   PAYMENT_DELETED
   STOCK_ADJUSTED
+  LOGGED_IN
 }
 
 model User {
