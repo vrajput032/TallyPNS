@@ -1,4 +1,4 @@
-import type { ActivityAction, ActivityModule } from "@prisma/client";
+import { Prisma, type ActivityAction, type ActivityModule } from "@prisma/client";
 import type { Request } from "express";
 import { prisma } from "../../lib/prisma.js";
 import type { AuthPayload } from "../../middleware/auth.js";
@@ -98,21 +98,53 @@ export function recordRequestActivity(
   });
 }
 
+type ActivityListRow = {
+  id: string;
+  createdAt: Date;
+  userId: string | null;
+  actorName: string;
+  deviceName: string | null;
+  module: string;
+  action: string;
+  entityId: string | null;
+  entityNo: string | null;
+  summary: string;
+  amount: { toString(): string } | number | null;
+  href: string | null;
+};
+
 export async function listActivity(opts: { module?: ActivityModule; limit?: number }) {
   const limit = Math.min(Math.max(opts.limit ?? 100, 1), 200);
-  const logs = await prisma.activityLog.findMany({
-    where: opts.module ? { module: opts.module } : undefined,
-    orderBy: { createdAt: "desc" },
-    take: limit,
-  });
+  const moduleFilter = opts.module
+    ? Prisma.sql`WHERE module::text = ${opts.module}`
+    : Prisma.empty;
+  const logs = await prisma.$queryRaw<ActivityListRow[]>(Prisma.sql`
+    SELECT
+      id,
+      "createdAt",
+      "userId",
+      "actorName",
+      "deviceName",
+      module::text AS module,
+      action::text AS action,
+      "entityId",
+      "entityNo",
+      summary,
+      amount,
+      href
+    FROM "ActivityLog"
+    ${moduleFilter}
+    ORDER BY "createdAt" DESC
+    LIMIT ${limit}
+  `);
   return logs.map((log) => ({
     id: log.id,
     createdAt: log.createdAt,
     userId: log.userId,
     actorName: log.actorName,
     deviceName: log.deviceName,
-    module: log.module,
-    action: log.action,
+    module: log.module as ActivityModule,
+    action: log.action as ActivityAction,
     entityId: log.entityId,
     entityNo: log.entityNo,
     summary: log.summary,

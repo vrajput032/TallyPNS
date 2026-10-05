@@ -159,7 +159,7 @@ function ActivityCards({
 }
 
 export function ActivityPage() {
-  const { data, isLoading, isError, error } = useActivity();
+  const { data, isLoading, isError, error, refetch } = useActivity();
   const [filter, setFilter] = useState<FilterId>("ALL");
   const isCompactNav = useIsCompactNav();
   const navigate = useNavigate();
@@ -182,8 +182,11 @@ export function ActivityPage() {
       <FilterBar value={filter} onChange={setFilter} compact={isCompactNav} />
 
       {isError ? (
-        <div className="rounded-md border bg-card p-8 text-center text-sm text-destructive">
-          {error ?? "Failed to load activity"}
+        <div className="grid justify-items-center gap-3 rounded-md border bg-card p-8 text-center text-sm text-destructive">
+          <p>{error ?? "Failed to load activity"}</p>
+          <Button type="button" size="sm" variant="outline" onClick={() => refetch()}>
+            Try again
+          </Button>
         </div>
       ) : isCompactNav ? (
         <ActivityCards rows={rows} isLoading={isLoading} emptyText={emptyMessage(filter)} onOpen={openRow} />
