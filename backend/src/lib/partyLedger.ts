@@ -122,15 +122,32 @@ export function groupPayments(payments: LedgerSourcePayment[]) {
   );
 }
 
+function voucherSequence(voucherNo: string) {
+  const match = /^(.*?)(\d+)$/.exec(voucherNo);
+  return match ? { prefix: match[1], number: Number(match[2]) } : null;
+}
+
+/** Consecutive vouchers collapse to a range; gaps are listed so the label never implies others. */
 function groupedVoucherNo(rows: LedgerSourcePayment[]) {
-  const first = rows[0]?.voucherNo ?? "";
-  const last = rows[rows.length - 1]?.voucherNo ?? "";
-  return rows.length > 1 ? `${first} – ${last}` : first;
+  const runs: string[][] = [];
+  for (const row of rows) {
+    const run = runs[runs.length - 1];
+    const previous = run ? voucherSequence(run[run.length - 1]) : null;
+    const current = voucherSequence(row.voucherNo);
+    const continues =
+      previous && current && previous.prefix === current.prefix && current.number === previous.number + 1;
+    if (run && continues) run.push(row.voucherNo);
+    else runs.push([row.voucherNo]);
+  }
+  return runs
+    .map((run) => (run.length > 1 ? `${run[0]} – ${run[run.length - 1]}` : run[0]))
+    .join(", ");
 }
 
 function groupedParticulars(party: LedgerParty, rows: LedgerSourcePayment[]) {
-  const narrations = [...new Set(rows.map((row) => row.narration?.trim()).filter(Boolean))];
-  if (narrations.length === 1) return narrations[0]!;
+  const narrations = new Set(rows.map((row) => row.narration?.trim() || ""));
+  const [onlyNarration] = narrations;
+  if (narrations.size === 1 && onlyNarration) return onlyNarration;
 
   const first = rows[0]!;
   const docNos = [...new Set(rows.map((row) => row.documentNo).filter(Boolean))];

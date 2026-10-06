@@ -34,7 +34,7 @@ app.use("/api", (_req, res, next) => {
 });
 
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", release: "ledger-password" });
+  res.json({ status: "ok", release: "ledger-labels" });
 });
 
 app.use("/api", apiRouter);

@@ -79,6 +79,26 @@ assert.equal(split.entries[0]?.allocations.length, 3);
 assert.equal(split.entries[0]?.allocations[0]?.documentNo, "PNS/26-27/07");
 assert.match(split.entries[0]?.particulars ?? "", /^Bank receipt against PNS\/26-27\/07, PNS\/26-27\/08, PNS\/26-27\/09$/);
 
+// A late top-up receipt on the same day joins the line without implying the vouchers in between.
+const topUp = buildPartyLedger({
+  party: "CUSTOMER",
+  openingBalance: 0,
+  documents: [],
+  payments: ["RCP-10006", "RCP-10013", "RCP-10007", "RCP-10008"].map((voucherNo) => ({
+    id: voucherNo,
+    voucherNo,
+    amount: 1,
+    documentId: "b",
+    documentNo: "PNS/26-27/05",
+    date: new Date("2026-09-21T00:00:00.000Z"),
+    mode: "BANK" as const,
+    reference: null,
+    narration: voucherNo === "RCP-10013" ? "Balance of bank receipt" : null,
+  })),
+});
+assert.equal(topUp.entries[0]?.voucherNo, "RCP-10006 – RCP-10008, RCP-10013");
+assert.equal(topUp.entries[0]?.particulars, "Bank receipt against PNS/26-27/05");
+
 // Different mode or reference on the same day stays separate.
 const separate = buildPartyLedger({
   party: "CUSTOMER",
