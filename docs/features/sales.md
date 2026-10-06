@@ -15,7 +15,7 @@ GST tax invoices to customers.
 - Totals include GST (CGST/SGST split on print). Amount in words.
 - Print view matches a GST tax invoice (company header, GSTIN, bank details).
 - **Payments:** record receipts (cash or bank) against the invoice. Status: PENDING / PARTIAL / PAID. Cannot overpay.
-- Edit and delete require the deletion PIN. Delete is **soft** (recycle bin) and reverses stock. Permanent delete is admin + PIN.
+- Editing is **admin-only** (STAFF see no Edit button, `/sales/:id/edit` redirects them, `PUT /api/sales/:id` returns 403). Edit and delete require the deletion PIN. Delete is **soft** (recycle bin) and reverses stock. Permanent delete is admin + PIN.
 
 ## List filters (`/sales`)
 

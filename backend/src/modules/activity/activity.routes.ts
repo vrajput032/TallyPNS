@@ -1,13 +1,13 @@
 import { Router } from "express";
 import { asyncHandler } from "../../middleware/asyncHandler.js";
-import { requireAuth } from "../../middleware/auth.js";
+import { requireAdmin, requireAuth } from "../../middleware/auth.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import { listActivity } from "./activity.js";
 import type { ActivityModule } from "@prisma/client";
 
 export const activityRouter = Router();
 
-activityRouter.use(requireAuth);
+activityRouter.use(requireAuth, requireAdmin);
 
 const MODULES = ["SALES", "PURCHASE", "RAW_MATERIAL", "INVENTORY", "PAYMENT", "AUTH"] as const;
 const MODULE_SET = new Set<string>(MODULES);

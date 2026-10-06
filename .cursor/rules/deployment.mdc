@@ -1,13 +1,24 @@
 ---
-description: Deploy frontend and backend together; avoid wasting Render pipeline minutes
+description: Ask before every commit and deploy; deploy frontend and backend together to save Render minutes
 alwaysApply: true
 ---
 
 # Deployment policy
 
+## Always ask before committing or deploying
+
+This outranks finishing a task end to end.
+
+- **Never `git commit` on your own.** When code is ready, stop and ask: "Should I commit these changes?" Commit only after the user says yes in that turn.
+- **Never deploy on your own.** That covers `npm run deploy`, `deploy:backend`, `deploy:frontend`, the Render hook and wrangler. Ask: "Should I deploy now?" Deploy only after the user says yes in that turn.
+- **Never `git push` on your own** either, because pushing `main` is the first step of a deploy.
+- A yes to commit is not a yes to deploy. Ask separately for each.
+- A yes applies only to the changes it was given for. Later changes need a new yes.
+- A request to fix something or check data is not a request to commit or deploy.
+
 ## Default: one deploy, not many
 
-When the user asks to deploy, release, or ship changes:
+When the user has said yes to deploying, release, or shipping changes:
 
 1. **Batch work first** — finish the feature/fix across frontend and backend before deploying.
 2. **Deploy once** from repo root:
@@ -23,7 +34,7 @@ Render free tier limits are **monthly** (pipeline minutes, instance hours). Each
 
 ## Before deploying
 
-- Commit and push to `main` (backend builds from GitHub).
+- Commit and push to `main` (backend builds from GitHub), but only after the user approves both.
 - Never commit `.env`, dumps, or `backups/`.
 - Frontend production API URL is locked via `frontend/.env.production`, `scripts/deploy.sh`, and `frontend/src/lib/apiBaseUrl.ts` — do not rebuild with localhost.
 

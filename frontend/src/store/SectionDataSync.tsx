@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { useAppDispatch } from "@/store/hooks";
+import { useAuthStore } from "@/store/authStore";
+import { isAdmin } from "@/lib/permissions";
 import { fetchCustomers } from "@/store/slices/customersSlice";
 import { fetchProducts } from "@/store/slices/productsSlice";
 import {
@@ -154,7 +156,7 @@ export function SectionDataSync() {
         dispatch(fetchRecycleBin(silent));
         break;
       case "activity":
-        dispatch(fetchActivity(silent));
+        if (isAdmin(useAuthStore.getState().user)) dispatch(fetchActivity(silent));
         break;
       default:
         break;

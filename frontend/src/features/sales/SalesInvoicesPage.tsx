@@ -74,7 +74,7 @@ import {
 } from "@/features/payments/paymentTile";
 import { TradingBadge } from "./TradingBadge";
 import { formatInr } from "@/lib/formatInr";
-import { canDelete } from "@/lib/permissions";
+import { canDelete, isAdmin } from "@/lib/permissions";
 import { apiErrorMessage } from "@/lib/apiError";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
@@ -246,7 +246,7 @@ function MobileInvoiceCards({
   isLoading: boolean;
   emptyMessage: string;
   onView: (invoice: SalesInvoice) => void;
-  onEdit: (invoice: SalesInvoice) => void;
+  onEdit?: (invoice: SalesInvoice) => void;
   onDelete?: (invoice: SalesInvoice) => void;
 }) {
   if (isLoading) {
@@ -337,7 +337,7 @@ function MobileInvoiceCards({
               </div>
 
               <div className="flex shrink-0 items-center" onClick={(e) => e.stopPropagation()}>
-                {(invoice.receipts?.length ?? 0) === 0 && (
+                {onEdit && (invoice.receipts?.length ?? 0) === 0 && (
                   <Button variant="ghost" size="icon" onClick={() => onEdit(invoice)}>
                     <Pencil className="size-4" />
                   </Button>
@@ -365,7 +365,9 @@ export function SalesInvoicesPage() {
   const { data: invoices, isLoading } = useSalesInvoices();
   const navigate = useNavigate();
   const isCompactNav = useIsCompactNav();
-  const allowDelete = canDelete(useAuthStore((state) => state.user));
+  const user = useAuthStore((state) => state.user);
+  const allowDelete = canDelete(user);
+  const allowEdit = isAdmin(user);
   const deleteInvoice = useDeleteSalesInvoice();
   const [chatOpen, setChatOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<SalesInvoice | null>(null);
@@ -719,7 +721,7 @@ export function SalesInvoicesPage() {
             isLoading={isLoading}
             emptyMessage={emptyMessage}
             onView={(invoice) => navigate(`/sales/${invoice.id}`)}
-            onEdit={(invoice) => navigate(`/sales/${invoice.id}/edit`)}
+            onEdit={allowEdit ? (invoice) => navigate(`/sales/${invoice.id}/edit`) : undefined}
             onDelete={allowDelete ? handleDelete : undefined}
           />
         </>
@@ -772,7 +774,7 @@ export function SalesInvoicesPage() {
                       >
                         <Eye className="size-4" />
                       </Button>
-                      {(row.original.receipts?.length ?? 0) === 0 && (
+                      {allowEdit && (row.original.receipts?.length ?? 0) === 0 && (
                         <Button
                           variant="ghost"
                           size="icon"

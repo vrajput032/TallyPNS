@@ -9,7 +9,7 @@
 | Role | Can do | Cannot do |
 |------|--------|-----------|
 | **ADMIN** | Full CRUD, user management, recycle bin, delete with PIN | Delete their own account if they are the last admin |
-| **STAFF** | View everything, create and edit masters and vouchers | Delete customers/products/vendors, soft-delete invoices/bills, open Users or Recycle Bin |
+| **STAFF** | View everything except the activity log, create and edit masters and vouchers (except editing sales invoices) | Delete customers/products/vendors, soft-delete invoices/bills, edit sales invoices, open Users, Recycle Bin or Activity |
 
 ## Deletion PIN
 

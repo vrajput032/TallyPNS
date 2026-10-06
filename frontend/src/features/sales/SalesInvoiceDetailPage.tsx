@@ -22,7 +22,7 @@ import { SalesInvoicePrint } from "./SalesInvoicePrint";
 import { TradingBadge } from "./TradingBadge";
 import { useDeleteSalesInvoice, useSalesInvoice } from "./useSales";
 import { formatInr } from "@/lib/formatInr";
-import { canDelete } from "@/lib/permissions";
+import { canDelete, isAdmin } from "@/lib/permissions";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useAuthStore } from "@/store/authStore";
 
@@ -32,7 +32,9 @@ export function SalesInvoiceDetailPage() {
   const { data: invoice, isLoading } = useSalesInvoice(id);
   const deleteInvoice = useDeleteSalesInvoice();
   const deleteReceipt = useDeleteReceipt();
-  const allowDelete = canDelete(useAuthStore((state) => state.user));
+  const user = useAuthStore((state) => state.user);
+  const allowDelete = canDelete(user);
+  const allowEdit = isAdmin(user);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -104,7 +106,7 @@ export function SalesInvoiceDetailPage() {
               <Printer className="size-4" />
               Print
             </Button>
-            {(invoice.receipts?.length ?? 0) === 0 && (
+            {allowEdit && (invoice.receipts?.length ?? 0) === 0 && (
               <Button variant="outline" onClick={() => navigate(`/sales/${invoice.id}/edit`)}>
                 <Pencil className="size-4" />
                 Edit

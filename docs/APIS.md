@@ -310,7 +310,7 @@ One invoice including relations and payment summary. Soft-deleted → 404 unless
 
 ### `PUT /sales/:id`
 
-Same body as create. Header `x-delete-pin`. Reverses old stock, applies new lines.
+Admin + PIN. Same body as create. Header `x-delete-pin`. Reverses old stock, applies new lines.
 
 ### `DELETE /sales/:id`
 
@@ -732,7 +732,7 @@ Restore and permanent delete use the sales/purchase routes above. Raw-material d
 
 ## Activity — `/api/activity`
 
-Auth (any logged-in user).
+Admin only (STAFF get `403`).
 
 ### `GET /activity`
 

@@ -8,7 +8,7 @@
 ## Behaviour
 
 - Feed of recent operational actions: sales, purchase, raw material, inventory adjustments, and payments (sales receipts, vendor payments, raw-material payments).
-- Available to **ADMIN** and **STAFF** (not admin-only).
+- **Admin-only.** STAFF do not see the Activity nav item, `/activity` redirects them, and `GET /api/activity` returns 403.
 - Module filter chips: All / Sales / Purchase / Raw material / Inventory / Payments.
 - Each row shows who, optional device, when, summary, and amount when relevant. Click opens the related invoice/bill/inventory page when `href` is set.
 - Writes are fire-and-forget after a successful business action; a failed log write never blocks the bill/payment/stock request.
@@ -26,4 +26,4 @@ Users must **log out and log in once** after this shipped so existing sessions p
 
 | Route | Who |
 |-------|-----|
-| `/activity` | All logged-in users |
+| `/activity` | ADMIN only |

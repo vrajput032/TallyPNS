@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { asyncHandler } from "../../middleware/asyncHandler.js";
-import { requireAuth, requireCanDelete } from "../../middleware/auth.js";
+import { requireAdmin, requireAuth, requireCanDelete } from "../../middleware/auth.js";
 import { requireDeletePin } from "../../middleware/requireDeletePin.js";
 import { createSalesInvoiceSchema } from "./sales.schema.js";
 import * as salesService from "./sales.service.js";
@@ -56,6 +56,7 @@ salesRouter.post(
 
 salesRouter.put(
   "/:id",
+  requireAdmin,
   requireDeletePin,
   asyncHandler(async (req, res) => {
     const data = createSalesInvoiceSchema.parse(req.body);

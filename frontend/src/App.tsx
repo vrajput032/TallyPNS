@@ -59,7 +59,9 @@ export default function App() {
                 <Route path="/sales/new" element={<SalesInvoiceFormPage />} />
                 <Route path="/sales/print-month" element={<SalesInvoicesMonthPrintPage />} />
                 <Route path="/sales/print-totals" element={<SalesTotalsPrintPage />} />
-                <Route path="/sales/:id/edit" element={<SalesInvoiceFormPage />} />
+                <Route element={<AdminRoute />}>
+                  <Route path="/sales/:id/edit" element={<SalesInvoiceFormPage />} />
+                </Route>
                 <Route path="/sales/:id" element={<SalesInvoiceDetailPage />} />
                 <Route path="/purchase" element={<PurchaseBillsPage />} />
                 <Route path="/purchase/new" element={<PurchaseBillFormPage />} />
@@ -93,8 +95,8 @@ export default function App() {
                 <Route path="/ledger/:customerId" element={<LedgerDetailPage />} />
                 <Route path="/products" element={<ProductsPage />} />
                 <Route path="/reports" element={<ReportsPage />} />
-                <Route path="/activity" element={<ActivityPage />} />
                 <Route element={<AdminRoute />}>
+                  <Route path="/activity" element={<ActivityPage />} />
                   <Route path="/users" element={<UsersPage />} />
                   <Route path="/recycle-bin" element={<RecycleBinPage />} />
                 </Route>
