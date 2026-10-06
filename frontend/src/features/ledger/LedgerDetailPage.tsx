@@ -21,35 +21,79 @@ import {
   customerInitial,
   formatLedgerBalance,
   formatLedgerDate,
+  isPaymentEntry,
   kindLabel,
+  ledgerDocumentPath,
+  ledgerListPath,
+  ledgerPath,
   moneyOrBlank,
+  type LedgerParty,
 } from "./ledgerUi";
 import type { LedgerEntry } from "./types";
-import { useCustomerLedger, useLedgerList } from "./useLedger";
+import {
+  useLedgerList,
+  usePartyLedger,
+  useSupplierLedgerList,
+  type PartyLedgerView,
+} from "./useLedger";
 
 function entryAmountClass(entry: LedgerEntry) {
-  if (entry.kind === "RECEIPT") return "text-emerald-700 dark:text-emerald-400";
-  if (entry.debit > 0.009) return "text-red-600 dark:text-red-400";
-  return undefined;
+  if (isPaymentEntry(entry.kind)) return "text-emerald-700 dark:text-emerald-400";
+  if (entry.kind === "OPENING") return undefined;
+  return "text-red-600 dark:text-red-400";
 }
 
 function entryAmount(entry: LedgerEntry) {
-  if (entry.credit > 0.009) return `+₹${formatInr(entry.credit)}`;
-  if (entry.debit > 0.009) return `₹${formatInr(entry.debit)}`;
-  return "₹0.00";
+  return `₹${formatInr(Math.max(entry.debit, entry.credit))}`;
+}
+
+function notFoundLabel(party: LedgerParty) {
+  return party === "SUPPLIER" ? "Supplier not found." : "Customer not found.";
+}
+
+function AllocationList({
+  entry,
+  party,
+  linked,
+}: {
+  entry: LedgerEntry;
+  party: LedgerParty;
+  linked: boolean;
+}) {
+  if (entry.allocations.length < 2) return null;
+  return (
+    <ul className="mt-1 grid gap-0.5 text-xs text-muted-foreground">
+      {entry.allocations.map((allocation) => (
+        <li key={allocation.voucherNo} className="tabular-nums">
+          {linked ? (
+            <Link
+              to={ledgerDocumentPath(party, allocation.documentId)}
+              className="text-primary hover:underline"
+            >
+              {allocation.documentNo}
+            </Link>
+          ) : (
+            allocation.documentNo
+          )}
+          {` · ${allocation.voucherNo} · ₹${formatInr(allocation.amount)}`}
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 function MobileLedgerDetail({
+  party,
   data,
   isLoading,
   isError,
 }: {
-  data: ReturnType<typeof useCustomerLedger>["data"];
+  party: LedgerParty;
+  data: PartyLedgerView | undefined;
   isLoading: boolean;
   isError: boolean;
 }) {
   const navigate = useNavigate();
-  const customer = data?.customer;
 
   if (isLoading) {
     return (
@@ -60,8 +104,8 @@ function MobileLedgerDetail({
     );
   }
 
-  if (isError || !data || !customer) {
-    return <p className="py-16 text-center text-sm text-muted-foreground">Customer not found.</p>;
+  if (isError || !data) {
+    return <p className="py-16 text-center text-sm text-muted-foreground">{notFoundLabel(party)}</p>;
   }
 
   return (
@@ -69,19 +113,24 @@ function MobileLedgerDetail({
       <div className="overflow-hidden rounded-2xl border bg-card p-5 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg font-bold text-primary">
-            {customerInitial(customer.name)}
+            {customerInitial(data.name)}
           </div>
           <div className="min-w-0">
-            <p className="truncate text-lg font-semibold leading-tight">{customer.name}</p>
+            <p className="truncate text-lg font-semibold leading-tight">{data.name}</p>
             <p className="truncate text-xs text-muted-foreground">
-              {[customer.phone, customer.gstin].filter(Boolean).join(" · ") || "No contact details"}
+              {data.contactParts.join(" · ") || "No contact details"}
             </p>
           </div>
         </div>
         <p className="mt-4 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-          Closing balance
+          {party === "SUPPLIER" ? "Payable" : "Closing balance"}
         </p>
-        <p className={cn("text-3xl font-bold tabular-nums tracking-tight", balanceTone(data.closingBalance))}>
+        <p
+          className={cn(
+            "text-3xl font-bold tabular-nums tracking-tight",
+            balanceTone(data.closingBalance, party)
+          )}
+        >
           ₹{formatLedgerBalance(data.closingBalance)}
         </p>
         <div className="mt-4 grid grid-cols-2 gap-3">
@@ -94,10 +143,7 @@ function MobileLedgerDetail({
             <p className="text-sm font-semibold tabular-nums">₹{formatInr(data.totalCredit)}</p>
           </div>
         </div>
-        <Button
-          className="mt-4 w-full"
-          onClick={() => navigate(`/ledger/${customer.id}/print`)}
-        >
+        <Button className="mt-4 w-full" onClick={() => navigate(`${ledgerPath(party, data.id)}/print`)}>
           <Download className="size-4" />
           Download ledger
         </Button>
@@ -108,18 +154,18 @@ function MobileLedgerDetail({
       ) : (
         <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
           {data.entries.map((entry, index) => {
-            const canOpen = Boolean(entry.salesInvoiceId);
+            const documentId = entry.documentId;
             const rowClass = cn(
               "flex w-full items-center gap-3 px-4 py-3 text-left",
               index > 0 && "border-t",
-              canOpen && "transition-colors active:bg-muted/70"
+              documentId && "transition-colors active:bg-muted/70"
             );
             const body = (
               <>
                 <div
                   className={cn(
                     "flex size-10 shrink-0 items-center justify-center rounded-full text-[11px] font-bold",
-                    entry.kind === "RECEIPT"
+                    isPaymentEntry(entry.kind)
                       ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
                       : "bg-primary/10 text-primary"
                   )}
@@ -132,6 +178,7 @@ function MobileLedgerDetail({
                     {formatLedgerDate(entry.date)}
                     {entry.voucherNo ? ` · ${entry.voucherNo}` : ""}
                   </p>
+                  <AllocationList entry={entry} party={party} linked={false} />
                 </div>
                 <div className="shrink-0 text-right">
                   <p className={cn("text-sm font-bold tabular-nums leading-tight", entryAmountClass(entry))}>
@@ -141,17 +188,17 @@ function MobileLedgerDetail({
                     {formatLedgerBalance(entry.balance)}
                   </p>
                 </div>
-                {canOpen ? <ChevronRight className="size-4 shrink-0 text-muted-foreground" /> : null}
+                {documentId ? <ChevronRight className="size-4 shrink-0 text-muted-foreground" /> : null}
               </>
             );
 
-            if (canOpen) {
+            if (documentId) {
               return (
                 <button
                   key={`${entry.kind}-${entry.id}`}
                   type="button"
                   className={rowClass}
-                  onClick={() => navigate(`/sales/${entry.salesInvoiceId}`)}
+                  onClick={() => navigate(ledgerDocumentPath(party, documentId))}
                 >
                   {body}
                 </button>
@@ -170,10 +217,13 @@ function MobileLedgerDetail({
   );
 }
 
-function entryVoucher(entry: LedgerEntry) {
-  if (entry.salesInvoiceId && (entry.kind === "INVOICE" || entry.kind === "RECEIPT")) {
+function entryVoucher(entry: LedgerEntry, party: LedgerParty) {
+  if (entry.documentId) {
     return (
-      <Link to={`/sales/${entry.salesInvoiceId}`} className="inline-flex items-center gap-1 text-primary hover:underline">
+      <Link
+        to={ledgerDocumentPath(party, entry.documentId)}
+        className="inline-flex items-center gap-1 text-primary hover:underline"
+      >
         <LinkIcon className="size-3" />
         {entry.voucherNo}
       </Link>
@@ -182,28 +232,58 @@ function entryVoucher(entry: LedgerEntry) {
   return entry.voucherNo || "—";
 }
 
-export function LedgerDetailPage() {
-  const { customerId } = useParams();
+function PartySwitcher({ party, partyId }: { party: LedgerParty; partyId: string | undefined }) {
+  const navigate = useNavigate();
+  const { data: customerList } = useLedgerList();
+  const { data: supplierList } = useSupplierLedgerList();
+
+  const options =
+    party === "SUPPLIER"
+      ? (supplierList?.suppliers ?? []).map((row) => ({ id: row.key, name: row.name }))
+      : (customerList?.customers ?? []).map((row) => ({ id: row.id, name: row.name }));
+
+  if (options.length === 0) return null;
+
+  return (
+    <label className="grid max-w-sm gap-1 text-sm">
+      <span className="text-muted-foreground">{party === "SUPPLIER" ? "Supplier" : "Customer"}</span>
+      <select
+        className="h-9 rounded-lg border bg-background px-3"
+        value={partyId ?? ""}
+        onChange={(e) => navigate(ledgerPath(party, e.target.value))}
+      >
+        {options.map((option) => (
+          <option key={option.id} value={option.id}>
+            {option.name}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+export function LedgerDetailPage({ party = "CUSTOMER" }: { party?: LedgerParty }) {
+  const params = useParams();
+  const partyId = party === "SUPPLIER" ? params.partyId : params.customerId;
   const navigate = useNavigate();
   const isCompact = useIsCompactNav();
-  const { data: list } = useLedgerList();
-  const { data, isLoading, isError } = useCustomerLedger(customerId);
-
-  const title = data?.customer.name ?? "Customer ledger";
+  const { data, isLoading, isError } = usePartyLedger(party, partyId);
 
   if (isCompact) {
-    return <MobileLedgerDetail data={data} isLoading={isLoading} isError={isError} />;
+    return <MobileLedgerDetail party={party} data={data} isLoading={isLoading} isError={isError} />;
   }
+
+  const title = data?.name ?? (party === "SUPPLIER" ? "Supplier ledger" : "Customer ledger");
 
   return (
     <div className="grid gap-4">
       <PageHeader
         title={title}
-        backTo="/ledger"
+        backTo={ledgerListPath(party)}
         backLabel="Back to Ledger"
         actions={
-          data?.customer ? (
-            <Button variant="outline" onClick={() => navigate(`/ledger/${data.customer.id}/print`)}>
+          data ? (
+            <Button variant="outline" onClick={() => navigate(`${ledgerPath(party, data.id)}/print`)}>
               <Download className="size-4" />
               Download ledger
             </Button>
@@ -211,29 +291,15 @@ export function LedgerDetailPage() {
         }
       />
 
-      {list && list.customers.length > 0 ? (
-        <label className="grid max-w-sm gap-1 text-sm">
-          <span className="text-muted-foreground">Customer</span>
-          <select
-            className="h-9 rounded-lg border bg-background px-3"
-            value={customerId ?? ""}
-            onChange={(e) => navigate(`/ledger/${e.target.value}`)}
-          >
-            {list.customers.map((customer) => (
-              <option key={customer.id} value={customer.id}>
-                {customer.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : null}
+      <PartySwitcher party={party} partyId={partyId} />
 
-      {data?.customer ? (
-        <p className="text-sm text-muted-foreground">
-          {[data.customer.phone, data.customer.gstin, data.customer.address]
-            .filter(Boolean)
-            .join(" · ") || "No contact details"}
-        </p>
+      {data ? (
+        <div className="grid gap-0.5 text-sm text-muted-foreground">
+          <p>{data.contactParts.join(" · ") || "No contact details"}</p>
+          {data.aliases.length > 0 ? (
+            <p className="text-xs">Also billed as: {data.aliases.join(", ")}</p>
+          ) : null}
+        </div>
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -256,14 +322,14 @@ export function LedgerDetailPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Closing Balance
+              {party === "SUPPLIER" ? "Payable" : "Closing Balance"}
             </CardTitle>
           </CardHeader>
           <CardContent className="text-2xl font-semibold">
             {isLoading ? (
               <Skeleton className="h-8 w-28" />
             ) : (
-              <span className={balanceTone(data?.closingBalance ?? 0)}>
+              <span className={balanceTone(data?.closingBalance ?? 0, party)}>
                 {formatLedgerBalance(data?.closingBalance ?? 0)}
               </span>
             )}
@@ -290,7 +356,7 @@ export function LedgerDetailPage() {
             ) : isError ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center text-muted-foreground">
-                  Customer not found.
+                  {notFoundLabel(party)}
                 </TableCell>
               </TableRow>
             ) : (data?.entries.length ?? 0) === 0 ? (
@@ -302,13 +368,16 @@ export function LedgerDetailPage() {
             ) : (
               data?.entries.map((entry) => (
                 <TableRow key={`${entry.kind}-${entry.id}`}>
-                  <TableCell>{formatLedgerDate(entry.date)}</TableCell>
-                  <TableCell>{kindLabel(entry.kind)}</TableCell>
-                  <TableCell>{entry.particulars}</TableCell>
-                  <TableCell>{entryVoucher(entry)}</TableCell>
-                  <TableCell className="text-right">{moneyOrBlank(entry.debit)}</TableCell>
-                  <TableCell className="text-right">{moneyOrBlank(entry.credit)}</TableCell>
-                  <TableCell className={cn("text-right", balanceTone(entry.balance))}>
+                  <TableCell className="align-top">{formatLedgerDate(entry.date)}</TableCell>
+                  <TableCell className="align-top">{kindLabel(entry.kind)}</TableCell>
+                  <TableCell className="whitespace-normal">
+                    {entry.particulars}
+                    <AllocationList entry={entry} party={party} linked />
+                  </TableCell>
+                  <TableCell className="align-top">{entryVoucher(entry, party)}</TableCell>
+                  <TableCell className="text-right align-top">{moneyOrBlank(entry.debit)}</TableCell>
+                  <TableCell className="text-right align-top">{moneyOrBlank(entry.credit)}</TableCell>
+                  <TableCell className={cn("text-right align-top", balanceTone(entry.balance, party))}>
                     {formatLedgerBalance(entry.balance)}
                   </TableCell>
                 </TableRow>

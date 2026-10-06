@@ -16,6 +16,20 @@ ledgerRouter.get(
 );
 
 ledgerRouter.get(
+  "/suppliers",
+  asyncHandler(async (_req, res) => {
+    res.json(await ledgerService.listSupplierLedgers());
+  })
+);
+
+ledgerRouter.get(
+  "/suppliers/:supplierKey",
+  asyncHandler(async (req, res) => {
+    res.json(await ledgerService.getSupplierLedger(routeParam(req.params.supplierKey)));
+  })
+);
+
+ledgerRouter.get(
   "/:customerId",
   asyncHandler(async (req, res) => {
     const ledger = await ledgerService.getCustomerLedger(routeParam(req.params.customerId));

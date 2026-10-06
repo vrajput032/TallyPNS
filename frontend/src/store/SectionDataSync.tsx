@@ -3,7 +3,12 @@ import { useLocation } from "react-router-dom";
 import { useAppDispatch } from "@/store/hooks";
 import { fetchCustomers } from "@/store/slices/customersSlice";
 import { fetchProducts } from "@/store/slices/productsSlice";
-import { fetchCustomerLedger, fetchLedgerList } from "@/store/slices/ledgerSlice";
+import {
+  fetchCustomerLedger,
+  fetchLedgerList,
+  fetchSupplierLedger,
+  fetchSupplierLedgerList,
+} from "@/store/slices/ledgerSlice";
 import { fetchSalesInvoices, fetchSalesInvoice } from "@/store/slices/salesSlice";
 import { fetchPurchaseBills, fetchPurchaseBill } from "@/store/slices/purchaseSlice";
 import { fetchStock, fetchStockMovements } from "@/store/slices/inventorySlice";
@@ -103,8 +108,12 @@ export function SectionDataSync() {
         break;
       case "ledger": {
         dispatch(fetchLedgerList(silent));
+        dispatch(fetchSupplierLedgerList(silent));
+        const supplierKey = pathname.match(/^\/ledger\/suppliers\/([^/]+)/)?.[1];
         const customerId = pathname.match(/^\/ledger\/([^/]+)/)?.[1];
-        if (customerId) {
+        if (supplierKey) {
+          dispatch(fetchSupplierLedger({ id: supplierKey, silent: true }));
+        } else if (customerId && customerId !== "suppliers") {
           dispatch(fetchCustomerLedger({ id: customerId, silent: true }));
         }
         break;

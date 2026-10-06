@@ -4,6 +4,7 @@ import { requireAdmin, requireAuth } from "../../middleware/auth.js";
 import { authRateLimit } from "../../middleware/authRateLimit.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import {
+  changeOwnPasswordSchema,
   createUserSchema,
   loginSchema,
   refreshSchema,
@@ -69,6 +70,20 @@ authRouter.patch(
     const { password } = resetUserPasswordSchema.parse(req.body);
     const user = await authService.resetUserPassword(routeParam(req.params.id), password);
     res.json(user);
+  })
+);
+
+authRouter.post(
+  "/me/password",
+  authRateLimit,
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    if (!req.user) {
+      throw new ApiError(401, "Missing access token");
+    }
+    const { currentPassword, newPassword } = changeOwnPasswordSchema.parse(req.body);
+    await authService.changeOwnPassword(req.user.sub, currentPassword, newPassword);
+    res.status(204).send();
   })
 );
 

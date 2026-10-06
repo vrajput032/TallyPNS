@@ -81,6 +81,14 @@ export default function App() {
                 <Route path="/commission" element={<CommissionPage />} />
                 <Route path="/commission/:customerId" element={<CommissionCustomerPage />} />
                 <Route path="/ledger" element={<LedgerPage />} />
+                <Route
+                  path="/ledger/suppliers/:partyId/print"
+                  element={<LedgerPrintPage party="SUPPLIER" />}
+                />
+                <Route
+                  path="/ledger/suppliers/:partyId"
+                  element={<LedgerDetailPage party="SUPPLIER" />}
+                />
                 <Route path="/ledger/:customerId/print" element={<LedgerPrintPage />} />
                 <Route path="/ledger/:customerId" element={<LedgerDetailPage />} />
                 <Route path="/products" element={<ProductsPage />} />

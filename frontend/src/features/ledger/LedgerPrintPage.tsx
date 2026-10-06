@@ -11,23 +11,23 @@ import {
   formatLedgerBalance,
   formatLedgerDate,
   kindLabel,
+  ledgerListPath,
+  ledgerPath,
   ledgerPrintFileName,
   moneyOrBlank,
+  type LedgerParty,
 } from "./ledgerUi";
-import type { CustomerLedger, LedgerEntry } from "./types";
-import { useCustomerLedger } from "./useLedger";
-
-function contactLine(customer: CustomerLedger["customer"]) {
-  return [customer.phone, customer.gstin, customer.address].filter(Boolean).join(" · ");
-}
+import type { LedgerEntry } from "./types";
+import { usePartyLedger, type PartyLedgerView } from "./useLedger";
 
 function LedgerSheet({
   data,
   generatedOn,
 }: {
-  data: CustomerLedger;
+  data: PartyLedgerView;
   generatedOn: string;
 }) {
+  const contactLine = data.contactParts.join(" · ");
   return (
     <div className="sales-totals-sheet mx-auto w-[190mm] bg-white p-6 text-black">
       <header className="border-b-2 border-black pb-3">
@@ -39,12 +39,10 @@ function LedgerSheet({
         ))}
         <p className="mt-1 text-xs">GSTIN: {COMPANY.gstin}</p>
         <h2 className="mt-3 text-base font-semibold uppercase tracking-wide">
-          Customer ledger
+          {data.party === "SUPPLIER" ? "Supplier ledger" : "Customer ledger"}
         </h2>
-        <p className="text-sm font-semibold">{data.customer.name}</p>
-        {contactLine(data.customer) ? (
-          <p className="text-xs">{contactLine(data.customer)}</p>
-        ) : null}
+        <p className="text-sm font-semibold">{data.name}</p>
+        {contactLine ? <p className="text-xs">{contactLine}</p> : null}
         <p className="mt-1 text-sm">
           {data.entries.length} {data.entries.length === 1 ? "entry" : "entries"} · Generated{" "}
           {generatedOn}
@@ -115,7 +113,16 @@ function LedgerSheetRow({ entry }: { entry: LedgerEntry }) {
         {formatLedgerDate(entry.date)}
       </td>
       <td className="border border-black px-1.5 py-1">{kindLabel(entry.kind)}</td>
-      <td className="border border-black px-1.5 py-1 break-words">{entry.particulars}</td>
+      <td className="border border-black px-1.5 py-1 break-words">
+        {entry.particulars}
+        {entry.allocations.length > 1 ? (
+          <span className="mt-0.5 block text-[10px]">
+            {entry.allocations
+              .map((allocation) => `${allocation.documentNo}: ${formatInr(allocation.amount)}`)
+              .join(" · ")}
+          </span>
+        ) : null}
+      </td>
       <td className="border border-black px-1.5 py-1 break-words">{entry.voucherNo || "—"}</td>
       <td className="border border-black px-1.5 py-1 text-right tabular-nums">
         {moneyOrBlank(entry.debit)}
@@ -130,13 +137,14 @@ function LedgerSheetRow({ entry }: { entry: LedgerEntry }) {
   );
 }
 
-export function LedgerPrintPage() {
-  const { customerId } = useParams();
+export function LedgerPrintPage({ party = "CUSTOMER" }: { party?: LedgerParty }) {
+  const params = useParams();
+  const partyId = party === "SUPPLIER" ? params.partyId : params.customerId;
   const navigate = useNavigate();
   const isCompactNav = useIsCompactNav();
-  const { data, isLoading, isError } = useCustomerLedger(customerId);
+  const { data, isLoading, isError } = usePartyLedger(party, partyId);
 
-  const fileTitle = data ? ledgerPrintFileName(data.customer.name) : "PNS-ledger";
+  const fileTitle = data ? ledgerPrintFileName(data.name) : "PNS-ledger";
 
   useEffect(() => {
     function handleBeforePrint() {
@@ -156,20 +164,22 @@ export function LedgerPrintPage() {
   }, [fileTitle]);
 
   useEffect(() => {
-    if (!customerId) navigate("/ledger", { replace: true });
-  }, [customerId, navigate]);
+    if (!partyId) navigate(ledgerListPath(party), { replace: true });
+  }, [partyId, party, navigate]);
 
-  if (!customerId) return null;
+  if (!partyId) return null;
 
   if (isLoading) return <DetailSkeleton />;
 
   if (isError || !data) {
     return (
-      <p className="py-16 text-center text-sm text-muted-foreground">Customer not found.</p>
+      <p className="py-16 text-center text-sm text-muted-foreground">
+        {party === "SUPPLIER" ? "Supplier not found." : "Customer not found."}
+      </p>
     );
   }
 
-  const backTo = `/ledger/${data.customer.id}`;
+  const backTo = ledgerPath(party, data.id);
   const generatedOn = new Date().toLocaleDateString("en-GB");
 
   function handlePrint() {
@@ -192,7 +202,7 @@ export function LedgerPrintPage() {
               <ArrowLeft className="size-4" />
               Back to ledger
             </Button>
-            <h1 className="mt-2 text-xl font-semibold">Ledger PDF · {data.customer.name}</h1>
+            <h1 className="mt-2 text-xl font-semibold">Ledger PDF · {data.name}</h1>
             <p className="text-sm text-muted-foreground">
               Use <span className="font-medium">Save as PDF</span> in the print dialog to download
             </p>

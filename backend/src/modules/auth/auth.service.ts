@@ -125,6 +125,25 @@ export async function resetUserPassword(userId: string, password: string) {
   return toPublicUser({ ...user, passwordHash, refreshToken: null });
 }
 
+/** Signed-in user changes their own password. Other devices on the account stay signed in. */
+export async function changeOwnPassword(userId: string, currentPassword: string, newPassword: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!valid) {
+    throw new ApiError(400, "Current password is incorrect");
+  }
+  if (currentPassword === newPassword) {
+    throw new ApiError(400, "New password must be different from the current one");
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+}
+
 export async function register(username: string, email: string, password: string, name: string) {
   const normalized = username.toLowerCase();
   const existingUsername = await prisma.user.findUnique({ where: { username: normalized } });

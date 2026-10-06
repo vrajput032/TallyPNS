@@ -1,4 +1,4 @@
-export type LedgerEntryKind = "OPENING" | "INVOICE" | "RECEIPT";
+export type LedgerEntryKind = "OPENING" | "INVOICE" | "RECEIPT" | "BILL" | "PAYMENT";
 export type LedgerPaymentMode = "CASH" | "BANK";
 
 export interface LedgerCustomerSummary {
@@ -21,6 +21,26 @@ export interface LedgerList {
   totalClosingBalance: number;
 }
 
+export interface LedgerSupplierSummary {
+  key: string;
+  name: string;
+  gstin: string | null;
+  billCount: number;
+  totalBilled: number;
+  totalPaid: number;
+  /** Debit minus credit: negative means we still owe the supplier. */
+  closingBalance: number;
+  entryCount: number;
+  lastTransactionDate: string | null;
+}
+
+export interface SupplierLedgerList {
+  suppliers: LedgerSupplierSummary[];
+  totalBilled: number;
+  totalPaid: number;
+  totalClosingBalance: number;
+}
+
 export interface LedgerCustomer {
   id: string;
   name: string;
@@ -28,6 +48,20 @@ export interface LedgerCustomer {
   email: string | null;
   gstin: string | null;
   address: string | null;
+}
+
+export interface LedgerSupplier {
+  key: string;
+  name: string;
+  gstin: string | null;
+  aliases: string[];
+}
+
+export interface LedgerAllocation {
+  documentId: string;
+  documentNo: string;
+  voucherNo: string;
+  amount: number;
 }
 
 export interface LedgerEntry {
@@ -39,16 +73,25 @@ export interface LedgerEntry {
   debit: number;
   credit: number;
   balance: number;
-  salesInvoiceId: string | null;
-  receiptId: string | null;
+  /** Invoice or bill to open; null when one payment covered several bills. */
+  documentId: string | null;
   paymentMode: LedgerPaymentMode | null;
+  reference: string | null;
+  allocations: LedgerAllocation[];
 }
 
-export interface CustomerLedger {
-  customer: LedgerCustomer;
+export interface LedgerBook {
   openingBalance: number;
   entries: LedgerEntry[];
   totalDebit: number;
   totalCredit: number;
   closingBalance: number;
+}
+
+export interface CustomerLedger extends LedgerBook {
+  customer: LedgerCustomer;
+}
+
+export interface SupplierLedger extends LedgerBook {
+  supplier: LedgerSupplier;
 }

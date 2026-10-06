@@ -1,4 +1,10 @@
-import { createTransform, type PersistConfig } from "redux-persist";
+import {
+  createMigrate,
+  createTransform,
+  type MigrationManifest,
+  type PersistConfig,
+  type PersistedState as PersistedReduxState,
+} from "redux-persist";
 import createWebStorageImport from "redux-persist/lib/storage/createWebStorage";
 
 const createWebStorage =
@@ -62,9 +68,19 @@ const rehydrateTransform = createTransform(
   { whitelist: [...PERSIST_SLICE_KEYS] }
 );
 
+const migrations: MigrationManifest = {
+  // Ledger entries changed shape (merged receipts, supplier books); drop the old cache.
+  2: (state) => {
+    if (!state) return state;
+    const { ledger: _ledger, ...rest } = state as PersistedState & PersistedReduxState;
+    return rest as PersistedReduxState;
+  },
+};
+
 export const persistConfig: PersistConfig<PersistedState> = {
   key: "pns-erp-data",
-  version: 1,
+  version: 2,
+  migrate: createMigrate(migrations),
   storage,
   whitelist: [...PERSIST_SLICE_KEYS],
   transforms: [rehydrateTransform],

@@ -1,4 +1,5 @@
-import { ArrowLeft, CircleUser, LogOut, Menu } from "lucide-react";
+import { ArrowLeft, CircleUser, KeyRound, LogOut, Menu } from "lucide-react";
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { TiltCard } from "@/lib/useTilt.tsx";
 import { clearLocalAppCache } from "@/lib/clearLocalAppCache";
 import { useAuthStore } from "@/store/authStore";
+import { ChangePasswordDialog } from "@/features/auth/ChangePasswordDialog";
 import { PaymentRemindersMenu } from "@/features/notifications/PaymentRemindersMenu";
 import { AccountMenu } from "./AccountMenu";
 import { getMobileHeaderMeta } from "./mobileHeader";
@@ -36,6 +38,12 @@ export function Topbar({
   const isCompactNav = useIsCompactNav();
   const { title, backTo, backLabel } = getMobileHeaderMeta(pathname);
   const logout = useAuthStore((state) => state.logout);
+  const [passwordOpen, setPasswordOpen] = useState(false);
+
+  function openChangePassword() {
+    onRightOpenChange(false);
+    setPasswordOpen(true);
+  }
 
   function handleLogout() {
     void clearLocalAppCache();
@@ -55,7 +63,7 @@ export function Topbar({
       />
       <SheetContent side="right" className="w-72 p-0">
         <SheetTitle className="sr-only">Account</SheetTitle>
-        <AccountMenu onLogout={handleLogout} />
+        <AccountMenu onLogout={handleLogout} onChangePassword={openChangePassword} />
       </SheetContent>
     </Sheet>
   );
@@ -91,6 +99,16 @@ export function Topbar({
   const desktopActions = (
     <div className="flex shrink-0 items-center gap-0.5">
       <PaymentRemindersMenu />
+      <Button
+        variant="ghost"
+        size="icon"
+        className="shrink-0"
+        onClick={openChangePassword}
+        title="Change password"
+      >
+        <KeyRound className="size-4" />
+        <span className="sr-only">Change password</span>
+      </Button>
       <Button variant="ghost" size="icon" className="shrink-0" onClick={handleLogout}>
         <LogOut className="size-4" />
         <span className="sr-only">Log out</span>
@@ -129,6 +147,8 @@ export function Topbar({
           <div className="hidden md:block">{desktopActions}</div>
         )}
       </header>
+
+      <ChangePasswordDialog open={passwordOpen} onOpenChange={setPasswordOpen} />
 
       {isCompactNav ? (
         <div

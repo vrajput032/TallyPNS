@@ -1,4 +1,4 @@
-import { LogOut } from "lucide-react";
+import { KeyRound, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ThemeList } from "@/components/ThemeSelector";
@@ -11,7 +11,13 @@ function userInitial(name: string | undefined, username: string | undefined): st
   return source.charAt(0).toUpperCase();
 }
 
-export function AccountMenu({ onLogout }: { onLogout: () => void }) {
+export function AccountMenu({
+  onLogout,
+  onChangePassword,
+}: {
+  onLogout: () => void;
+  onChangePassword: () => void;
+}) {
   const user = useAuthStore((state) => state.user);
   const { theme, setTheme } = useTheme();
   const roleLabel = user?.role === "ADMIN" ? "Admin" : "Staff";
@@ -40,7 +46,11 @@ export function AccountMenu({ onLogout }: { onLogout: () => void }) {
         <ThemeList currentName={theme.name} onSelect={setTheme} />
       </div>
       <Separator />
-      <div className="p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="grid gap-2 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <Button variant="outline" className="w-full justify-start" onClick={onChangePassword}>
+          <KeyRound className="size-4" />
+          Change password
+        </Button>
         <Button variant="outline" className="w-full justify-start" onClick={onLogout}>
           <LogOut className="size-4" />
           Log out
