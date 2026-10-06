@@ -82,8 +82,7 @@ authRouter.post(
       throw new ApiError(401, "Missing access token");
     }
     const { currentPassword, newPassword } = changeOwnPasswordSchema.parse(req.body);
-    await authService.changeOwnPassword(req.user.sub, currentPassword, newPassword);
-    res.status(204).send();
+    res.json(await authService.changeOwnPassword(req.user, currentPassword, newPassword));
   })
 );
 

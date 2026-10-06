@@ -1,6 +1,7 @@
 import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { prisma } from "../src/lib/prisma.js";
+import { revokedSessionValue } from "../src/lib/sessionRevocation.js";
 
 const username = (process.env.ADMIN_USERNAME ?? "admin").toLowerCase();
 const password = process.env.ADMIN_PASSWORD;
@@ -22,7 +23,7 @@ async function main() {
   const passwordHash = await bcrypt.hash(password, 10);
   await prisma.user.update({
     where: { id: user.id },
-    data: { passwordHash, refreshToken: null },
+    data: { passwordHash, refreshToken: revokedSessionValue() },
   });
 
   console.log(`Password updated for ${username}. Existing sessions were invalidated.`);

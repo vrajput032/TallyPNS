@@ -2,7 +2,11 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import type { User } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
-import { revokedSessionValue, sessionIsRevoked } from "../../lib/sessionRevocation.js";
+import {
+  revokedSessionValue,
+  sessionIsRevoked,
+  storedTokenAfterLogin,
+} from "../../lib/sessionRevocation.js";
 import type { AuthPayload } from "../../middleware/auth.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import { recordActivity } from "../activity/activity.js";
@@ -125,9 +129,13 @@ export async function resetUserPassword(userId: string, password: string) {
   return toPublicUser({ ...user, passwordHash, refreshToken: null });
 }
 
-/** Signed-in user changes their own password. Other devices on the account stay signed in. */
-export async function changeOwnPassword(userId: string, currentPassword: string, newPassword: string) {
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+/** Signed-in user changes their own password; every other device on the account is signed out. */
+export async function changeOwnPassword(
+  caller: AuthPayload,
+  currentPassword: string,
+  newPassword: string
+) {
+  const user = await prisma.user.findUnique({ where: { id: caller.sub } });
   if (!user) {
     throw new ApiError(404, "User not found");
   }
@@ -141,7 +149,12 @@ export async function changeOwnPassword(userId: string, currentPassword: string,
   }
 
   const passwordHash = await bcrypt.hash(newPassword, 10);
-  await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { passwordHash, refreshToken: revokedSessionValue() },
+  });
+
+  return signTokens(toPayload(user, caller.deviceName));
 }
 
 export async function register(username: string, email: string, password: string, name: string) {
@@ -179,7 +192,10 @@ export async function login(username: string, password: string, deviceName?: str
   }
 
   const tokens = signTokens(toPayload(user, deviceName));
-  await prisma.user.update({ where: { id: user.id }, data: { refreshToken: tokens.refreshToken } });
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { refreshToken: storedTokenAfterLogin(user.refreshToken, tokens.refreshToken) },
+  });
 
   recordActivity({
     user: {

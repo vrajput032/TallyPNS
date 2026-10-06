@@ -25,6 +25,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { api } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { useAuthStore } from "@/store/authStore";
 
 const schema = z
   .object({
@@ -53,6 +54,7 @@ type ChangePasswordDialogProps = {
 export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialogProps) {
   const isMobile = useIsMobile();
   const [isPending, setIsPending] = useState(false);
+  const setTokens = useAuthStore((state) => state.setTokens);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -68,12 +70,13 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
   function onSubmit(values: FormValues) {
     setIsPending(true);
     api
-      .post("/auth/me/password", {
+      .post<{ accessToken: string; refreshToken: string }>("/auth/me/password", {
         currentPassword: values.currentPassword,
         newPassword: values.newPassword,
       })
-      .then(() => {
-        toast.success("Password changed");
+      .then(({ data }) => {
+        setTokens(data.accessToken, data.refreshToken);
+        toast.success("Password changed. Other devices have been signed out.");
         onOpenChange(false);
       })
       .catch((error: unknown) => {
@@ -84,7 +87,7 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
 
   const title = "Change password";
   const description =
-    "Use the new password next time you sign in. Devices already signed in stay signed in.";
+    "Every other device signed in to this account will be signed out and need the new password.";
 
   const passwordField = (
     name: keyof FormValues,
