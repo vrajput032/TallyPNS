@@ -28,14 +28,35 @@ export const salesInvoiceItemSchema = z
     }
   });
 
-export const createSalesInvoiceSchema = z.object({
-  customerId: z.string().min(1),
-  invoiceNo: z.string().trim().max(60).optional(),
-  invoiceDate: z.coerce.date().optional(),
-  transport: z.string().trim().max(100).optional().nullable(),
-  vehicleNo: z.string().trim().max(40).optional().nullable(),
-  isTrading: z.boolean().optional(),
-  /** Omit to calculate from the customer's commission rate */
-  commissionAmount: z.number().min(0).max(100_000_000).optional().nullable(),
-  items: z.array(salesInvoiceItemSchema).min(1, "At least one item is required"),
-});
+export const createSalesInvoiceSchema = z
+  .object({
+    customerId: z.string().min(1),
+    invoiceNo: z.string().trim().max(60).optional(),
+    invoiceDate: z.coerce.date().optional(),
+    transport: z.string().trim().max(100).optional().nullable(),
+    vehicleNo: z.string().trim().max(40).optional().nullable(),
+    isTrading: z.boolean().optional(),
+    isRawMaterialTrading: z.boolean().optional(),
+    /** Purchase cost ₹/kg before GST; required for raw-material trading */
+    rawMaterialCostPerKg: z.number().positive().max(100_000).optional().nullable(),
+    /** Omit to calculate from the customer's commission rate */
+    commissionAmount: z.number().min(0).max(100_000_000).optional().nullable(),
+    items: z.array(salesInvoiceItemSchema).min(1, "At least one item is required"),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.isRawMaterialTrading) return;
+    if (data.isTrading) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "An invoice is either Trading or Raw material trading, not both",
+        path: ["isRawMaterialTrading"],
+      });
+    }
+    if (data.rawMaterialCostPerKg == null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Enter the purchase cost per kg for raw material trading",
+        path: ["rawMaterialCostPerKg"],
+      });
+    }
+  });

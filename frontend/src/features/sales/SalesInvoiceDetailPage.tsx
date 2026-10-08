@@ -19,7 +19,7 @@ import { PaymentStatusBadge } from "@/features/payments/PaymentStatusBadge";
 import { RecordReceiptDialog } from "@/features/payments/RecordReceiptDialog";
 import { useDeleteReceipt } from "@/features/payments/usePayments";
 import { SalesInvoicePrint } from "./SalesInvoicePrint";
-import { TradingBadge } from "./TradingBadge";
+import { SaleTypeBadge } from "./TradingBadge";
 import { useDeleteSalesInvoice, useSalesInvoice } from "./useSales";
 import { formatInr } from "@/lib/formatInr";
 import { canDelete, isAdmin } from "@/lib/permissions";
@@ -157,7 +157,7 @@ export function SalesInvoiceDetailPage() {
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-1.5">
             <PaymentStatusBadge status={invoice.paymentStatus} />
-            {invoice.isTrading ? <TradingBadge /> : null}
+            <SaleTypeBadge invoice={invoice} />
           </CardContent>
         </Card>
       </div>
@@ -169,6 +169,16 @@ export function SalesInvoiceDetailPage() {
           <Link to={`/commission/${invoice.customerId}`} className="text-primary underline-offset-2 hover:underline">
             View commission
           </Link>
+        </p>
+      ) : null}
+
+      {invoice.isRawMaterialTrading && invoice.rawMaterialCostPerKg != null ? (
+        <p className="print:hidden text-sm text-muted-foreground">
+          Raw material bought at{" "}
+          <span className="font-medium text-foreground">
+            ₹{formatInr(invoice.rawMaterialCostPerKg)}/kg
+          </span>{" "}
+          before GST · used for the dashboard RM trading profit
         </p>
       ) : null}
 

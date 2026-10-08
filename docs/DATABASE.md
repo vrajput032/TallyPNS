@@ -181,6 +181,9 @@ Sales catalog lines and inventory adjustments change this table. Purchase bills 
 | `customerId` | FK → Customer | Restrict (no cascade) |
 | `invoiceDate` | DateTime | Default now |
 | `transport` / `vehicleNo` | String? | Print |
+| `isTrading` | Boolean | Pipe trading (bought and resold) |
+| `isRawMaterialTrading` | Boolean | Raw material resold by kg; never together with `isTrading` |
+| `rawMaterialCostPerKg` | Decimal(14,2)? | Purchase ₹/kg before GST, raw-material trading only; drives its dashboard profit |
 | `totalAmount` | Decimal(14,2) | Inclusive of GST |
 | `deletedAt` | DateTime? | Soft delete; indexed |
 | `createdAt` / `updatedAt` | DateTime | |
@@ -478,6 +481,7 @@ Code (not DB lookup tables):
 | `20260924120000_sales_invoice_trading` | `SalesInvoice.isTrading` |
 | `20260924140000_purchase_trading_running_cost` | `PurchaseBillKind` + `TRADING`, `RUNNING_COST` |
 | `20260928120000_running_cost_override` | `RunningCostOverride` |
+| `20261008120000_sales_raw_material_trading` | `SalesInvoice.isRawMaterialTrading`, `rawMaterialCostPerKg` |
 
 ---
 

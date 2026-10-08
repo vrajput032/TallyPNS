@@ -258,7 +258,11 @@ export function DashboardPage() {
       </RevealCard>
 
       <RevealCard className="min-w-0">
-        <TradingPnlCard data={data?.trading} isLoading={isLoading} />
+        <TradingPnlCard variant="goods" data={data?.trading} isLoading={isLoading} />
+      </RevealCard>
+
+      <RevealCard className="min-w-0">
+        <TradingPnlCard variant="raw-material" data={data?.rawMaterialTrading} isLoading={isLoading} />
       </RevealCard>
 
       <div className="grid min-w-0 gap-2 sm:gap-3">

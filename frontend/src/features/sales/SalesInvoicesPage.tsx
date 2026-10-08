@@ -72,7 +72,7 @@ import {
   paymentTileInk,
   type PaymentTileTone,
 } from "@/features/payments/paymentTile";
-import { TradingBadge } from "./TradingBadge";
+import { SaleTypeBadge } from "./TradingBadge";
 import { formatInr } from "@/lib/formatInr";
 import { canDelete, isAdmin } from "@/lib/permissions";
 import { apiErrorMessage } from "@/lib/apiError";
@@ -190,7 +190,7 @@ const columns: ColumnDef<SalesInvoice>[] = [
     cell: ({ row }) => (
       <span className="inline-flex items-center gap-2">
         {row.original.invoiceNo}
-        {row.original.isTrading ? <TradingBadge /> : null}
+        <SaleTypeBadge invoice={row.original} />
       </span>
     ),
   },
@@ -299,7 +299,7 @@ function MobileInvoiceCards({
                     {invoice.invoiceNo}
                   </p>
                   <div className="flex shrink-0 items-center gap-1.5">
-                    {invoice.isTrading ? <TradingBadge /> : null}
+                    <SaleTypeBadge invoice={invoice} />
                     <span
                       className={cn(
                         "rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide",

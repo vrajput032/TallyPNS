@@ -1,7 +1,7 @@
 import { daysUntilDue, type SalesInvoice } from "./types";
 
 export type SalesStatusFilter = "all" | "unpaid" | "PENDING" | "PARTIAL" | "PAID";
-export type SalesTypeFilter = "all" | "factory" | "trading";
+export type SalesTypeFilter = "all" | "factory" | "trading" | "raw-material";
 export type SalesDueFilter = "all" | "overdue" | "week";
 
 export type SalesFilters = {
@@ -29,9 +29,10 @@ export const STATUS_FILTER_OPTIONS: { value: SalesStatusFilter; label: string }[
 ];
 
 export const TYPE_FILTER_OPTIONS: { value: SalesTypeFilter; label: string }[] = [
-  { value: "all", label: "Factory + trading" },
+  { value: "all", label: "All types" },
   { value: "factory", label: "Factory only" },
   { value: "trading", label: "Trading only" },
+  { value: "raw-material", label: "Raw material trading only" },
 ];
 
 export const DUE_FILTER_OPTIONS: { value: SalesDueFilter; label: string }[] = [
@@ -104,9 +105,11 @@ function matchesType(invoice: SalesInvoice, type: SalesTypeFilter): boolean {
     case "all":
       return true;
     case "factory":
-      return !invoice.isTrading;
+      return !invoice.isTrading && !invoice.isRawMaterialTrading;
     case "trading":
       return invoice.isTrading;
+    case "raw-material":
+      return invoice.isRawMaterialTrading;
     default: {
       const _exhaustive: never = type;
       return _exhaustive;

@@ -78,6 +78,8 @@ async function salesValues(): Promise<SheetValues> {
     "lineAmount",
     "isTrading",
     "commissionAmount",
+    "isRawMaterialTrading",
+    "rawMaterialCostPerKg",
   ];
 
   const rows: SheetValues = [];
@@ -95,7 +97,12 @@ async function salesValues(): Promise<SheetValues> {
       s.balanceAmount,
       s.paymentStatus,
     ];
-    const invoiceTail = [s.isTrading ? "yes" : "no", Number(s.commissionAmount)];
+    const invoiceTail = [
+      s.isTrading ? "yes" : "no",
+      Number(s.commissionAmount),
+      s.isRawMaterialTrading ? "yes" : "no",
+      optNumber(s.rawMaterialCostPerKg),
+    ];
 
     if (s.items.length === 0) {
       rows.push([...invoiceCols, "", "", "", "", "", "", "", "", "", ...invoiceTail]);

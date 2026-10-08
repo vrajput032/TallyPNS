@@ -72,6 +72,9 @@ export type MonthPnlInput = {
   otherSalesTaxable: number;
   rmTaxable: number;
   rmKg: number;
+  /** Raw material resold on raw-material trading invoices: not processed, so no scrap or yield. */
+  rmResoldKg?: number;
+  rmResoldSalesTaxable?: number;
   piecesSold: number;
   unsizedPieces: number;
   piecesSoldBySize: PiecesSoldRow[];
@@ -196,7 +199,8 @@ export function businessMonthsThrough(now = new Date()): { year: number; month: 
 
 export function buildMonthPnl(input: MonthPnlInput): MonthPnl {
   const scrapRatePerKg = SCRAP_RATE_PER_KG;
-  const scrapKg = scrapKgFromRmKg(input.rmKg);
+  const factoryKg = Math.max(input.rmKg - (input.rmResoldKg ?? 0), 0);
+  const scrapKg = scrapKgFromRmKg(factoryKg);
   const scrapIncome = round2(scrapKg * scrapRatePerKg);
   const thekedar = round2(input.piecesSold * THEKEDAR_PER_PIECE);
   const rent = MONTHLY_RENT;
@@ -215,6 +219,7 @@ export function buildMonthPnl(input: MonthPnlInput): MonthPnl {
   const income: PnlLine[] = [
     { id: "pipe-sales", label: "Pipe sales", amount: pipeSales },
     { id: "other-sales", label: "Other invoiced sales", amount: otherSales },
+    { id: "raw-material-resold", label: "Raw material resold", amount: round2(input.rmResoldSalesTaxable ?? 0) },
     {
       id: "scrap",
       label: `Scrap / wastage (${SCRAP_PERCENT_OF_RM}% of RM · ₹${SCRAP_RATE_PER_KG}/kg)`,
@@ -248,7 +253,7 @@ export function buildMonthPnl(input: MonthPnlInput): MonthPnl {
     month: input.month,
     monthLabel: input.monthLabel,
     scrapRatePerKg,
-    rmKg: round2(input.rmKg),
+    rmKg: round2(factoryKg),
     scrapKg,
     piecesSold: round2(input.piecesSold),
     unsizedPieces: round2(input.unsizedPieces),
@@ -256,7 +261,7 @@ export function buildMonthPnl(input: MonthPnlInput): MonthPnl {
       sizeMm: row.sizeMm,
       quantity: round2(row.quantity),
     })),
-    yieldHint: yieldFromKg(input.rmKg),
+    yieldHint: yieldFromKg(factoryKg),
     income,
     costs,
     expenseEntries,

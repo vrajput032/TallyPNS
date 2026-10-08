@@ -81,6 +81,49 @@ function summarizeTotals(totals: TradingTotals) {
   };
 }
 
+type PnlEntry = { date: Date; total: number; beforeGst: number };
+
+function buildTradingPnl(sales: PnlEntry[], purchases: PnlEntry[]) {
+  const months = new Map<string, { key: string; label: string; totals: TradingTotals }>();
+  for (const { year, month } of businessMonthsThrough()) {
+    const key = monthKey(year, month);
+    months.set(key, { key, label: shortMonthLabel(year, month), totals: emptyTotals() });
+  }
+
+  function bucket(date: Date): TradingTotals {
+    const year = date.getUTCFullYear();
+    const month = date.getUTCMonth() + 1;
+    const key = monthKey(year, month);
+    const existing = months.get(key);
+    if (existing) return existing.totals;
+    const created = { key, label: shortMonthLabel(year, month), totals: emptyTotals() };
+    months.set(key, created);
+    return created.totals;
+  }
+
+  const overall = emptyTotals();
+  for (const entry of sales) {
+    const month = bucket(entry.date);
+    overall.sales += entry.total;
+    overall.salesBeforeGst += entry.beforeGst;
+    month.sales += entry.total;
+    month.salesBeforeGst += entry.beforeGst;
+  }
+  for (const entry of purchases) {
+    const month = bucket(entry.date);
+    overall.purchases += entry.total;
+    overall.purchasesBeforeGst += entry.beforeGst;
+    month.purchases += entry.total;
+    month.purchasesBeforeGst += entry.beforeGst;
+  }
+
+  const monthRows: TradingPnlMonth[] = [...months.values()]
+    .map(({ key, label, totals }) => ({ key, label, ...summarizeTotals(totals) }))
+    .sort((a, b) => (a.key < b.key ? 1 : a.key > b.key ? -1 : 0));
+
+  return { ...summarizeTotals(overall), months: monthRows };
+}
+
 /** Trading = goods bought and resold as-is. Sold − bought − GST payable = profit. */
 async function getTradingPnl() {
   const [invoices, bills] = await Promise.all([
@@ -102,57 +145,67 @@ async function getTradingPnl() {
     }),
   ]);
 
-  const months = new Map<string, { key: string; label: string; totals: TradingTotals }>();
-  for (const { year, month } of businessMonthsThrough()) {
-    const key = monthKey(year, month);
-    months.set(key, { key, label: shortMonthLabel(year, month), totals: emptyTotals() });
-  }
-
-  function bucket(date: Date): TradingTotals {
-    const year = date.getUTCFullYear();
-    const month = date.getUTCMonth() + 1;
-    const key = monthKey(year, month);
-    const existing = months.get(key);
-    if (existing) return existing.totals;
-    const created = { key, label: shortMonthLabel(year, month), totals: emptyTotals() };
-    months.set(key, created);
-    return created.totals;
-  }
-
-  const overall = emptyTotals();
-  for (const invoice of invoices) {
-    const total = Number(invoice.totalAmount) || 0;
-    const beforeGst = taxableTotal(invoice.items);
-    const month = bucket(invoice.invoiceDate);
-    overall.sales += total;
-    overall.salesBeforeGst += beforeGst;
-    month.sales += total;
-    month.salesBeforeGst += beforeGst;
-  }
-  for (const bill of bills) {
-    const total = Number(bill.totalAmount) || 0;
-    const beforeGst = taxableTotal(bill.items);
-    const month = bucket(bill.billDate);
-    overall.purchases += total;
-    overall.purchasesBeforeGst += beforeGst;
-    month.purchases += total;
-    month.purchasesBeforeGst += beforeGst;
-  }
-
-  const monthRows: TradingPnlMonth[] = [...months.values()]
-    .map(({ key, label, totals }) => ({ key, label, ...summarizeTotals(totals) }))
-    .sort((a, b) => (a.key < b.key ? 1 : a.key > b.key ? -1 : 0));
-
   return {
-    ...summarizeTotals(overall),
+    ...buildTradingPnl(
+      invoices.map((invoice) => ({
+        date: invoice.invoiceDate,
+        total: Number(invoice.totalAmount) || 0,
+        beforeGst: taxableTotal(invoice.items),
+      })),
+      bills.map((bill) => ({
+        date: bill.billDate,
+        total: Number(bill.totalAmount) || 0,
+        beforeGst: taxableTotal(bill.items),
+      }))
+    ),
     invoiceCount: invoices.length,
     billCount: bills.length,
-    months: monthRows,
+  };
+}
+
+/** Raw material resold by kg; cost is the ₹/kg saved on each invoice, plus the same GST as the sale line. */
+async function getRawMaterialTradingPnl() {
+  const invoices = await prisma.salesInvoice.findMany({
+    where: { ...activeOnly, isRawMaterialTrading: true },
+    select: {
+      invoiceDate: true,
+      totalAmount: true,
+      rawMaterialCostPerKg: true,
+      items: { select: { quantity: true, rate: true, gstRate: true } },
+    },
+  });
+
+  let kg = 0;
+  const sales: PnlEntry[] = [];
+  const purchases: PnlEntry[] = [];
+  for (const invoice of invoices) {
+    const costPerKg = Number(invoice.rawMaterialCostPerKg) || 0;
+    let costBeforeGst = 0;
+    let costWithGst = 0;
+    for (const item of invoice.items) {
+      const qty = Number(item.quantity) || 0;
+      const base = qty * costPerKg;
+      kg += qty;
+      costBeforeGst += base;
+      costWithGst += base + (base * (Number(item.gstRate) || 0)) / 100;
+    }
+    sales.push({
+      date: invoice.invoiceDate,
+      total: Number(invoice.totalAmount) || 0,
+      beforeGst: taxableTotal(invoice.items),
+    });
+    purchases.push({ date: invoice.invoiceDate, total: costWithGst, beforeGst: costBeforeGst });
+  }
+
+  return {
+    ...buildTradingPnl(sales, purchases),
+    kg: round2(kg),
+    invoiceCount: invoices.length,
   };
 }
 
 export async function getDashboardSummary() {
-  const [customerCount, productCount, products, salesAgg, tradingAgg, receiptsAgg, sizeStocks, trading, indusPo] = await Promise.all([
+  const [customerCount, productCount, products, salesAgg, tradingAgg, receiptsAgg, sizeStocks, trading, rawMaterialTrading, indusPo] = await Promise.all([
     prisma.customer.count(),
     prisma.product.count(),
     prisma.product.findMany({ select: { price: true, currentStock: true } }),
@@ -172,6 +225,7 @@ export async function getDashboardSummary() {
       select: { sizeMm: true, quantity: true },
     }),
     getTradingPnl(),
+    getRawMaterialTradingPnl(),
     getIndusPoProgress(),
   ]);
 
@@ -222,10 +276,11 @@ export async function getDashboardSummary() {
     stockBySize,
     lowStockCount,
     totalSales,
-    pnsSales: totalSales - tradingSales,
+    pnsSales: totalSales - tradingSales - rawMaterialTrading.sales,
     tradingSales,
     tradingInvoiceCount: tradingAgg._count,
     trading,
+    rawMaterialTrading,
     indusPo,
     totalReceived: Number(receiptsAgg._sum.amount ?? 0),
     rawMaterial: {

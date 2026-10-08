@@ -18,6 +18,7 @@ import {
 type InvoiceRow = {
   invoiceDate: Date;
   isTrading: boolean;
+  isRawMaterialTrading: boolean;
   commissionAmount: unknown;
   items: {
     productId: string | null;
@@ -42,6 +43,14 @@ function emptySizeRows(): { sizeMm: number; quantity: number }[] {
 }
 
 function addInvoiceToAgg(agg: MonthPnlInput, invoice: InvoiceRow) {
+  if (invoice.isRawMaterialTrading) {
+    for (const item of invoice.items) {
+      const qty = Number(item.quantity) || 0;
+      agg.rmResoldKg = (agg.rmResoldKg ?? 0) + qty;
+      agg.rmResoldSalesTaxable = (agg.rmResoldSalesTaxable ?? 0) + qty * (Number(item.rate) || 0);
+    }
+    return;
+  }
   if (!invoice.isTrading) {
     agg.commission = (agg.commission ?? 0) + (Number(invoice.commissionAmount) || 0);
   }
@@ -92,6 +101,7 @@ async function loadVouchers(from: Date, toExclusive: Date): Promise<{
       select: {
         invoiceDate: true,
         isTrading: true,
+        isRawMaterialTrading: true,
         commissionAmount: true,
         items: { select: { productId: true, sizeMm: true, quantity: true, rate: true } },
       },

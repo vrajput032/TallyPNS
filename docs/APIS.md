@@ -177,6 +177,8 @@ All require auth.
 
 `lowStockCount` = products with `currentStock ≤ 10`. `stockBySize` always includes 95, 110, 90, 55, 85, 70, 82.
 
+`rawMaterialTrading` = `{ sales, purchases, gst, profit, kg, invoiceCount, months[] }` for invoices with `isRawMaterialTrading`. `purchases` is kg × each invoice's `rawMaterialCostPerKg` plus the line's GST; `profit` = sales before GST − purchases before GST. `pnsSales` excludes both trading types.
+
 ### `GET /dashboard/sales/monthly`
 
 From July 2026 through the current month:
@@ -305,6 +307,7 @@ One invoice including relations and payment summary. Soft-deleted → 404 unless
 - Each line needs **either** `productId` **or** `description`
 - Catalog `sizeMm` must be 95, 110, 90, 55, 85, 70, or 82
 - Creates stock OUT for catalog lines
+- Optional sale type: `isTrading` (pipe trading) or `isRawMaterialTrading` (raw material resold by kg), not both. `isRawMaterialTrading: true` requires `rawMaterialCostPerKg` (purchase ₹/kg before GST, > 0). Both trading types save commission as 0.
 
 `201`. Duplicate `invoiceNo` → `409`.
 

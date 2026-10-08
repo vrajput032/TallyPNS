@@ -13,7 +13,7 @@ Default workbook: [Tally](https://docs.google.com/spreadsheets/d/1JodzZIfLaQktBO
 
 | Tab | Contents |
 |-----|----------|
-| Sales | Invoice header + line items in one row (incl. paid/balance/`PENDING`\|`PARTIAL`\|`PAID`, trading flag, commission) |
+| Sales | Invoice header + line items in one row (incl. paid/balance/`PENDING`\|`PARTIAL`\|`PAID`, trading flag, commission, raw-material trading flag and ₹/kg cost) |
 | sales receipts | Customer receipts against invoices |
 | Purchase | Active purchase bills (incl. paid/balance/status) |
 | purchase items | Purchase bill lines |

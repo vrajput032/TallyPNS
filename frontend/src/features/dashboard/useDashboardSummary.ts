@@ -29,6 +29,17 @@ export interface TradingPnlSummary {
   months: TradingPnlMonth[];
 }
 
+/** Raw material resold by kg; "purchases" is kg × the ₹/kg saved on each invoice, plus GST. */
+export interface RawMaterialTradingPnlSummary {
+  sales: number;
+  purchases: number;
+  gst: number;
+  profit: number;
+  kg: number;
+  invoiceCount: number;
+  months: TradingPnlMonth[];
+}
+
 export interface IndusPoLineProgress {
   sizeMm: number;
   description: string;
@@ -66,6 +77,7 @@ export interface DashboardSummary {
   tradingSales: number;
   tradingInvoiceCount: number;
   trading?: TradingPnlSummary;
+  rawMaterialTrading?: RawMaterialTradingPnlSummary;
   indusPo?: IndusPoSummary;
   totalReceived: number;
   rawMaterial?: RawMaterialSummary;

@@ -25,6 +25,9 @@ export interface SalesInvoice {
   transport: string | null;
   vehicleNo: string | null;
   isTrading: boolean;
+  isRawMaterialTrading: boolean;
+  /** Purchase ₹/kg before GST (raw-material trading only) */
+  rawMaterialCostPerKg: string | null;
   totalAmount: string;
   /** Commission earned by the customer on this bill (not printed) */
   commissionAmount: string;
@@ -63,6 +66,8 @@ export interface SalesInvoiceInput {
   transport?: string | null;
   vehicleNo?: string | null;
   isTrading?: boolean;
+  isRawMaterialTrading?: boolean;
+  rawMaterialCostPerKg?: number | null;
   /** Omit to use the customer's commission rate */
   commissionAmount?: number;
   items: SalesInvoiceItemInput[];

@@ -29,6 +29,8 @@ import {
 import { calcInvoiceCommission, formatCommissionRate } from "@/features/commission/commission";
 import { useCustomers } from "@/features/customers/useCustomers";
 import { useProducts } from "@/features/products/useProducts";
+import type { RawMaterialBill } from "@/features/raw-material/types";
+import { useRawMaterialBills } from "@/features/raw-material/useRawMaterial";
 import {
   useCreateSalesInvoice,
   useNextInvoiceNo,
@@ -37,6 +39,7 @@ import {
 } from "./useSales";
 import { formatInr } from "@/lib/formatInr";
 import { apiErrorMessage } from "@/lib/apiError";
+import { cn } from "@/lib/utils";
 
 const lineItemSchema = z
   .object({
@@ -70,14 +73,57 @@ const lineItemSchema = z
     }
   });
 
-const invoiceFormSchema = z.object({
-  customerId: z.string().min(1, "Select a customer"),
-  invoiceNo: z.string().trim().max(60).optional(),
-  transport: z.string().trim().max(100).optional(),
-  vehicleNo: z.string().trim().max(40).optional(),
-  isTrading: z.boolean(),
-  items: z.array(lineItemSchema).min(1, "Add at least one item"),
-});
+const SALE_TYPES = ["FACTORY", "TRADING", "RAW_MATERIAL"] as const;
+type SaleType = (typeof SALE_TYPES)[number];
+
+const SALE_TYPE_OPTIONS: { value: SaleType; label: string; hint: string }[] = [
+  { value: "FACTORY", label: "Factory", hint: "Pipes made in the factory." },
+  {
+    value: "TRADING",
+    label: "Trading",
+    hint: "Goods bought and resold, not manufactured. Counted in the dashboard Trading total.",
+  },
+  {
+    value: "RAW_MATERIAL",
+    label: "Raw material trading",
+    hint: "Steel tube from raw-material bills resold by kg. Profit on the dashboard uses the purchase ₹/kg.",
+  },
+];
+
+function saleTypeOf(invoice: { isTrading?: boolean; isRawMaterialTrading?: boolean }): SaleType {
+  if (invoice.isRawMaterialTrading) return "RAW_MATERIAL";
+  if (invoice.isTrading) return "TRADING";
+  return "FACTORY";
+}
+
+/** Before-GST ₹/kg of the newest raw-material bill. */
+function latestRawMaterialCostPerKg(bills: RawMaterialBill[] | undefined): number | null {
+  const latest = [...(bills ?? [])]
+    .filter((bill) => Number(bill.totalKg) > 0)
+    .sort((a, b) => b.billDate.localeCompare(a.billDate) || b.createdAt.localeCompare(a.createdAt))[0];
+  if (!latest) return null;
+  return Math.round((Number(latest.taxableAmount) / Number(latest.totalKg)) * 100) / 100;
+}
+
+const invoiceFormSchema = z
+  .object({
+    customerId: z.string().min(1, "Select a customer"),
+    invoiceNo: z.string().trim().max(60).optional(),
+    transport: z.string().trim().max(100).optional(),
+    vehicleNo: z.string().trim().max(40).optional(),
+    saleType: z.enum(SALE_TYPES),
+    rawMaterialCostPerKg: z.coerce.number().optional(),
+    items: z.array(lineItemSchema).min(1, "Add at least one item"),
+  })
+  .superRefine((values, ctx) => {
+    if (values.saleType === "RAW_MATERIAL" && !((values.rawMaterialCostPerKg ?? 0) > 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Enter the purchase cost per kg",
+        path: ["rawMaterialCostPerKg"],
+      });
+    }
+  });
 
 type InvoiceFormValues = z.infer<typeof invoiceFormSchema>;
 
@@ -105,12 +151,20 @@ const emptyManualItem = {
   gstRate: 18,
 };
 
+const rawMaterialItem = {
+  ...emptyManualItem,
+  description: "STEEL TUBE CDW",
+  hsn: "73069090",
+  unit: "KG",
+};
+
 export function SalesInvoiceFormPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isEditing = !!id;
   const { data: customers } = useCustomers();
   const { data: products } = useProducts();
+  const { data: rawMaterialBills } = useRawMaterialBills();
   const { data: nextInvoiceNo } = useNextInvoiceNo();
   const { data: existingInvoice, isLoading: isLoadingInvoice } = useSalesInvoice(
     isEditing ? id : undefined
@@ -129,7 +183,8 @@ export function SalesInvoiceFormPage() {
       invoiceNo: "",
       transport: "REGULAR",
       vehicleNo: "",
-      isTrading: false,
+      saleType: "FACTORY",
+      rawMaterialCostPerKg: undefined,
       items: [{ ...emptyProductItem }],
     },
   });
@@ -147,7 +202,11 @@ export function SalesInvoiceFormPage() {
       invoiceNo: existingInvoice.invoiceNo,
       transport: existingInvoice.transport ?? "",
       vehicleNo: existingInvoice.vehicleNo ?? "",
-      isTrading: existingInvoice.isTrading ?? false,
+      saleType: saleTypeOf(existingInvoice),
+      rawMaterialCostPerKg:
+        existingInvoice.rawMaterialCostPerKg != null
+          ? Number(existingInvoice.rawMaterialCostPerKg)
+          : undefined,
       items: existingInvoice.items.map((item) => ({
         isManual: !item.productId,
         productId: item.productId ?? "",
@@ -175,7 +234,9 @@ export function SalesInvoiceFormPage() {
   }, 0);
 
   const selectedCustomer = customers?.find((customer) => customer.id === form.watch("customerId"));
-  const isTrading = form.watch("isTrading");
+  const saleType = form.watch("saleType");
+  const isTrading = saleType !== "FACTORY";
+  const suggestedCostPerKg = latestRawMaterialCostPerKg(rawMaterialBills);
   const autoCommission = calcInvoiceCommission(
     selectedCustomer?.commissionType ?? null,
     selectedCustomer?.commissionRate ?? null,
@@ -200,13 +261,27 @@ export function SalesInvoiceFormPage() {
     }
   }
 
+  function handleSaleTypeChange(next: SaleType) {
+    form.setValue("saleType", next, { shouldDirty: true });
+    if (next !== "RAW_MATERIAL") return;
+    if (!form.getValues("rawMaterialCostPerKg") && suggestedCostPerKg != null) {
+      form.setValue("rawMaterialCostPerKg", suggestedCostPerKg);
+    }
+    const current = form.getValues("items");
+    const untouched = current.length === 1 && !current[0].productId && !current[0].description?.trim();
+    if (untouched) form.setValue("items", [{ ...rawMaterialItem }]);
+  }
+
   function buildPayload(values: InvoiceFormValues) {
+    const isRawMaterialTrading = values.saleType === "RAW_MATERIAL";
     return {
       customerId: values.customerId,
       invoiceNo: values.invoiceNo,
       transport: values.transport,
       vehicleNo: values.vehicleNo,
-      isTrading: values.isTrading,
+      isTrading: values.saleType === "TRADING",
+      isRawMaterialTrading,
+      rawMaterialCostPerKg: isRawMaterialTrading ? values.rawMaterialCostPerKg : null,
       commissionAmount,
       items: values.items.map((item) => {
         if (item.isManual) {
@@ -366,31 +441,60 @@ export function SalesInvoiceFormPage() {
               />
               <FormField
                 control={form.control}
-                name="isTrading"
+                name="saleType"
                 render={({ field }) => (
                   <FormItem className="sm:col-span-2">
-                    <FormLabel className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 font-normal">
-                      <FormControl>
-                        <input
-                          type="checkbox"
-                          className="mt-0.5 size-4 accent-primary"
-                          checked={field.value}
-                          onChange={(event) => field.onChange(event.target.checked)}
-                          onBlur={field.onBlur}
-                          ref={field.ref}
-                        />
-                      </FormControl>
-                      <span className="grid gap-0.5">
-                        <span className="font-medium">Trading invoice</span>
-                        <span className="text-sm text-muted-foreground">
-                          Goods bought and resold, not manufactured. Shown with a Trading label
-                          and counted in the dashboard Trading total.
-                        </span>
-                      </span>
-                    </FormLabel>
+                    <FormLabel>Sale type</FormLabel>
+                    <div role="radiogroup" className="grid gap-2 sm:grid-cols-3">
+                      {SALE_TYPE_OPTIONS.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          role="radio"
+                          aria-checked={field.value === option.value}
+                          onClick={() => handleSaleTypeChange(option.value)}
+                          className={cn(
+                            "grid gap-0.5 rounded-lg border p-3 text-left transition-colors",
+                            field.value === option.value
+                              ? "border-primary bg-primary/5 ring-1 ring-primary"
+                              : "hover:bg-muted/50"
+                          )}
+                        >
+                          <span className="text-sm font-medium">{option.label}</span>
+                          <span className="text-xs text-muted-foreground">{option.hint}</span>
+                        </button>
+                      ))}
+                    </div>
                   </FormItem>
                 )}
               />
+              {saleType === "RAW_MATERIAL" ? (
+                <FormField
+                  control={form.control}
+                  name="rawMaterialCostPerKg"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Purchase cost ₹/kg (before GST)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          step="0.01"
+                          {...field}
+                          value={field.value ?? ""}
+                        />
+                      </FormControl>
+                      <p className="text-xs text-muted-foreground">
+                        {suggestedCostPerKg != null
+                          ? `Latest raw-material bill: ₹${formatInr(suggestedCostPerKg)}/kg. Not printed on the invoice.`
+                          : "Not printed on the invoice."}
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : null}
             </CardContent>
           </Card>
 

@@ -20,8 +20,24 @@ function lineAmount(quantity: number, rate: number, gstRate: number) {
   return base + (base * gstRate) / 100;
 }
 
-async function resolveCommission(data: z.infer<typeof createSalesInvoiceSchema>, isTrading: boolean) {
-  if (isTrading) return 0;
+type SaleKind = { isTrading: boolean; isRawMaterialTrading: boolean; rawMaterialCostPerKg: number | null };
+
+function resolveSaleKind(
+  data: z.infer<typeof createSalesInvoiceSchema>,
+  existing?: { isTrading: boolean; isRawMaterialTrading: boolean; rawMaterialCostPerKg: unknown }
+): SaleKind {
+  const isRawMaterialTrading = data.isRawMaterialTrading ?? existing?.isRawMaterialTrading ?? false;
+  const isTrading = isRawMaterialTrading ? false : (data.isTrading ?? existing?.isTrading ?? false);
+  if (!isRawMaterialTrading) return { isTrading, isRawMaterialTrading, rawMaterialCostPerKg: null };
+  const cost = data.rawMaterialCostPerKg ?? (existing?.rawMaterialCostPerKg != null ? Number(existing.rawMaterialCostPerKg) : null);
+  if (cost == null || !(cost > 0)) {
+    throw new ApiError(400, "Enter the purchase cost per kg for raw material trading");
+  }
+  return { isTrading, isRawMaterialTrading, rawMaterialCostPerKg: round2(cost) };
+}
+
+async function resolveCommission(data: z.infer<typeof createSalesInvoiceSchema>, kind: SaleKind) {
+  if (kind.isTrading || kind.isRawMaterialTrading) return 0;
   if (data.commissionAmount != null) return round2(data.commissionAmount);
   const customer = await prisma.customer.findUnique({
     where: { id: data.customerId },
@@ -138,8 +154,8 @@ export async function createSalesInvoice(data: z.infer<typeof createSalesInvoice
   if (existing) {
     throw new ApiError(409, `Invoice number ${invoiceNo} is already in use`);
   }
-  const isTrading = data.isTrading ?? false;
-  const commissionAmount = await resolveCommission(data, isTrading);
+  const kind = resolveSaleKind(data);
+  const commissionAmount = await resolveCommission(data, kind);
 
   const invoice = await prisma.$transaction(async (tx) => {
     const created = await tx.salesInvoice.create({
@@ -149,7 +165,7 @@ export async function createSalesInvoice(data: z.infer<typeof createSalesInvoice
         invoiceDate: data.invoiceDate ?? new Date(),
         transport: data.transport?.trim() || null,
         vehicleNo: data.vehicleNo?.trim() || null,
-        isTrading,
+        ...kind,
         totalAmount,
         commissionAmount,
         items: {
@@ -282,8 +298,8 @@ export async function updateSalesInvoice(
     (sum, item) => sum + lineAmount(item.quantity, item.rate, item.gstRate),
     0
   );
-  const isTrading = data.isTrading ?? existingInvoice.isTrading;
-  const commissionAmount = await resolveCommission(data, isTrading);
+  const kind = resolveSaleKind(data, existingInvoice);
+  const commissionAmount = await resolveCommission(data, kind);
 
   const updated = await prisma.$transaction(async (tx) => {
     for (const item of existingInvoice.items) {
@@ -312,7 +328,7 @@ export async function updateSalesInvoice(
         invoiceDate: data.invoiceDate ?? existingInvoice.invoiceDate,
         transport: data.transport?.trim() || null,
         vehicleNo: data.vehicleNo?.trim() || null,
-        isTrading,
+        ...kind,
         totalAmount,
         commissionAmount,
         items: {

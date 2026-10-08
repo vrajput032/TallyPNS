@@ -20,7 +20,7 @@ import {
 import { formatInr } from "@/lib/formatInr";
 import { cn } from "@/lib/utils";
 import { DashboardWash } from "./DashboardWash";
-import type { TradingPnlSummary } from "./useDashboardSummary";
+import type { RawMaterialTradingPnlSummary, TradingPnlSummary } from "./useDashboardSummary";
 
 function profitTone(value: number) {
   if (value > 0) return "text-green-600 dark:text-green-400";
@@ -33,13 +33,70 @@ function signedInr(value: number, withSymbol = true) {
   return `${sign}${withSymbol ? "₹" : ""}${formatInr(Math.abs(value), 0)}`;
 }
 
-interface TradingPnlCardProps {
-  data?: TradingPnlSummary;
-  isLoading: boolean;
+type TradingPnlCardProps =
+  | { variant: "goods"; data?: TradingPnlSummary; isLoading: boolean }
+  | { variant: "raw-material"; data?: RawMaterialTradingPnlSummary; isLoading: boolean };
+
+type CardCopy = {
+  title: string;
+  description: string;
+  soldNote: string;
+  boughtNote: string;
+  emptyHint: string;
+  warning: string | null;
+  links: { label: string; to: string }[];
+};
+
+function plural(count: number, word: string) {
+  return `${count} ${word}${count === 1 ? "" : "s"}`;
 }
 
-export function TradingPnlCard({ data, isLoading }: TradingPnlCardProps) {
+function cardCopy(props: TradingPnlCardProps): CardCopy {
+  switch (props.variant) {
+    case "goods": {
+      const data = props.data;
+      return {
+        title: "Trading Profit & Loss",
+        description: "Goods bought and resold · sold − bought − GST = profit",
+        soldNote: plural(data?.invoiceCount ?? 0, "invoice"),
+        boughtNote: plural(data?.billCount ?? 0, "bill"),
+        emptyHint: "Mark sales invoices as Trading and add Trading purchase bills to see profit here.",
+        warning:
+          data && data.invoiceCount > 0 && data.billCount === 0
+            ? "No Trading purchase bills yet, so all trading sales show as profit."
+            : null,
+        links: [
+          { label: "Sales", to: "/sales" },
+          { label: "Purchase", to: "/purchase" },
+        ],
+      };
+    }
+    case "raw-material": {
+      const data = props.data;
+      return {
+        title: "Raw Material Trading",
+        description: "Steel tube resold by kg · sold − bought − GST = profit",
+        soldNote: `${formatInr(data?.kg ?? 0, 0)} kg · ${plural(data?.invoiceCount ?? 0, "invoice")}`,
+        boughtNote: "At the ₹/kg on each invoice",
+        emptyHint: "Pick Raw material trading as the sale type on a sales invoice to see profit here.",
+        warning: null,
+        links: [
+          { label: "Sales", to: "/sales?type=raw-material" },
+          { label: "Raw material", to: "/raw-material" },
+        ],
+      };
+    }
+    default: {
+      const _exhaustive: never = props;
+      return _exhaustive;
+    }
+  }
+}
+
+export function TradingPnlCard(props: TradingPnlCardProps) {
+  const { data, isLoading } = props;
   const navigate = useNavigate();
+  const copy = cardCopy(props);
 
   const cardClass =
     "relative min-w-0 overflow-hidden border-border/40 bg-card/60 shadow-[0_4px_30px_rgba(0,0,0,0.04)] backdrop-blur-xl";
@@ -48,7 +105,7 @@ export function TradingPnlCard({ data, isLoading }: TradingPnlCardProps) {
     return (
       <Card className={cardClass}>
         <CardHeader>
-          <CardTitle className="text-base font-medium">Trading Profit &amp; Loss</CardTitle>
+          <CardTitle className="text-base font-medium">{copy.title}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3">
           <Skeleton className="h-20 w-full rounded-xl" />
@@ -59,7 +116,7 @@ export function TradingPnlCard({ data, isLoading }: TradingPnlCardProps) {
 
   if (!data) return null;
 
-  const hasActivity = data.invoiceCount > 0 || data.billCount > 0;
+  const hasActivity = data.invoiceCount > 0 || data.purchases !== 0;
   const activeMonths = data.months.filter((row) => row.sales !== 0 || row.purchases !== 0);
 
   return (
@@ -67,17 +124,20 @@ export function TradingPnlCard({ data, isLoading }: TradingPnlCardProps) {
       <DashboardWash tint={data.profit < 0 ? "rose" : "mint"} />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent dark:via-white/20" />
       <CardHeader>
-        <CardTitle className="text-base font-medium">Trading Profit &amp; Loss</CardTitle>
-        <CardDescription className="text-xs">
-          Goods bought and resold · sold − bought − GST = profit
-        </CardDescription>
+        <CardTitle className="text-base font-medium">{copy.title}</CardTitle>
+        <CardDescription className="text-xs">{copy.description}</CardDescription>
         <CardAction className="flex gap-1">
-          <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate("/sales")}>
-            Sales
-          </Button>
-          <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate("/purchase")}>
-            Purchase
-          </Button>
+          {copy.links.map((link) => (
+            <Button
+              key={link.to}
+              variant="ghost"
+              size="sm"
+              className="text-xs"
+              onClick={() => navigate(link.to)}
+            >
+              {link.label}
+            </Button>
+          ))}
         </CardAction>
       </CardHeader>
       <CardContent className="grid gap-4">
@@ -89,9 +149,7 @@ export function TradingPnlCard({ data, isLoading }: TradingPnlCardProps) {
             <p className="mt-1 truncate text-sm font-bold tabular-nums sm:text-xl">
               ₹{formatInr(data.sales, 0)}
             </p>
-            <p className="truncate text-[10px] text-muted-foreground sm:text-xs">
-              {data.invoiceCount} invoice{data.invoiceCount === 1 ? "" : "s"}
-            </p>
+            <p className="truncate text-[10px] text-muted-foreground sm:text-xs">{copy.soldNote}</p>
           </div>
           <div className="relative min-w-0 overflow-hidden rounded-xl bg-gradient-to-br from-orange-200/40 via-muted/50 to-amber-100/25 px-2 py-3 text-center dark:from-orange-500/15 dark:via-muted/40 dark:to-transparent sm:px-3">
             <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-[11px]">
@@ -100,9 +158,7 @@ export function TradingPnlCard({ data, isLoading }: TradingPnlCardProps) {
             <p className="mt-1 truncate text-sm font-bold tabular-nums sm:text-xl">
               ₹{formatInr(data.purchases, 0)}
             </p>
-            <p className="truncate text-[10px] text-muted-foreground sm:text-xs">
-              {data.billCount} bill{data.billCount === 1 ? "" : "s"}
-            </p>
+            <p className="truncate text-[10px] text-muted-foreground sm:text-xs">{copy.boughtNote}</p>
           </div>
           <div className="relative min-w-0 overflow-hidden rounded-xl bg-gradient-to-br from-violet-200/40 via-muted/50 to-fuchsia-100/25 px-2 py-3 text-center dark:from-violet-500/15 dark:via-muted/40 dark:to-transparent sm:px-3">
             <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-[11px]">
@@ -139,13 +195,9 @@ export function TradingPnlCard({ data, isLoading }: TradingPnlCardProps) {
         </div>
 
         {!hasActivity ? (
-          <p className="text-sm text-muted-foreground">
-            Mark sales invoices as Trading and add Trading purchase bills to see profit here.
-          </p>
-        ) : data.billCount === 0 ? (
-          <p className="text-xs text-amber-600 dark:text-amber-400">
-            No Trading purchase bills yet, so all trading sales show as profit.
-          </p>
+          <p className="text-sm text-muted-foreground">{copy.emptyHint}</p>
+        ) : copy.warning ? (
+          <p className="text-xs text-amber-600 dark:text-amber-400">{copy.warning}</p>
         ) : null}
 
         {activeMonths.length > 0 ? (

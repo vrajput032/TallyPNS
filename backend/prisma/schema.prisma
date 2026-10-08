@@ -196,25 +196,33 @@ model ProductSizeStock {
 }
 
 model SalesInvoice {
-  id               String    @id @default(cuid())
-  invoiceNo        String    @unique
-  customerId       String
-  customer         Customer  @relation(fields: [customerId], references: [id])
-  invoiceDate      DateTime  @default(now())
-  transport        String?
-  vehicleNo        String?
+  id                   String    @id @default(cuid())
+  invoiceNo            String    @unique
+  customerId           String
+  customer             Customer  @relation(fields: [customerId], references: [id])
+  invoiceDate          DateTime  @default(now())
+  transport            String?
+  vehicleNo            String?
   /**
    * Traded goods (bought and resold) rather than manufactured
    */
-  isTrading        Boolean   @default(false)
-  totalAmount      Decimal   @default(0) @db.Decimal(14, 2)
+  isTrading            Boolean   @default(false)
+  /**
+   * Raw material (steel tube, sold by kg) bought on raw-material bills and resold
+   */
+  isRawMaterialTrading Boolean   @default(false)
+  /**
+   * Purchase cost ₹/kg before GST for raw-material trading; drives its dashboard profit
+   */
+  rawMaterialCostPerKg Decimal?  @db.Decimal(14, 2)
+  totalAmount          Decimal   @default(0) @db.Decimal(14, 2)
   /**
    * Commission earned by the customer on this bill (saved at create/edit; 0 for trading)
    */
-  commissionAmount Decimal   @default(0) @db.Decimal(14, 2)
-  deletedAt        DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  commissionAmount     Decimal   @default(0) @db.Decimal(14, 2)
+  deletedAt            DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   items    SalesInvoiceItem[]
   receipts PaymentReceipt[]

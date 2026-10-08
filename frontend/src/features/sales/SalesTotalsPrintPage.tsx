@@ -33,7 +33,7 @@ import {
   type SalesTotalsPeriod,
 } from "./salesMonthUtils";
 import { applySalesFilters, describeSalesFilters, parseSalesFilters } from "./salesFilters";
-import { TradingBadge } from "./TradingBadge";
+import { SaleTypeBadge } from "./TradingBadge";
 import { invoicePieces, type SalesInvoice } from "./types";
 import { useSalesInvoices } from "./useSales";
 
@@ -206,9 +206,9 @@ function SalesTotalsSheet({
             <tr key={invoice.id}>
               <td className={cn(sheetCell, "break-words")}>
                 {invoice.invoiceNo}
-                {invoice.isTrading ? (
+                {invoice.isTrading || invoice.isRawMaterialTrading ? (
                   <span className="mt-0.5 block w-fit rounded-sm border border-black px-1 text-[8px] font-semibold uppercase leading-[1.4] tracking-wide">
-                    Trading
+                    {invoice.isRawMaterialTrading ? "RM Trading" : "Trading"}
                   </span>
                 ) : null}
               </td>
@@ -425,7 +425,7 @@ function SalesTotalsScreenTable({
               <TableCell className="sticky left-0 z-10 bg-card font-medium">
                 <div className="flex flex-col items-start gap-1">
                   {invoice.invoiceNo}
-                  {invoice.isTrading ? <TradingBadge /> : null}
+                  <SaleTypeBadge invoice={invoice} />
                 </div>
               </TableCell>
               <TableCell>{formatSheetDate(invoice.invoiceDate)}</TableCell>
