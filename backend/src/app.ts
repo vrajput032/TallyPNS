@@ -34,7 +34,7 @@ app.use("/api", (_req, res, next) => {
 });
 
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", release: "raw-material-trading" });
+  res.json({ status: "ok", release: "direct-sales-chart" });
 });
 
 app.use("/api", apiRouter);

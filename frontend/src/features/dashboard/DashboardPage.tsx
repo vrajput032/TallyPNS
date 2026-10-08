@@ -2,6 +2,7 @@ import {
   ArrowLeftRight,
   CircleDollarSign,
   Factory,
+  Layers,
   Package,
   TrendingUp,
   Warehouse,
@@ -186,6 +187,7 @@ export function DashboardPage() {
   const totalSales = data?.totalSales ?? 0;
   const pnsSales = data?.pnsSales ?? 0;
   const tradingSales = data?.tradingSales ?? 0;
+  const rawMaterialSales = data?.rawMaterialTrading?.sales ?? 0;
   const totalReceived = data?.totalReceived ?? 0;
   const stockBySize = data?.stockBySize ?? PIPE_SIZES_MM.map((sizeMm) => ({ sizeMm, quantity: 0 }));
   const skipCountAnimation = data != null;
@@ -198,33 +200,7 @@ export function DashboardPage() {
   return (
     <div className="grid min-w-0 max-w-full gap-4 overflow-x-hidden sm:gap-5">
       <ParallaxHeader />
-      <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
-        <StatCard
-          label="Total Sales"
-          value={
-            <AnimatedCount
-              target={totalSales}
-              prefix="₹"
-              skipAnimation={skipCountAnimation}
-            />
-          }
-          icon={TrendingUp}
-          isLoading={isLoading}
-          tint="sky"
-        />
-        <StatCard
-          label="Payment Received"
-          value={
-            <AnimatedCount
-              target={totalReceived}
-              prefix="₹"
-              skipAnimation={skipCountAnimation}
-            />
-          }
-          icon={CircleDollarSign}
-          isLoading={isLoading}
-          tint="mint"
-        />
+      <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-5">
         <StatCard
           label="PNS Sales"
           value={
@@ -251,6 +227,47 @@ export function DashboardPage() {
           isLoading={isLoading}
           tint="teal"
         />
+        <StatCard
+          label="Raw material sales"
+          value={
+            <AnimatedCount
+              target={rawMaterialSales}
+              prefix="₹"
+              skipAnimation={skipCountAnimation}
+            />
+          }
+          icon={Layers}
+          isLoading={isLoading}
+          tint="gold"
+        />
+        <StatCard
+          label="Payment Received"
+          value={
+            <AnimatedCount
+              target={totalReceived}
+              prefix="₹"
+              skipAnimation={skipCountAnimation}
+            />
+          }
+          icon={CircleDollarSign}
+          isLoading={isLoading}
+          tint="mint"
+        />
+        <div className="col-span-2 min-w-0 lg:col-span-1">
+          <StatCard
+            label="Total Sales"
+            value={
+              <AnimatedCount
+                target={totalSales}
+                prefix="₹"
+                skipAnimation={skipCountAnimation}
+              />
+            }
+            icon={TrendingUp}
+            isLoading={isLoading}
+            tint="sky"
+          />
+        </div>
       </div>
 
       <RevealCard className="min-w-0">

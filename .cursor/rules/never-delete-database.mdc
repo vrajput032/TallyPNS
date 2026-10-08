@@ -11,11 +11,14 @@ The live database is Supabase (any host containing `supabase.com`). It holds the
 
 ## Agent testing uses the local database only
 
-When the agent tests, debugs, migrates, seeds, or tries unfinished code, use Docker Postgres from `docker-compose.yml` only:
+When the agent tests, debugs, migrates, seeds, or tries unfinished code, use the local test Postgres only:
 
 - Host `127.0.0.1`, port `5433`, database `tallypns`, user `postgres`, password `postgres`
-- Start it with `docker compose up -d db` from the repo root
+- Either Docker (`docker compose up -d db` from the repo root) or the Homebrew server on this Mac:
+  `/opt/homebrew/opt/postgresql@17/bin/pg_ctl -D ~/.tallypns-test-pg -o "-p 5433 -k /tmp" -l ~/.tallypns-test-pg/server.log start`
+- To refresh it with real data, restore a file from `backups/` into it with `pg_restore --no-owner --no-privileges` (local only, never `--clean` against Supabase)
 - Set `DATABASE_URL` and `DIRECT_URL` for that command only. Never point them at Supabase.
+- When running the backend against it, also blank `GOOGLE_SHEETS_SPREADSHEET_ID`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `SLACK_BOT_TOKEN` so test data never reaches the real Sheet, phones or Slack.
 
 Do not run tests or Prisma against the live database. The user enters real bills on both localhost and the live site, so both of those stay on Supabase.
 

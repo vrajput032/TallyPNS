@@ -77,7 +77,7 @@ function cardCopy(props: TradingPnlCardProps): CardCopy {
         title: "Raw Material Trading",
         description: "Steel tube resold by kg · sold − bought − GST = profit",
         soldNote: `${formatInr(data?.kg ?? 0, 0)} kg · ${plural(data?.invoiceCount ?? 0, "invoice")}`,
-        boughtNote: "At the ₹/kg on each invoice",
+        boughtNote: "At invoice ₹/kg",
         emptyHint: "Pick Raw material trading as the sale type on a sales invoice to see profit here.",
         warning: null,
         links: [

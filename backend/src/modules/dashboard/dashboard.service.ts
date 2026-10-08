@@ -292,7 +292,7 @@ export async function getDashboardSummary() {
   };
 }
 
-/** Aggregate sales totalAmount grouped by month from business start (Jul 2026). */
+/** Direct (factory) sales totalAmount by month from business start (Jul 2026); excludes both trading types. */
 export async function getMonthlySales() {
   const monthStarts = businessMonthStarts();
   if (monthStarts.length === 0) return [];
@@ -305,6 +305,8 @@ export async function getMonthlySales() {
   const invoices = await prisma.salesInvoice.findMany({
     where: {
       deletedAt: null,
+      isTrading: false,
+      isRawMaterialTrading: false,
       invoiceDate: {
         gte: startOfDay(monthStarts[0]),
         lt: startOfDay(nextMonth),

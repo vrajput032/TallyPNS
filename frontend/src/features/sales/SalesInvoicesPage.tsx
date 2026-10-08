@@ -63,7 +63,7 @@ import {
   parseMonthInput,
 } from "./salesMonthUtils";
 import { useDeleteSalesInvoice, useSalesInvoices } from "./useSales";
-import { daysUntilDue, invoicePieces, type SalesInvoice } from "./types";
+import { daysUntilDue, invoicePieces, invoiceQuantity, invoiceQuantityLabel, type SalesInvoice } from "./types";
 import { PaymentStatusBadge } from "@/features/payments/PaymentStatusBadge";
 import {
   dueAwareTileTone,
@@ -208,7 +208,7 @@ const columns: ColumnDef<SalesInvoice>[] = [
     id: "pieces",
     accessorFn: (invoice) => invoicePieces(invoice),
     header: ({ column }) => <SortableHeader label="Pieces" sorted={column.getIsSorted()} />,
-    cell: ({ row }) => invoicePieces(row.original).toLocaleString("en-IN"),
+    cell: ({ row }) => invoiceQuantityLabel(row.original),
   },
   {
     accessorKey: "totalAmount",
@@ -320,10 +320,10 @@ function MobileInvoiceCards({
               <div className="flex min-w-0 items-center gap-2">
                 <div className="flex flex-col items-center rounded-xl bg-white/45 px-3 py-1.5 backdrop-blur-md dark:bg-black/20">
                   <span className={cn("text-base font-bold leading-none tabular-nums", ink.title)}>
-                    {invoicePieces(invoice).toLocaleString("en-IN")}
+                    {invoiceQuantity(invoice).toLocaleString("en-IN")}
                   </span>
                   <span className={cn("mt-1 text-[10px] font-medium uppercase tracking-wider", ink.meta)}>
-                    Pcs
+                    {invoice.isRawMaterialTrading ? "Kg" : "Pcs"}
                   </span>
                 </div>
                 <div className="min-w-0">

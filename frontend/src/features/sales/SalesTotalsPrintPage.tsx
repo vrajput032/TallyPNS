@@ -34,7 +34,7 @@ import {
 } from "./salesMonthUtils";
 import { applySalesFilters, describeSalesFilters, parseSalesFilters } from "./salesFilters";
 import { SaleTypeBadge } from "./TradingBadge";
-import { invoicePieces, type SalesInvoice } from "./types";
+import { invoicePieces, invoiceQuantityLabel, type SalesInvoice } from "./types";
 import { useSalesInvoices } from "./useSales";
 
 type Totals = {
@@ -217,7 +217,7 @@ function SalesTotalsSheet({
               </td>
               <td className={cn(sheetCell, "break-words")}>{invoice.customer.name}</td>
               <td className={cn(sheetCell, "text-right tabular-nums")}>
-                {invoicePieces(invoice).toLocaleString("en-IN")}
+                {invoiceQuantityLabel(invoice)}
               </td>
               <td className={cn(sheetCell, "text-right tabular-nums")}>
                 {formatInr(invoiceTaxable(invoice))}
@@ -431,7 +431,7 @@ function SalesTotalsScreenTable({
               <TableCell>{formatSheetDate(invoice.invoiceDate)}</TableCell>
               <TableCell className="max-w-[10rem] truncate">{invoice.customer.name}</TableCell>
               <TableCell className="text-right tabular-nums">
-                {invoicePieces(invoice).toLocaleString("en-IN")}
+                {invoiceQuantityLabel(invoice)}
               </TableCell>
               <TableCell className="text-right tabular-nums">
                 {formatInr(invoiceTaxable(invoice))}

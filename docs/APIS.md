@@ -181,7 +181,7 @@ All require auth.
 
 ### `GET /dashboard/sales/monthly`
 
-From July 2026 through the current month:
+From July 2026 through the current month. Direct (factory) invoices only: excludes `isTrading` and `isRawMaterialTrading`.
 
 ```json
 [{ "month": "Jul 26", "total": 0 }]

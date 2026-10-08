@@ -90,8 +90,19 @@ export function salesItemUnit(item: SalesInvoiceItem) {
   return item.product?.unit ?? item.unit ?? "NOS";
 }
 
-export function invoicePieces(invoice: SalesInvoice) {
+export function invoiceQuantity(invoice: SalesInvoice) {
   return invoice.items.reduce((sum, item) => sum + Number(item.quantity), 0);
+}
+
+/** Raw-material trading lines are kg, so they add no pieces. */
+export function invoicePieces(invoice: SalesInvoice) {
+  return invoice.isRawMaterialTrading ? 0 : invoiceQuantity(invoice);
+}
+
+/** Pieces for normal invoices, "8,020 kg" for raw-material trading. */
+export function invoiceQuantityLabel(invoice: SalesInvoice) {
+  const quantity = invoiceQuantity(invoice).toLocaleString("en-IN");
+  return invoice.isRawMaterialTrading ? `${quantity} kg` : quantity;
 }
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
