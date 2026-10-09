@@ -1,6 +1,6 @@
 import { ArrowLeft, Bot, Check, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,7 @@ import {
   lineAmount,
   type InvoiceLineDraft,
 } from "./salesInvoicePayload";
+import { salesInvoicePath } from "./salesFilters";
 import { useCreateSalesInvoice, useNextInvoiceNo } from "./useSales";
 
 type ChatStep = "customer" | "catalogLine" | "manualLine" | "afterLine" | "review";
@@ -81,6 +82,7 @@ type SalesInvoiceChatSheetProps = {
 
 export function SalesInvoiceChatSheet({ open, onOpenChange }: SalesInvoiceChatSheetProps) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { data: customers } = useCustomers();
   const { data: products } = useProducts();
   const { data: nextInvoiceNo } = useNextInvoiceNo();
@@ -202,7 +204,7 @@ export function SalesInvoiceChatSheet({ open, onOpenChange }: SalesInvoiceChatSh
         onSuccess: (invoice) => {
           toast.success(`Invoice ${invoice.invoiceNo} created`);
           onOpenChange(false);
-          navigate(`/sales/${invoice.id}`);
+          navigate(salesInvoicePath(invoice.id, searchParams));
         },
         onError: (error: unknown) => {
           toast.error(apiErrorMessage(error, "Failed to create invoice"));

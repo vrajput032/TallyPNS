@@ -33,7 +33,7 @@ export function AppShell() {
   });
 
   return (
-    <div className="relative flex min-h-screen max-w-[100vw] overscroll-x-none">
+    <div className="app-shell relative flex min-h-screen max-w-[100vw] overscroll-x-none">
       <SectionDataSync />
       <PaymentRemindersBootstrap />
       {ENABLE_3D && <GlobalBackground />}

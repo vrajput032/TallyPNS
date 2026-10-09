@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { z } from "zod";
 import { ConfirmDeletePinDialog } from "@/components/ConfirmDeletePinDialog";
@@ -37,6 +37,7 @@ import {
   useSalesInvoice,
   useUpdateSalesInvoice,
 } from "./useSales";
+import { salesInvoicePath, salesListPath } from "./salesFilters";
 import { formatInr } from "@/lib/formatInr";
 import { apiErrorMessage } from "@/lib/apiError";
 import { cn } from "@/lib/utils";
@@ -161,6 +162,7 @@ const rawMaterialItem = {
 export function SalesInvoiceFormPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const isEditing = !!id;
   const { data: customers } = useCustomers();
   const { data: products } = useProducts();
@@ -323,7 +325,7 @@ export function SalesInvoiceFormPage() {
     createInvoice.mutate(buildPayload(values), {
       onSuccess: (invoice) => {
         toast.success(`Invoice ${invoice.invoiceNo} created`);
-        navigate(`/sales/${invoice.id}`);
+        navigate(salesInvoicePath(invoice.id, searchParams));
       },
       onError: (error: unknown) => {
         toast.error(apiErrorMessage(error, "Failed to create invoice"));
@@ -340,7 +342,7 @@ export function SalesInvoiceFormPage() {
           toast.success(`Invoice ${invoice.invoiceNo} updated`);
           setPinDialogOpen(false);
           setPendingValues(null);
-          navigate(`/sales/${invoice.id}`);
+          navigate(salesInvoicePath(invoice.id, searchParams));
         },
         onError: (error: unknown) => {
           toast.error(apiErrorMessage(error, "Failed to update invoice"));
@@ -357,7 +359,7 @@ export function SalesInvoiceFormPage() {
     <div className="grid gap-4">
       <PageHeader
         title={isEditing ? `Edit Invoice ${existingInvoice?.invoiceNo ?? ""}` : "New Sales Invoice"}
-        backTo={isEditing && id ? `/sales/${id}` : "/sales"}
+        backTo={isEditing && id ? salesInvoicePath(id, searchParams) : salesListPath(searchParams)}
         backLabel={isEditing ? "Back to Invoice" : "Back to Sales"}
       />
       <Form {...form}>
@@ -561,7 +563,9 @@ export function SalesInvoiceFormPage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate(isEditing && id ? `/sales/${id}` : "/sales")}
+              onClick={() =>
+                navigate(isEditing && id ? salesInvoicePath(id, searchParams) : salesListPath(searchParams))
+              }
             >
               Cancel
             </Button>

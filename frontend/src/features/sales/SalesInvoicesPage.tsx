@@ -18,6 +18,7 @@ import {
   MessageSquarePlus,
   Pencil,
   Plus,
+  Share2,
   SlidersHorizontal,
   Trash2,
 } from "lucide-react";
@@ -53,8 +54,14 @@ import {
   describeSalesFilters,
   invoiceCustomers,
   parseSalesFilters,
+  salesInvoiceEditPath,
+  salesInvoicePath,
+  salesListSearch,
+  salesListView,
   writeSalesFilters,
+  writeSalesListState,
   type SalesFilters,
+  type SalesListView,
 } from "./salesFilters";
 import {
   isInMonth,
@@ -62,6 +69,7 @@ import {
   monthLabel,
   parseMonthInput,
 } from "./salesMonthUtils";
+import { shareSalesInvoice } from "./shareSalesInvoice";
 import { useDeleteSalesInvoice, useSalesInvoices } from "./useSales";
 import { daysUntilDue, invoicePieces, invoiceQuantity, invoiceQuantityLabel, type SalesInvoice } from "./types";
 import { PaymentStatusBadge } from "@/features/payments/PaymentStatusBadge";
@@ -241,6 +249,8 @@ function MobileInvoiceCards({
   onView,
   onEdit,
   onDelete,
+  onShare,
+  sharingInvoiceId,
 }: {
   invoices: SalesInvoice[];
   isLoading: boolean;
@@ -248,6 +258,8 @@ function MobileInvoiceCards({
   onView: (invoice: SalesInvoice) => void;
   onEdit?: (invoice: SalesInvoice) => void;
   onDelete?: (invoice: SalesInvoice) => void;
+  onShare?: (invoice: SalesInvoice) => void;
+  sharingInvoiceId?: string | null;
 }) {
   if (isLoading) {
     return <CardListSkeleton cards={3} />;
@@ -337,6 +349,17 @@ function MobileInvoiceCards({
               </div>
 
               <div className="flex shrink-0 items-center" onClick={(e) => e.stopPropagation()}>
+                {onShare ? (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Share ${invoice.invoiceNo}`}
+                    disabled={sharingInvoiceId === invoice.id}
+                    onClick={() => onShare(invoice)}
+                  >
+                    <Share2 className="size-4" />
+                  </Button>
+                ) : null}
                 {onEdit && (invoice.receipts?.length ?? 0) === 0 && (
                   <Button variant="ghost" size="icon" onClick={() => onEdit(invoice)}>
                     <Pencil className="size-4" />
@@ -371,14 +394,15 @@ export function SalesInvoicesPage() {
   const deleteInvoice = useDeleteSalesInvoice();
   const [chatOpen, setChatOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<SalesInvoice | null>(null);
+  const [sharingInvoiceId, setSharingInvoiceId] = useState<string | null>(null);
   const [sorting, setSorting] = useState<SortingState>([{ id: "invoiceDate", desc: true }]);
   const now = new Date();
-  const [viewMode, setViewMode] = useState<"month" | "all">("month");
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
 
   const [searchParams, setSearchParams] = useSearchParams();
   const filters = useMemo(() => parseSalesFilters(searchParams), [searchParams]);
+  const viewMode = salesListView(searchParams);
   const activeFilters = activeSalesFilterCount(filters);
   const [filtersOpen, setFiltersOpen] = useState(activeFilters > 0);
   const customers = useMemo(() => invoiceCustomers(invoices ?? []), [invoices]);
@@ -387,8 +411,35 @@ export function SalesInvoicesPage() {
     customers.find((customer) => customer.id === filters.customerId)?.name
   );
 
+  function setViewMode(mode: SalesListView) {
+    const next = new URLSearchParams(searchParams);
+    if (mode === "all") next.set("view", "all");
+    else next.delete("view");
+    setSearchParams(next, { replace: true });
+  }
+
   function setFilters(next: SalesFilters) {
-    setSearchParams(writeSalesFilters(searchParams, next), { replace: true });
+    setSearchParams(writeSalesListState(searchParams, next, viewMode), { replace: true });
+  }
+
+  function openInvoice(id: string) {
+    navigate(salesInvoicePath(id, searchParams));
+  }
+
+  function openEdit(id: string) {
+    navigate(salesInvoiceEditPath(id, searchParams));
+  }
+
+  async function handleShareInvoice(invoice: SalesInvoice) {
+    setSharingInvoiceId(invoice.id);
+    try {
+      await shareSalesInvoice(invoice.invoiceNo, invoice);
+    } catch (error: unknown) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      toast.error("Could not share the bill");
+    } finally {
+      setSharingInvoiceId(null);
+    }
   }
 
   const filteredInvoices = useMemo(() => {
@@ -437,7 +488,6 @@ export function SalesInvoicesPage() {
     const date = new Date(year, month - 1 + delta, 1);
     setYear(date.getFullYear());
     setMonth(date.getMonth() + 1);
-    setViewMode("month");
   }
 
   function handleDelete(invoice: SalesInvoice) {
@@ -484,7 +534,7 @@ export function SalesInvoicesPage() {
               <MessageSquarePlus className="size-4" />
               Quick bill
             </Button>
-            <Button onClick={() => navigate("/sales/new")}>
+            <Button onClick={() => navigate(`/sales/new${salesListSearch(searchParams)}`)}>
               <Plus className="size-4" />
               New Invoice
             </Button>
@@ -720,8 +770,10 @@ export function SalesInvoicesPage() {
             invoices={visibleRows.map((row) => row.original)}
             isLoading={isLoading}
             emptyMessage={emptyMessage}
-            onView={(invoice) => navigate(`/sales/${invoice.id}`)}
-            onEdit={allowEdit ? (invoice) => navigate(`/sales/${invoice.id}/edit`) : undefined}
+            onView={(invoice) => openInvoice(invoice.id)}
+            onShare={handleShareInvoice}
+            sharingInvoiceId={sharingInvoiceId}
+            onEdit={allowEdit ? (invoice) => openEdit(invoice.id) : undefined}
             onDelete={allowDelete ? handleDelete : undefined}
           />
         </>
@@ -770,7 +822,7 @@ export function SalesInvoicesPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => navigate(`/sales/${row.original.id}`)}
+                        onClick={() => openInvoice(row.original.id)}
                       >
                         <Eye className="size-4" />
                       </Button>
@@ -778,7 +830,7 @@ export function SalesInvoicesPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => navigate(`/sales/${row.original.id}/edit`)}
+                          onClick={() => openEdit(row.original.id)}
                         >
                           <Pencil className="size-4" />
                         </Button>

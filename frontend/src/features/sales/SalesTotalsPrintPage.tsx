@@ -32,7 +32,13 @@ import {
   salesTotalsPrintFileName,
   type SalesTotalsPeriod,
 } from "./salesMonthUtils";
-import { applySalesFilters, describeSalesFilters, parseSalesFilters } from "./salesFilters";
+import {
+  applySalesFilters,
+  describeSalesFilters,
+  parseSalesFilters,
+  salesInvoicePath,
+  salesListPath,
+} from "./salesFilters";
 import { SaleTypeBadge } from "./TradingBadge";
 import { invoicePieces, invoiceQuantityLabel, type SalesInvoice } from "./types";
 import { useSalesInvoices } from "./useSales";
@@ -559,7 +565,7 @@ export function SalesTotalsPrintPage() {
       >
         {isCompactNav ? null : (
           <div>
-            <Button variant="ghost" size="sm" nativeButton={false} render={<Link to="/sales" />}>
+            <Button variant="ghost" size="sm" nativeButton={false} render={<Link to={salesListPath(searchParams)} />}>
               <ArrowLeft className="size-4" />
               Back to Sales
             </Button>
@@ -608,7 +614,7 @@ export function SalesTotalsPrintPage() {
                 rows={rows}
                 totals={totals}
                 edgeToEdge
-                onOpen={(id) => navigate(`/sales/${id}`)}
+                onOpen={(id) => navigate(salesInvoicePath(id, searchParams))}
               />
               <p className="text-xs text-muted-foreground">
                 Swipe sideways for all columns. Tap a row to open the bill.

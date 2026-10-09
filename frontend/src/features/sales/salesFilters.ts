@@ -72,6 +72,65 @@ export function writeSalesFilters(search: URLSearchParams, filters: SalesFilters
   return next;
 }
 
+const SALES_LIST_KEYS = ["q", "customer", "status", "type", "due"] as const;
+
+export type SalesListView = "month" | "all";
+
+export function salesListView(search: URLSearchParams): SalesListView {
+  return search.get("view") === "all" ? "all" : "month";
+}
+
+/** Filter params plus Month/All, for `/sales` and for pages that return there. */
+export function salesListSearch(search: URLSearchParams): string {
+  const next = new URLSearchParams();
+  for (const key of SALES_LIST_KEYS) {
+    const value = search.get(key);
+    if (value) next.set(key, value);
+  }
+  if (search.get("view") === "all") next.set("view", "all");
+  const query = next.toString();
+  return query ? `?${query}` : "";
+}
+
+export function salesListPath(search: URLSearchParams): string {
+  return `/sales${salesListSearch(search)}`;
+}
+
+export function salesInvoicePath(id: string, search: URLSearchParams): string {
+  return `/sales/${id}${salesListSearch(search)}`;
+}
+
+export function salesInvoiceEditPath(id: string, search: URLSearchParams): string {
+  return `/sales/${id}/edit${salesListSearch(search)}`;
+}
+
+/** Mobile back from a sales page keeps the list filters carried on this URL. */
+export function salesBackTarget(
+  backTo: string | undefined,
+  pathname: string,
+  search: string
+): string | undefined {
+  if (!backTo || !pathname.startsWith("/sales")) return backTo;
+  const listSearch = salesListSearch(new URLSearchParams(search));
+  if (!listSearch) return backTo;
+  const path = backTo.split("?")[0] ?? backTo;
+  if (path === "/sales" || /^\/sales\/[^/]+$/.test(path)) return `${path}${listSearch}`;
+  return backTo;
+}
+
+/** Keeps list filters and switches to All while any filter is on. */
+export function writeSalesListState(
+  search: URLSearchParams,
+  filters: SalesFilters,
+  view: SalesListView
+): URLSearchParams {
+  const next = writeSalesFilters(search, filters);
+  const listView = activeSalesFilterCount(filters) > 0 ? "all" : view;
+  if (listView === "all") next.set("view", "all");
+  else next.delete("view");
+  return next;
+}
+
 export function activeSalesFilterCount(filters: SalesFilters): number {
   return [
     filters.q.trim() !== "",

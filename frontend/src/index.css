@@ -209,18 +209,23 @@
   }
 
   html,
-  body {
+  body,
+  #root {
     background: white !important;
     margin: 0 !important;
     padding: 0 !important;
+    width: auto !important;
+    max-width: none !important;
     overflow: visible !important;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
 
+  .app-shell,
   main {
     overflow: visible !important;
     max-width: none !important;
+    width: auto !important;
   }
 
   /* Hide app chrome / toasts — bill only */
@@ -231,6 +236,8 @@
 
   .invoice-print-scroll {
     overflow: visible !important;
+    width: auto !important;
+    max-width: none !important;
     margin: 0 !important;
     padding: 0 !important;
   }
@@ -242,12 +249,22 @@
   }
 
   .invoice-sheet {
-    width: auto !important;
+    box-sizing: border-box !important;
+    /* 100% of the page, not a fixed 210mm, so a phone print does not clip the right edge */
+    width: calc(100% - 10mm) !important;
+    max-width: calc(100% - 10mm) !important;
+    min-width: 0 !important;
     min-height: 0 !important;
     height: auto !important;
-    max-height: 285mm !important;
-    margin: 6mm 6mm !important;
+    max-height: none !important;
+    margin: 5mm auto !important;
     box-shadow: none !important;
+  }
+
+  .invoice-sheet table {
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: fixed !important;
   }
 
   .invoice-items-wrap {

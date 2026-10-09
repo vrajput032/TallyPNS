@@ -72,7 +72,7 @@ export function SalesInvoicesMonthPrintPage() {
   const label = monthLabel(period.year, period.month);
 
   return (
-    <div className="grid gap-4">
+    <div className="grid min-w-0 gap-4">
       <div className="print:hidden flex flex-wrap items-center justify-between gap-3">
         <div>
           <Button variant="ghost" size="sm" nativeButton={false} render={<Link to="/sales" />}>

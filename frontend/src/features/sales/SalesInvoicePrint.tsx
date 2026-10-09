@@ -112,8 +112,11 @@ export function SalesInvoicePrint({ invoice }: { invoice: SalesInvoice }) {
   const bankConfigured = Boolean(COMPANY.bank.accountNo || COMPANY.bank.ifsc);
 
   return (
-    <div className="invoice-print-scroll -mx-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:overflow-visible sm:px-0 sm:pb-0 print:mx-0 print:overflow-visible print:px-0 print:pb-0">
-      <div className="invoice-sheet mx-auto flex w-[210mm] min-h-0 flex-col border-[2.5px] border-black bg-white text-black print:mx-auto print:w-[190mm]">
+    <div className="invoice-print-scroll w-full min-w-0 max-w-full">
+      <div
+        data-invoice-sheet
+        className="invoice-sheet mx-auto box-border flex w-full min-w-0 max-w-[210mm] flex-col break-words border-[2.5px] border-black bg-white text-black"
+      >
         {/* Header */}
         <div className="invoice-header border-b-2 border-black">
           <div className="border-b border-black px-3 py-1.5 text-center">

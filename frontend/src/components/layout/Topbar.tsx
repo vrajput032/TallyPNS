@@ -16,8 +16,10 @@ import { clearLocalAppCache } from "@/lib/clearLocalAppCache";
 import { useAuthStore } from "@/store/authStore";
 import { ChangePasswordDialog } from "@/features/auth/ChangePasswordDialog";
 import { PaymentRemindersMenu } from "@/features/notifications/PaymentRemindersMenu";
+import { salesBackTarget } from "@/features/sales/salesFilters";
 import { AccountMenu } from "./AccountMenu";
 import { getMobileHeaderMeta } from "./mobileHeader";
+import { useMobileHeaderStore } from "./mobileHeaderStore";
 import { SidebarNav } from "./SidebarNav";
 
 type TopbarProps = {
@@ -34,9 +36,13 @@ export function Topbar({
   onRightOpenChange,
 }: TopbarProps) {
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const isCompactNav = useIsCompactNav();
-  const { title, backTo, backLabel } = getMobileHeaderMeta(pathname);
+  const { title: routeTitle, backTo: routeBackTo, backLabel } = getMobileHeaderMeta(pathname);
+  const headerOverride = useMobileHeaderStore((state) => state.override);
+  const title = headerOverride?.title ?? routeTitle;
+  const subtitle = headerOverride?.subtitle;
+  const backTo = salesBackTarget(routeBackTo, pathname, search);
   const logout = useAuthStore((state) => state.logout);
   const [passwordOpen, setPasswordOpen] = useState(false);
 
@@ -132,9 +138,12 @@ export function Topbar({
         {/* Mobile: centered title with balanced left/right controls */}
         <div className="relative flex w-full items-center md:hidden">
           <div className="z-10 shrink-0">{leftNavButton}</div>
-          <h1 className="pointer-events-none absolute inset-x-0 truncate px-14 text-center text-base font-semibold">
-            {title}
-          </h1>
+          <div className="pointer-events-none absolute inset-x-0 flex flex-col items-center justify-center px-14 text-center leading-tight">
+            <h1 className="w-full truncate text-base font-semibold">{title}</h1>
+            {subtitle ? (
+              <p className="w-full truncate text-xs font-normal text-muted-foreground">{subtitle}</p>
+            ) : null}
+          </div>
           <div className="z-10 ml-auto shrink-0">{accountButton}</div>
         </div>
 

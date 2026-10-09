@@ -1,6 +1,8 @@
 import { Banknote, Pencil, Printer, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useMobileHeaderStore } from "@/components/layout/mobileHeaderStore";
+import { useIsCompactNav } from "@/hooks/useIsMobile";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ConfirmDeletePinDialog } from "@/components/ConfirmDeletePinDialog";
@@ -18,7 +20,10 @@ import {
 import { PaymentStatusBadge } from "@/features/payments/PaymentStatusBadge";
 import { RecordReceiptDialog } from "@/features/payments/RecordReceiptDialog";
 import { useDeleteReceipt } from "@/features/payments/usePayments";
+import { MobileSalesInvoiceDetail } from "./MobileSalesInvoiceDetail";
+import { salesInvoiceEditPath, salesListPath } from "./salesFilters";
 import { SalesInvoicePrint } from "./SalesInvoicePrint";
+import { shareSalesInvoice } from "./shareSalesInvoice";
 import { SaleTypeBadge } from "./TradingBadge";
 import { useDeleteSalesInvoice, useSalesInvoice } from "./useSales";
 import { formatInr } from "@/lib/formatInr";
@@ -29,14 +34,30 @@ import { useAuthStore } from "@/store/authStore";
 export function SalesInvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const backToSales = salesListPath(searchParams);
   const { data: invoice, isLoading } = useSalesInvoice(id);
   const deleteInvoice = useDeleteSalesInvoice();
   const deleteReceipt = useDeleteReceipt();
   const user = useAuthStore((state) => state.user);
   const allowDelete = canDelete(user);
   const allowEdit = isAdmin(user);
+  const isCompactNav = useIsCompactNav();
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [sharing, setSharing] = useState(false);
+
+  const setMobileHeaderOverride = useMobileHeaderStore((state) => state.setOverride);
+  const clearMobileHeaderOverride = useMobileHeaderStore((state) => state.clearOverride);
+
+  useEffect(() => {
+    if (!isCompactNav || !invoice) return;
+    setMobileHeaderOverride({
+      title: invoice.invoiceNo,
+      subtitle: invoice.customer.name,
+    });
+    return () => clearMobileHeaderOverride();
+  }, [clearMobileHeaderOverride, invoice, isCompactNav, setMobileHeaderOverride]);
 
   useEffect(() => {
     if (!invoice) return;
@@ -71,7 +92,7 @@ export function SalesInvoiceDetailPage() {
         onSuccess: () => {
           toast.success(`Invoice ${invoice.invoiceNo} moved to recycle bin`);
           setDeleteOpen(false);
-          navigate("/sales");
+          navigate(backToSales);
         },
         onError: (error: unknown) => {
           toast.error(apiErrorMessage(error, "Failed to delete invoice"));
@@ -87,12 +108,47 @@ export function SalesInvoiceDetailPage() {
     document.title = "PNS ERP";
   }
 
+  async function handleShare() {
+    if (!invoice) return;
+    setSharing(true);
+    try {
+      await shareSalesInvoice(invoice.invoiceNo, invoice);
+    } catch (error: unknown) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      toast.error("Could not share the bill");
+    } finally {
+      setSharing(false);
+    }
+  }
+
   return (
-    <div className="grid gap-4">
+    <div className="grid min-w-0 gap-4">
+      {isCompactNav ? (
+        <MobileSalesInvoiceDetail
+          invoice={invoice}
+          allowEdit={allowEdit}
+          allowDelete={allowDelete}
+          sharing={sharing}
+          deleteReceiptPending={deleteReceipt.isPending}
+          onPrint={handlePrint}
+          onShare={() => void handleShare()}
+          onEdit={() => navigate(salesInvoiceEditPath(invoice.id, searchParams))}
+          onDelete={() => setDeleteOpen(true)}
+          onRecordReceipt={() => setReceiptOpen(true)}
+          onDeleteReceipt={(receiptNo, receiptId) => {
+            if (!confirm(`Delete receipt ${receiptNo}?`)) return;
+            deleteReceipt.mutate(receiptId, {
+              onSuccess: () => toast.success("Receipt deleted"),
+              onError: () => toast.error("Failed to delete receipt"),
+            });
+          }}
+        />
+      ) : (
+        <>
       <PageHeader
         className="print:hidden"
         title={invoice.invoiceNo}
-        backTo="/sales"
+        backTo={backToSales}
         backLabel="Back to Sales"
         actions={
           <>
@@ -107,7 +163,7 @@ export function SalesInvoiceDetailPage() {
               Print
             </Button>
             {allowEdit && (invoice.receipts?.length ?? 0) === 0 && (
-              <Button variant="outline" onClick={() => navigate(`/sales/${invoice.id}/edit`)}>
+              <Button variant="outline" onClick={() => navigate(salesInvoiceEditPath(invoice.id, searchParams))}>
                 <Pencil className="size-4" />
                 Edit
               </Button>
@@ -229,8 +285,12 @@ export function SalesInvoiceDetailPage() {
           </Table>
         </div>
       )}
+        </>
+      )}
 
-      <SalesInvoicePrint invoice={invoice} />
+      <div className={isCompactNav ? "hidden print:block" : undefined}>
+        <SalesInvoicePrint invoice={invoice} />
+      </div>
 
       <RecordReceiptDialog
         open={receiptOpen}
