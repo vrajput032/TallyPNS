@@ -11,8 +11,10 @@
 - **Background loading indicator:** When the overlay is not showing, the header tells the user that data is loading in the background. If the server may be asleep and a request takes over 1.2 seconds, it shows an amber "Server waking up · loading data in background". If a refresh of cached data (GET) takes over 0.7 seconds, it shows "Loading data in background". On mobile, the message replaces the subtitle under the centred title, with shorter wording for the waking state. On desktop, it appears as a pill on the left of the header. It is hidden while a screen is showing its first-load skeleton.
 - **Section loaders:** Each feature reads from its Redux slice. Skeleton/loader shows only when that slice has **no cached data yet**. Revisiting a section — or reopening the app/PWA, since slices are cached in the browser — shows cached data immediately; `SectionDataSync` silently refetches in the background on navigation. A request interrupted by a reload is reset on startup so the screen fetches again.
 - **Redux cache:** One slice per feature area (`customers`, `sales`, `dashboard`, etc.). Hooks in `frontend/src/features/*/use*.ts` dispatch slice thunks; `{ silent: true }` refetches skip loading state when data already exists.
-- Sidebar navigation (desktop) and mobile-friendly lists, cards, and edge swipe.
+- Sidebar navigation (desktop) and mobile-friendly lists, cards, and edge swipe. On desktop the sidebar stays fixed at full screen height while the page scrolls; it scrolls on its own only if the menu is taller than the screen.
 - Theme selector (primary colour). Optional 3D background via `VITE_ENABLE_3D`.
+- **Page background:** a gradient sits behind every page and does not move on scroll. The default **Royal** theme uses white to light grey; other themes blend their own card, background and primary colours. It never prints.
+- **Night theme** turns on dark mode (the `.dark` class), so components with dark-mode styles switch to light text on dark backgrounds.
 - Company header on prints comes from `frontend/src/config/company.ts` (PNS ENTERPRISES, GSTIN `06ABJFP8733H1ZW`, HDFC bank details).
 
 ## Screens
