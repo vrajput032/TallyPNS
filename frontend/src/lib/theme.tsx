@@ -22,13 +22,23 @@ export interface Theme {
   tokens: Record<string, string>;
   // Preview swatches (4 colors for the UI picker)
   swatches: string[];
+  // Page background; themes without one get THEMED_PAGE_GRADIENT
+  pageGradient?: string;
+  // Turns on the `.dark` class so Tailwind `dark:` styles apply
+  dark?: boolean;
 }
+
+const NEUTRAL_PAGE_GRADIENT = "linear-gradient(160deg, #ffffff 0%, #f4f4f5 50%, #e4e4e7 100%)";
+
+const THEMED_PAGE_GRADIENT =
+  "linear-gradient(160deg, var(--card) 0%, var(--background) 45%, color-mix(in srgb, var(--primary) 16%, var(--background)) 100%)";
 
 export const THEMES: Theme[] = [
   {
     name: "royal",
     label: "Royal",
     swatches: ["#1d4ed8", "#8aa8e8", "#faf9f6", "#1a1a1a"],
+    pageGradient: NEUTRAL_PAGE_GRADIENT,
     tokens: {
       "--primary": "#1d4ed8",
       "--primary-foreground": "#ffffff",
@@ -98,6 +108,7 @@ export const THEMES: Theme[] = [
     name: "night",
     label: "Night",
     swatches: ["#7dd3fc", "#1e1b2e", "#151b2b", "#0f1115"],
+    dark: true,
     tokens: {
       "--primary": "#7dd3fc",
       "--primary-foreground": "#0f1115",
@@ -355,6 +366,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     for (const [key, value] of Object.entries(theme.tokens)) {
       root.style.setProperty(key, value);
     }
+    root.style.setProperty("--page-gradient", theme.pageGradient ?? THEMED_PAGE_GRADIENT);
+    root.classList.toggle("dark", Boolean(theme.dark));
+    root.style.colorScheme = theme.dark ? "dark" : "light";
     localStorage.setItem(STORAGE_KEY, themeName);
     window.dispatchEvent(new Event("themechange"));
   }, [theme, themeName]);

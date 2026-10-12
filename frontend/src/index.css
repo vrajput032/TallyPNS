@@ -52,6 +52,7 @@
   --muted-foreground: #64748b;
   --border: #e2e8f0;
   --ring: #1d4ed8;
+  --page-gradient: linear-gradient(160deg, #ffffff 0%, #f4f4f5 50%, #e4e4e7 100%);
 }
 
 .dark {
@@ -161,6 +162,15 @@
     overflow-x: clip;
     max-width: 100%;
   }
+  /* A fixed layer instead of background-attachment: fixed, which iOS Safari ignores. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: var(--page-gradient);
+  }
 }
 
 @layer utilities {
@@ -219,6 +229,10 @@
     overflow: visible !important;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
+  }
+
+  body::before {
+    display: none !important;
   }
 
   .app-shell,

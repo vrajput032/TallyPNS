@@ -103,14 +103,14 @@ function DueStatus({ invoice }: { invoice: SalesInvoice }) {
 
   if (days < 0) {
     return (
-      <span className="font-medium text-red-600">{Math.abs(days)} days overdue</span>
+      <span className="font-medium text-red-600 dark:text-red-400">{Math.abs(days)} days overdue</span>
     );
   }
   if (days === 0) {
-    return <span className="font-medium text-amber-600">Due today</span>;
+    return <span className="font-medium text-amber-600 dark:text-amber-400">Due today</span>;
   }
   return (
-    <span className={days <= 7 ? "font-medium text-amber-600" : "text-muted-foreground"}>
+    <span className={days <= 7 ? "font-medium text-amber-600 dark:text-amber-400" : "text-muted-foreground"}>
       {days} days left
     </span>
   );

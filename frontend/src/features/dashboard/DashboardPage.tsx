@@ -274,14 +274,6 @@ export function DashboardPage() {
         <IndusPoCard data={data?.indusPo} stockBySize={stockBySize} isLoading={isLoading} />
       </RevealCard>
 
-      <RevealCard className="min-w-0">
-        <TradingPnlCard variant="goods" data={data?.trading} isLoading={isLoading} />
-      </RevealCard>
-
-      <RevealCard className="min-w-0">
-        <TradingPnlCard variant="raw-material" data={data?.rawMaterialTrading} isLoading={isLoading} />
-      </RevealCard>
-
       <div className="grid min-w-0 gap-2 sm:gap-3">
         <div className="min-w-0 px-0.5">
           <h2 className="text-base font-semibold tracking-tight sm:text-lg">Current pieces</h2>
@@ -297,12 +289,20 @@ export function DashboardPage() {
               value={<AnimatedCount target={Math.round(row.quantity)} skipAnimation={skipCountAnimation} />}
               icon={Package}
               isLoading={isLoading}
-              valueClassName={row.quantity < LOW_STOCK_QTY ? "text-red-600" : undefined}
+              valueClassName={row.quantity < LOW_STOCK_QTY ? "text-red-600 dark:text-red-400" : undefined}
               tint={row.quantity < LOW_STOCK_QTY ? "rose" : STOCK_TINT[row.sizeMm] ?? "sky"}
             />
           ))}
         </div>
       </div>
+
+      <RevealCard className="min-w-0">
+        <TradingPnlCard variant="goods" data={data?.trading} isLoading={isLoading} />
+      </RevealCard>
+
+      <RevealCard className="min-w-0">
+        <TradingPnlCard variant="raw-material" data={data?.rawMaterialTrading} isLoading={isLoading} />
+      </RevealCard>
 
       <RevealCard className="min-w-0">
         <RawMaterialPaymentCard data={data?.rawMaterial} isLoading={isLoading} />

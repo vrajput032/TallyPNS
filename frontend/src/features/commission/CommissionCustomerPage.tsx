@@ -169,7 +169,7 @@ export function CommissionCustomerPage() {
             <CardContent
               className={cn(
                 "truncate text-sm font-semibold tabular-nums sm:text-xl",
-                stat.label === "Due" && stat.value > 0 && "text-red-600"
+                stat.label === "Due" && stat.value > 0 && "text-red-600 dark:text-red-400"
               )}
             >
               ₹{formatInr(stat.value)}

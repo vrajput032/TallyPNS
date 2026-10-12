@@ -93,7 +93,7 @@ export function SupplierBillUploadCard({ onFile, onParsed }: SupplierBillUploadC
         {result ? (
           <div className="grid gap-2 rounded-md border bg-muted/40 p-3 text-sm">
             <p className="flex items-center gap-2 font-medium">
-              <CheckCircle2 className="size-4 text-emerald-600" />
+              <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
               Read {result.items.length} item{result.items.length === 1 ? "" : "s"} from{" "}
               {result.sourceFileName}
             </p>

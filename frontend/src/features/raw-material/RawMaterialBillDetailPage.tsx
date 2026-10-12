@@ -115,7 +115,7 @@ export function RawMaterialBillDetailPage() {
             <CardTitle className="text-sm text-muted-foreground">Still to send</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2">
-            <p className="truncate text-base font-semibold tabular-nums text-red-600 sm:text-xl">
+            <p className="truncate text-base font-semibold tabular-nums text-red-600 sm:text-xl dark:text-red-400">
               ₹{formatInr(bill.balanceAmount)}
             </p>
             {bill.paymentStatus !== "PAID" ? (

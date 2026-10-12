@@ -65,7 +65,7 @@ function SizeStockCard({
         {isLow && <Badge variant="destructive">Low</Badge>}
       </div>
       <div>
-        <p className={`text-2xl font-bold leading-tight ${isLow ? "text-red-600" : ""}`}>
+        <p className={`text-2xl font-bold leading-tight ${isLow ? "text-red-600 dark:text-red-400" : ""}`}>
           {qty.toLocaleString("en-IN")}
         </p>
         <p className="text-xs text-muted-foreground">{unit} in stock</p>
@@ -248,7 +248,7 @@ function HistoryView({
             </div>
             <p
               className={`shrink-0 text-base font-semibold ${
-                m.type === "OUT" ? "text-red-600" : "text-emerald-600"
+                m.type === "OUT" ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
               }`}
             >
               {sign}

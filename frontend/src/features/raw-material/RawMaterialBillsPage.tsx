@@ -264,7 +264,7 @@ export function RawMaterialBillsPage() {
           <CardHeader className="pb-1">
             <CardTitle className="text-sm text-muted-foreground">Still to send</CardTitle>
           </CardHeader>
-          <CardContent className="text-xl font-semibold tabular-nums text-red-600">
+          <CardContent className="text-xl font-semibold tabular-nums text-red-600 dark:text-red-400">
             ₹{formatInr(totals.balanceAmount)}
           </CardContent>
         </Card>

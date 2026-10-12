@@ -158,7 +158,7 @@ export function CommissionPage() {
                   <TableCell
                     className={cn(
                       "text-right font-semibold tabular-nums",
-                      row.due > 0 ? "text-red-600" : "text-muted-foreground"
+                      row.due > 0 ? "text-red-600 dark:text-red-400" : "text-muted-foreground"
                     )}
                   >
                     {formatInr(row.due)}
