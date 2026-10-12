@@ -8,6 +8,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { BackgroundSyncIndicator } from "@/components/loading/BackgroundSyncIndicator";
+import { useBackgroundSync } from "@/hooks/useBackgroundSync";
 import { useIsCompactNav } from "@/hooks/useIsMobile";
 import { ENABLE_3D } from "@/lib/featureFlags";
 import { cn } from "@/lib/utils";
@@ -43,6 +45,7 @@ export function Topbar({
   const title = headerOverride?.title ?? routeTitle;
   const subtitle = headerOverride?.subtitle;
   const backTo = salesBackTarget(routeBackTo, pathname, search);
+  const backgroundSync = useBackgroundSync();
   const logout = useAuthStore((state) => state.logout);
   const [passwordOpen, setPasswordOpen] = useState(false);
 
@@ -138,16 +141,22 @@ export function Topbar({
         {/* Mobile: centered title with balanced left/right controls */}
         <div className="relative flex w-full items-center md:hidden">
           <div className="z-10 shrink-0">{leftNavButton}</div>
-          <div className="pointer-events-none absolute inset-x-0 flex flex-col items-center justify-center px-14 text-center leading-tight">
+          <div className="pointer-events-none absolute inset-x-0 flex flex-col items-center justify-center px-11 text-center leading-tight">
             <h1 className="w-full truncate text-base font-semibold">{title}</h1>
-            {subtitle ? (
+            {backgroundSync !== "idle" ? (
+              <BackgroundSyncIndicator state={backgroundSync} variant="inline" className="max-w-full justify-center" />
+            ) : subtitle ? (
               <p className="w-full truncate text-xs font-normal text-muted-foreground">{subtitle}</p>
             ) : null}
           </div>
           <div className="z-10 ml-auto shrink-0">{accountButton}</div>
         </div>
 
-        <div className="hidden md:block" />
+        <div className="hidden min-w-0 md:block">
+          {backgroundSync !== "idle" ? (
+            <BackgroundSyncIndicator state={backgroundSync} variant="pill" />
+          ) : null}
+        </div>
         {ENABLE_3D ? (
           <TiltCard maxTilt={4} scale={1.01} speed={250} className="hidden md:block">
             {desktopActions}

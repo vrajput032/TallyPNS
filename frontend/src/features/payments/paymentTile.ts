@@ -24,11 +24,11 @@ export function paymentTileClass(status: PaymentTileTone) {
     case "PARTIAL":
       return "border-amber-400/50 bg-gradient-to-br from-amber-300 via-yellow-200 to-orange-100 shadow-[0_10px_28px_-10px_rgba(245,158,11,0.5)] dark:border-amber-500/35 dark:from-amber-600/80 dark:via-yellow-800/50 dark:to-orange-950/70 dark:shadow-[0_10px_28px_-10px_rgba(245,158,11,0.3)]";
     case "PENDING":
-      return "border-rose-300/50 bg-gradient-to-br from-rose-300 via-pink-200 to-rose-100 shadow-[0_10px_28px_-10px_rgba(244,63,94,0.4)] dark:border-rose-500/35 dark:from-rose-700/75 dark:via-pink-900/50 dark:to-rose-950/70 dark:shadow-[0_10px_28px_-10px_rgba(244,63,94,0.28)]";
+      return "border-stone-300/70 bg-gradient-to-br from-stone-200 via-stone-100 to-zinc-50 shadow-[0_10px_28px_-10px_rgba(87,83,78,0.35)] dark:border-zinc-600/40 dark:from-zinc-700/80 dark:via-zinc-800/60 dark:to-zinc-900/70 dark:shadow-[0_10px_28px_-10px_rgba(0,0,0,0.4)]";
     case "DUE":
       return "border-orange-400/55 bg-gradient-to-br from-orange-400 via-orange-300 to-amber-200 shadow-[0_10px_28px_-10px_rgba(249,115,22,0.5)] dark:border-orange-500/40 dark:from-orange-700/85 dark:via-orange-800/55 dark:to-amber-950/70 dark:shadow-[0_10px_28px_-10px_rgba(249,115,22,0.35)]";
     case "OVERDUE":
-      return "border-red-400/55 bg-gradient-to-br from-red-400 via-rose-300 to-orange-200 shadow-[0_10px_28px_-10px_rgba(239,68,68,0.5)] dark:border-red-500/40 dark:from-red-700/85 dark:via-rose-800/55 dark:to-orange-950/70 dark:shadow-[0_10px_28px_-10px_rgba(239,68,68,0.35)]";
+      return "border-red-700/60 bg-gradient-to-br from-red-700 via-red-600 to-red-500 text-white shadow-[0_10px_28px_-10px_rgba(220,38,38,0.6)] dark:border-red-500/45 dark:from-red-800 dark:via-red-900 dark:to-red-950 dark:shadow-[0_10px_28px_-10px_rgba(220,38,38,0.4)]";
     default: {
       const _exhaustive: never = status;
       return _exhaustive;
@@ -44,6 +44,7 @@ export function paymentTileInk(status: PaymentTileTone) {
         meta: "text-emerald-900/70 dark:text-emerald-100/70",
         chip: "bg-white/60 text-emerald-950 backdrop-blur-md dark:bg-black/25 dark:text-emerald-50",
         glow: "bg-white/55 dark:bg-emerald-200/20",
+        surface: "bg-white/50 dark:bg-black/20",
       };
     case "PARTIAL":
       return {
@@ -51,13 +52,15 @@ export function paymentTileInk(status: PaymentTileTone) {
         meta: "text-amber-900/70 dark:text-amber-100/70",
         chip: "bg-white/60 text-amber-950 backdrop-blur-md dark:bg-black/25 dark:text-amber-50",
         glow: "bg-white/55 dark:bg-amber-200/20",
+        surface: "bg-white/50 dark:bg-black/20",
       };
     case "PENDING":
       return {
-        title: "text-rose-950 dark:text-rose-50",
-        meta: "text-rose-900/70 dark:text-rose-100/70",
-        chip: "bg-white/60 text-rose-950 backdrop-blur-md dark:bg-black/25 dark:text-rose-50",
-        glow: "bg-white/55 dark:bg-rose-200/20",
+        title: "text-stone-900 dark:text-zinc-50",
+        meta: "text-stone-600 dark:text-zinc-300",
+        chip: "bg-white/80 text-stone-800 backdrop-blur-md dark:bg-black/25 dark:text-zinc-50",
+        glow: "bg-white/70 dark:bg-zinc-200/10",
+        surface: "bg-white/70 dark:bg-black/20",
       };
     case "DUE":
       return {
@@ -65,13 +68,15 @@ export function paymentTileInk(status: PaymentTileTone) {
         meta: "text-orange-900/75 dark:text-orange-100/75",
         chip: "bg-white/60 text-orange-950 backdrop-blur-md dark:bg-black/25 dark:text-orange-50",
         glow: "bg-white/50 dark:bg-orange-200/20",
+        surface: "bg-white/50 dark:bg-black/20",
       };
     case "OVERDUE":
       return {
-        title: "text-red-950 dark:text-red-50",
-        meta: "text-red-900/75 dark:text-red-100/75",
-        chip: "bg-white/60 text-red-950 backdrop-blur-md dark:bg-black/25 dark:text-red-50",
-        glow: "bg-white/50 dark:bg-red-200/20",
+        title: "text-white",
+        meta: "text-red-50/85",
+        chip: "bg-white text-red-700 backdrop-blur-md dark:bg-white/90",
+        glow: "bg-white/15 dark:bg-red-300/15",
+        surface: "bg-black/20",
       };
     default: {
       const _exhaustive: never = status;

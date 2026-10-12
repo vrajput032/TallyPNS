@@ -2,14 +2,15 @@ import { daysUntilDue, type SalesInvoice } from "./types";
 
 export type SalesStatusFilter = "all" | "unpaid" | "PENDING" | "PARTIAL" | "PAID";
 export type SalesTypeFilter = "all" | "factory" | "trading" | "raw-material";
-export type SalesDueFilter = "all" | "overdue" | "week";
+export type SalesDueOption = "overdue" | "week";
 
 export type SalesFilters = {
   q: string;
   customerId: string;
   status: SalesStatusFilter;
   type: SalesTypeFilter;
-  due: SalesDueFilter;
+  /** Empty = any due date; several = invoice matches any of them. */
+  due: SalesDueOption[];
 };
 
 export const EMPTY_SALES_FILTERS: SalesFilters = {
@@ -17,7 +18,7 @@ export const EMPTY_SALES_FILTERS: SalesFilters = {
   customerId: "",
   status: "all",
   type: "all",
-  due: "all",
+  due: [],
 };
 
 export const STATUS_FILTER_OPTIONS: { value: SalesStatusFilter; label: string }[] = [
@@ -35,8 +36,9 @@ export const TYPE_FILTER_OPTIONS: { value: SalesTypeFilter; label: string }[] = 
   { value: "raw-material", label: "Raw material trading only" },
 ];
 
-export const DUE_FILTER_OPTIONS: { value: SalesDueFilter; label: string }[] = [
-  { value: "all", label: "Any due date" },
+export const ANY_DUE_LABEL = "Any due date";
+
+export const DUE_FILTER_OPTIONS: { value: SalesDueOption; label: string }[] = [
   { value: "overdue", label: "Overdue" },
   { value: "week", label: "Due in 7 days" },
 ];
@@ -45,13 +47,25 @@ function pick<T extends string>(options: { value: T }[], raw: string | null, fal
   return options.find((option) => option.value === raw)?.value ?? fallback;
 }
 
+function parseDue(raw: string | null): SalesDueOption[] {
+  const values = new Set((raw ?? "").split(","));
+  return DUE_FILTER_OPTIONS.filter((option) => values.has(option.value)).map((option) => option.value);
+}
+
+export function dueFilterLabel(due: SalesDueOption[]): string {
+  if (due.length === 0) return ANY_DUE_LABEL;
+  return DUE_FILTER_OPTIONS.filter((option) => due.includes(option.value))
+    .map((option) => option.label)
+    .join(" + ");
+}
+
 export function parseSalesFilters(search: URLSearchParams): SalesFilters {
   return {
     q: search.get("q") ?? "",
     customerId: search.get("customer") ?? "",
     status: pick(STATUS_FILTER_OPTIONS, search.get("status"), "all"),
     type: pick(TYPE_FILTER_OPTIONS, search.get("type"), "all"),
-    due: pick(DUE_FILTER_OPTIONS, search.get("due"), "all"),
+    due: parseDue(search.get("due")),
   };
 }
 
@@ -63,7 +77,7 @@ export function writeSalesFilters(search: URLSearchParams, filters: SalesFilters
     ["customer", filters.customerId, ""],
     ["status", filters.status, "all"],
     ["type", filters.type, "all"],
-    ["due", filters.due, "all"],
+    ["due", filters.due.join(","), ""],
   ];
   for (const [key, value, fallback] of entries) {
     if (value && value !== fallback) next.set(key, value);
@@ -137,7 +151,7 @@ export function activeSalesFilterCount(filters: SalesFilters): number {
     filters.customerId !== "",
     filters.status !== "all",
     filters.type !== "all",
-    filters.due !== "all",
+    filters.due.length > 0,
   ].filter(Boolean).length;
 }
 
@@ -176,11 +190,7 @@ function matchesType(invoice: SalesInvoice, type: SalesTypeFilter): boolean {
   }
 }
 
-function matchesDue(invoice: SalesInvoice, due: SalesDueFilter): boolean {
-  if (due === "all") return true;
-  if ((invoice.balanceAmount ?? 0) <= 0) return false;
-  const days = daysUntilDue(invoice);
-  if (days === null) return false;
+function matchesDueOption(days: number, due: SalesDueOption): boolean {
   switch (due) {
     case "overdue":
       return days < 0;
@@ -191,6 +201,14 @@ function matchesDue(invoice: SalesInvoice, due: SalesDueFilter): boolean {
       return _exhaustive;
     }
   }
+}
+
+function matchesDue(invoice: SalesInvoice, due: SalesDueOption[]): boolean {
+  if (due.length === 0) return true;
+  if ((invoice.balanceAmount ?? 0) <= 0) return false;
+  const days = daysUntilDue(invoice);
+  if (days === null) return false;
+  return due.some((option) => matchesDueOption(days, option));
 }
 
 function matchesSearch(invoice: SalesInvoice, q: string): boolean {
@@ -230,7 +248,7 @@ export function describeSalesFilters(filters: SalesFilters, customerName?: strin
   if (filters.status === "unpaid") parts.push("Unpaid");
   else if (filters.status !== "all") parts.push(label(STATUS_FILTER_OPTIONS, filters.status));
   if (filters.type !== "all") parts.push(label(TYPE_FILTER_OPTIONS, filters.type));
-  if (filters.due !== "all") parts.push(label(DUE_FILTER_OPTIONS, filters.due));
+  if (filters.due.length > 0) parts.push(dueFilterLabel(filters.due));
   if (filters.q.trim()) parts.push(`“${filters.q.trim()}”`);
   return parts.join(" · ");
 }

@@ -1,7 +1,7 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { clearLocalAppCache } from "@/lib/clearLocalAppCache";
 import { useAuthStore } from "@/store/authStore";
-import { markApiSuccess, registerColdStartRequest } from "@/store/coldStartStore";
+import { markApiSuccess, registerColdStartRequest, trackApiRead } from "@/store/coldStartStore";
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
 import { getDeviceName } from "@/lib/deviceName";
 
@@ -31,8 +31,13 @@ api.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
   const method = (config.method ?? "get").toLowerCase();
-  const release = registerColdStartRequest({ blocking: method !== "get" && method !== "head" });
-  (config as ApiRequestConfig)._releaseColdStart = release;
+  const isRead = method === "get" || method === "head";
+  const releaseWake = registerColdStartRequest({ blocking: !isRead });
+  const releaseRead = isRead ? trackApiRead() : null;
+  (config as ApiRequestConfig)._releaseColdStart = () => {
+    releaseWake();
+    releaseRead?.();
+  };
   return config;
 });
 

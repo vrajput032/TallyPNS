@@ -71,7 +71,8 @@ export function MobileSalesInvoiceDetail({
         <div className="relative flex items-center gap-3 p-4">
           <div
             className={cn(
-              "flex size-10 shrink-0 items-center justify-center rounded-full bg-white/50 text-sm font-bold backdrop-blur-md dark:bg-black/20",
+              "flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-bold backdrop-blur-md",
+              ink.surface,
               ink.title
             )}
           >
@@ -101,7 +102,7 @@ export function MobileSalesInvoiceDetail({
         <div className="relative mx-4 border-t border-black/10 dark:border-white/10" />
 
         <div className="relative flex items-center gap-2 p-4">
-          <div className="flex flex-col items-center rounded-xl bg-white/45 px-3 py-1.5 backdrop-blur-md dark:bg-black/20">
+          <div className={cn("flex flex-col items-center rounded-xl px-3 py-1.5 backdrop-blur-md", ink.surface)}>
             <span className={cn("text-base font-bold leading-none tabular-nums", ink.title)}>
               {invoiceQuantity(invoice).toLocaleString("en-IN")}
             </span>

@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type KeyboardEvent } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -127,6 +127,21 @@ const invoiceFormSchema = z
   });
 
 type InvoiceFormValues = z.infer<typeof invoiceFormSchema>;
+
+/** Enter in a text field only saves once every line has a product/description, qty and rate. */
+function isReadyToSave(values: InvoiceFormValues): boolean {
+  if (!values.customerId) return false;
+  if (values.saleType === "RAW_MATERIAL" && !(Number(values.rawMaterialCostPerKg) > 0)) return false;
+  return (
+    values.items.length > 0 &&
+    values.items.every(
+      (item) =>
+        Boolean(item.isManual ? item.description?.trim() : item.productId?.trim()) &&
+        Number(item.quantity) > 0 &&
+        Number(item.rate) > 0
+    )
+  );
+}
 
 const emptyProductItem = {
   isManual: false,
@@ -333,6 +348,11 @@ export function SalesInvoiceFormPage() {
     });
   }
 
+  function handleFormKeyDown(event: KeyboardEvent<HTMLFormElement>) {
+    if (event.key !== "Enter" || !(event.target instanceof HTMLInputElement)) return;
+    if (!isReadyToSave(form.getValues())) event.preventDefault();
+  }
+
   function confirmEdit(pin: string) {
     if (!id || !pendingValues) return;
     updateInvoice.mutate(
@@ -363,7 +383,11 @@ export function SalesInvoiceFormPage() {
         backLabel={isEditing ? "Back to Invoice" : "Back to Sales"}
       />
       <Form {...form}>
-        <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
+        <form
+          className="grid gap-4"
+          onSubmit={form.handleSubmit(onSubmit)}
+          onKeyDown={handleFormKeyDown}
+        >
           <Card>
             <CardHeader>
               <CardTitle>Customer &amp; Transport</CardTitle>

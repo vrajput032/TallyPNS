@@ -12,6 +12,8 @@ interface ColdStartState {
   blockingLoaders: number;
   /** Writes (POST/PUT/PATCH/DELETE) waiting on a sleeping server. */
   blockingRequests: number;
+  /** GET requests in flight, including silent refreshes of cached screens. */
+  pendingReads: number;
   show: () => void;
   hide: () => void;
   setForced: (forced: boolean) => void;
@@ -22,6 +24,7 @@ export const useColdStartStore = create<ColdStartState>((set, get) => ({
   forced: false,
   blockingLoaders: 0,
   blockingRequests: 0,
+  pendingReads: 0,
   show: () => set({ waking: true }),
   hide: () => {
     if (!get().forced) set({ waking: false });
@@ -33,6 +36,26 @@ export const useColdStartStore = create<ColdStartState>((set, get) => ({
 export function selectColdStartOverlayVisible(state: ColdStartState) {
   if (state.forced) return true;
   return state.waking && (state.blockingLoaders > 0 || state.blockingRequests > 0);
+}
+
+export type BackgroundSyncState = "idle" | "waking" | "refreshing";
+
+/** What the header indicator shows while the full-screen overlay is not covering the app. */
+export function selectBackgroundSync(state: ColdStartState): BackgroundSyncState {
+  if (selectColdStartOverlayVisible(state)) return "idle";
+  if (state.waking) return "waking";
+  if (state.pendingReads > 0 && state.blockingLoaders === 0) return "refreshing";
+  return "idle";
+}
+
+export function trackApiRead(): () => void {
+  useColdStartStore.setState((s) => ({ pendingReads: s.pendingReads + 1 }));
+  let done = false;
+  return () => {
+    if (done) return;
+    done = true;
+    useColdStartStore.setState((s) => ({ pendingReads: Math.max(0, s.pendingReads - 1) }));
+  };
 }
 
 let lastSuccessfulApiAt = 0;
