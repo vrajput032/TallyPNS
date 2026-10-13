@@ -1,23 +1,28 @@
+import { fileURLToPath } from "node:url";
 import { prisma } from "../../lib/prisma.js";
 import { activeOnly } from "../../lib/activeRecords.js";
 import { istDateKey } from "../../lib/paymentReminder.js";
 import { pipeSizeMatches, SIZE_70MM_WITHOUT_CHUDI } from "../../lib/pipeSizes.js";
 
 /**
- * Indus POs: previous 70,000 (4 Sep–4 Oct 2026) plus current IAPL-004031.
- * Leftover from the previous PO is added to the current remaining.
- * Current supplied starts the day after the previous PO ends.
+ * Indus POs: previous IAPL-003469 (4 Sep 2026) and current IAPL-004031.
+ * Pieces billed from the previous PO date onward fill each size on the previous PO
+ * first; only what is left over counts toward the current PO.
  */
 export const INDUS_PO = {
   customerNameIncludes: "INDUS APPLIANCES",
   customerGstin: "06AAGCI1206D1Z8",
+  previous: {
+    poNo: "IAPL-003469",
+    poDate: "2026-09-04",
+    lines: [
+      { sizeMm: 45, quantity: 10000 },
+      { sizeMm: 70, quantity: 40000 },
+      { sizeMm: 82, quantity: 20000 },
+    ],
+  },
   poNo: "IAPL-004031",
   poDate: "2026-10-03",
-  previous: {
-    quantity: 70000,
-    from: "2026-09-04",
-    to: "2026-10-04",
-  },
   lines: [
     { sizeMm: 70, quantity: 35000, description: "MS Pipe 70mm" },
     { sizeMm: 45, quantity: 4500, description: "MS Pipe 45mm (square tank)" },
@@ -25,10 +30,27 @@ export const INDUS_PO = {
   ],
 } as const;
 
+type IndusPoConfig = typeof INDUS_PO;
+
+/** Same depth from src/ and dist/, so this resolves to backend/assets/indus-po in both. */
+const PO_PDF_DIR = fileURLToPath(new URL("../../../assets/indus-po/", import.meta.url));
+
+/** Absolute path of a stored Indus PO PDF, or null for any other PO number. */
+export function indusPoPdfPath(poNo: string, po: IndusPoConfig = INDUS_PO): string | null {
+  if (poNo !== po.poNo && poNo !== po.previous.poNo) return null;
+  return `${PO_PDF_DIR}${poNo}.pdf`;
+}
+
 export type IndusPoLineProgress = {
   sizeMm: number;
   description: string;
+  /** Previous PO quantity for this size. */
+  previousOrdered: number;
+  /** Pieces of this size that went toward the previous PO. */
+  previousSupplied: number;
+  /** Current PO quantity for this size. */
   ordered: number;
+  /** Pieces of this size counted toward the current PO, after the previous PO filled. */
   supplied: number;
 };
 
@@ -37,17 +59,22 @@ export type IndusPoSummary = {
   poDate: string;
   customerName: string | null;
   customerId: string | null;
+  previousPoNo: string;
+  previousPoDate: string;
   previousPoQuantity: number;
-  previousPoFrom: string;
-  previousPoTo: string;
   previousSupplied: number;
-  lastMonthLeft: number;
+  /** Pieces still owed on the previous PO. */
+  previousLeft: number;
+  previousComplete: boolean;
   poQuantity: number;
-  target: number;
   supplied: number;
+  /** Pieces still owed on the current PO. */
+  currentLeft: number;
+  /** previousLeft + currentLeft. */
   remaining: number;
   invoiceCount: number;
   lines: IndusPoLineProgress[];
+  /** Pieces billed in sizes that are on neither PO. */
   otherSupplied: number;
 };
 
@@ -64,26 +91,27 @@ type InvoiceForPo = {
   items: CatalogLine[];
 };
 
-export function poQuantity(po = INDUS_PO): number {
-  return po.lines.reduce((sum, line) => sum + line.quantity, 0);
+function sumLines(lines: readonly { quantity: number }[]): number {
+  return lines.reduce((sum, line) => sum + line.quantity, 0);
 }
 
-export function currentSuppliedFrom(po = INDUS_PO): string {
-  const end = new Date(`${po.previous.to}T00:00:00Z`);
-  end.setUTCDate(end.getUTCDate() + 1);
-  return end.toISOString().slice(0, 10);
+export function poQuantity(po: IndusPoConfig = INDUS_PO): number {
+  return sumLines(po.lines);
 }
 
-function inInclusiveRange(date: Date, from: string, to: string): boolean {
-  const key = istDateKey(date);
-  return key >= from && key <= to;
+export function previousPoQuantity(po: IndusPoConfig = INDUS_PO): number {
+  return sumLines(po.previous.lines);
 }
 
-/** Map a billed size onto a PO line (70mm without chudi counts as 70mm). */
-export function poLineSizeFor(sizeMm: number, po = INDUS_PO): number | null {
-  for (const line of po.lines) {
-    if (pipeSizeMatches(sizeMm, line.sizeMm)) return line.sizeMm;
-    if (line.sizeMm === 70 && pipeSizeMatches(sizeMm, SIZE_70MM_WITHOUT_CHUDI)) return 70;
+/** Map a billed size onto a PO line size (70mm without chudi counts as 70mm). */
+export function poLineSizeFor(sizeMm: number, po: IndusPoConfig = INDUS_PO): number | null {
+  const sizes = new Set<number>([
+    ...po.previous.lines.map((line) => line.sizeMm),
+    ...po.lines.map((line) => line.sizeMm),
+  ]);
+  for (const size of sizes) {
+    if (pipeSizeMatches(sizeMm, size)) return size;
+    if (size === 70 && pipeSizeMatches(sizeMm, SIZE_70MM_WITHOUT_CHUDI)) return 70;
   }
   return null;
 }
@@ -94,16 +122,8 @@ function catalogPieces(item: CatalogLine): number {
   return Number.isFinite(qty) ? qty : 0;
 }
 
-function invoiceCatalogPieces(invoice: InvoiceForPo): number {
-  return invoice.items.reduce((sum, item) => sum + catalogPieces(item), 0);
-}
-
-export function summarizeIndusPo(invoices: InvoiceForPo[], po = INDUS_PO): IndusPoSummary {
-  const ordered = poQuantity(po);
-  const suppliedFrom = currentSuppliedFrom(po);
-  const suppliedBySize = new Map<number, number>();
-  let previousSupplied = 0;
-  let supplied = 0;
+export function summarizeIndusPo(invoices: InvoiceForPo[], po: IndusPoConfig = INDUS_PO): IndusPoSummary {
+  const billedBySize = new Map<number, number>();
   let otherSupplied = 0;
   let invoiceCount = 0;
   let customerId: string | null = null;
@@ -112,69 +132,85 @@ export function summarizeIndusPo(invoices: InvoiceForPo[], po = INDUS_PO): Indus
   for (const invoice of invoices) {
     customerId = invoice.customerId;
     customerName = invoice.customerName;
-    const day = istDateKey(invoice.invoiceDate);
-    const qty = invoiceCatalogPieces(invoice);
-    if (qty === 0) continue;
+    if (istDateKey(invoice.invoiceDate) < po.previous.poDate) continue;
 
-    if (inInclusiveRange(invoice.invoiceDate, po.previous.from, po.previous.to)) {
-      previousSupplied += qty;
-      continue;
-    }
-    if (day < suppliedFrom) continue;
-
-    supplied += qty;
-    invoiceCount += 1;
+    let counted = false;
     for (const item of invoice.items) {
-      const itemQty = catalogPieces(item);
-      if (itemQty === 0) continue;
+      const qty = catalogPieces(item);
+      if (qty === 0) continue;
+      counted = true;
       const sizeMm = item.sizeMm == null ? NaN : Number(item.sizeMm);
       const poSize = Number.isFinite(sizeMm) ? poLineSizeFor(sizeMm, po) : null;
       if (poSize == null) {
-        otherSupplied += itemQty;
+        otherSupplied += qty;
         continue;
       }
-      suppliedBySize.set(poSize, (suppliedBySize.get(poSize) ?? 0) + itemQty);
+      billedBySize.set(poSize, (billedBySize.get(poSize) ?? 0) + qty);
     }
+    if (counted) invoiceCount += 1;
   }
 
-  const lastMonthLeft = Math.max(0, Math.round(po.previous.quantity - previousSupplied));
-  const target = ordered + lastMonthLeft;
-  const remaining = Math.max(0, Math.round(target - supplied));
+  const previousOrderedBySize = new Map<number, number>(
+    po.previous.lines.map((line) => [line.sizeMm, line.quantity])
+  );
+  const previousSuppliedBySize = new Map<number, number>();
+  const currentSuppliedBySize = new Map<number, number>();
+  for (const [size, billed] of billedBySize) {
+    const toPrevious = Math.min(billed, previousOrderedBySize.get(size) ?? 0);
+    previousSuppliedBySize.set(size, toPrevious);
+    currentSuppliedBySize.set(size, billed - toPrevious);
+  }
+
+  const previousQty = previousPoQuantity(po);
+  const previousSupplied = Math.round(
+    [...previousSuppliedBySize.values()].reduce((sum, qty) => sum + qty, 0)
+  );
+  const previousLeft = Math.max(0, previousQty - previousSupplied);
+
+  const lines: IndusPoLineProgress[] = po.lines.map((line) => ({
+    sizeMm: line.sizeMm,
+    description: line.description,
+    previousOrdered: previousOrderedBySize.get(line.sizeMm) ?? 0,
+    previousSupplied: Math.round(previousSuppliedBySize.get(line.sizeMm) ?? 0),
+    ordered: line.quantity,
+    supplied: Math.round(currentSuppliedBySize.get(line.sizeMm) ?? 0),
+  }));
+  const supplied = lines.reduce((sum, line) => sum + line.supplied, 0);
+  const currentLeft = lines.reduce((sum, line) => sum + Math.max(0, line.ordered - line.supplied), 0);
 
   return {
     poNo: po.poNo,
     poDate: po.poDate,
     customerName,
     customerId,
-    previousPoQuantity: po.previous.quantity,
-    previousPoFrom: po.previous.from,
-    previousPoTo: po.previous.to,
-    previousSupplied: Math.round(previousSupplied),
-    lastMonthLeft,
-    poQuantity: ordered,
-    target,
-    supplied: Math.round(supplied),
-    remaining,
+    previousPoNo: po.previous.poNo,
+    previousPoDate: po.previous.poDate,
+    previousPoQuantity: previousQty,
+    previousSupplied,
+    previousLeft,
+    previousComplete: previousLeft === 0,
+    poQuantity: poQuantity(po),
+    supplied,
+    currentLeft,
+    remaining: previousLeft + currentLeft,
     invoiceCount,
-    lines: po.lines.map((line) => ({
-      sizeMm: line.sizeMm,
-      description: line.description,
-      ordered: line.quantity,
-      supplied: Math.round(suppliedBySize.get(line.sizeMm) ?? 0),
-    })),
+    lines,
     otherSupplied: Math.round(otherSupplied),
   };
 }
 
 export function indusPoPushPayload(summary: IndusPoSummary) {
-  const left = summary.remaining.toLocaleString("en-IN");
-  const supplied = summary.supplied.toLocaleString("en-IN");
-  const target = summary.target.toLocaleString("en-IN");
-  const poQty = summary.poQuantity.toLocaleString("en-IN");
-  const leftover = summary.lastMonthLeft.toLocaleString("en-IN");
+  const fmt = (value: number) => value.toLocaleString("en-IN");
+  const title =
+    summary.remaining <= 0
+      ? `Indus PO ${summary.poNo} is complete`
+      : `Indus PO: ${fmt(summary.remaining)} pieces left`;
+  const body = summary.previousComplete
+    ? `${summary.poNo}: supplied ${fmt(summary.supplied)} of ${fmt(summary.poQuantity)}`
+    : `Finish ${summary.previousPoNo} first: ${fmt(summary.previousLeft)} left · then ${summary.poNo}: ${fmt(summary.currentLeft)}`;
   return {
-    title: summary.remaining <= 0 ? `Indus PO ${summary.poNo} is complete` : `Indus PO: ${left} pieces left`,
-    body: `Supplied ${supplied} of ${target} (this PO ${poQty} + last PO left ${leftover})`,
+    title,
+    body,
     url: "/",
     tag: "indus-po-remaining",
     playSound: true as const,

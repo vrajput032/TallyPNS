@@ -43,6 +43,8 @@ export interface RawMaterialTradingPnlSummary {
 export interface IndusPoLineProgress {
   sizeMm: number;
   description: string;
+  previousOrdered: number;
+  previousSupplied: number;
   ordered: number;
   supplied: number;
 }
@@ -52,14 +54,15 @@ export interface IndusPoSummary {
   poDate: string;
   customerName: string | null;
   customerId: string | null;
+  previousPoNo: string;
+  previousPoDate: string;
   previousPoQuantity: number;
-  previousPoFrom: string;
-  previousPoTo: string;
   previousSupplied: number;
-  lastMonthLeft: number;
+  previousLeft: number;
+  previousComplete: boolean;
   poQuantity: number;
-  target: number;
   supplied: number;
+  currentLeft: number;
   remaining: number;
   invoiceCount: number;
   lines: IndusPoLineProgress[];
