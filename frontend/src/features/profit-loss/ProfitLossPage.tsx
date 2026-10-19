@@ -178,9 +178,10 @@ function ExpenseEntriesTable({
     <div className="min-w-0 rounded-md border bg-card">
       <div className="border-b px-4 py-2 font-medium">Marked expense entries</div>
       <p className="px-4 pt-2 text-xs text-muted-foreground">
-        Live from pns-expenses. Split partner rows with the same note are counted once. Kiraya is
-        delivery. Transfers, raw material, and CNC payments are listed but not added. Totals and
-        items already in rent / Akshay salary are listed but not added again.
+        Live from pns-expenses. Split partner rows with the same note are counted once. Kiraya,
+        transfers, raw material, and CNC payments are listed here but not added to P&amp;L costs —
+        enter kiraya as a running-cost bill. Totals and items already in rent / Akshay salary are
+        listed but not added again.
       </p>
       <Table>
         <TableHeader>

@@ -25,7 +25,7 @@ export const createUserSchema = z.object({
   username: usernameSchema,
   password: z.string().min(8, "Password must be at least 8 characters"),
   name: z.string().trim().min(1).max(80),
-  role: z.enum(["ADMIN", "STAFF"]),
+  role: z.enum(["ADMIN", "MANAGER", "STAFF"]),
 });
 
 export const registerSchema = z.object({

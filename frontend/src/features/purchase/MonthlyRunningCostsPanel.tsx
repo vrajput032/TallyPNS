@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiErrorMessage } from "@/lib/apiError";
 import { formatInr } from "@/lib/formatInr";
-import { canDelete } from "@/lib/permissions";
+import { canDeletePurchase } from "@/lib/permissions";
 import { useAuthStore } from "@/store/authStore";
 import {
   parseRunningCostLineId,
@@ -183,7 +183,7 @@ function MonthCard({
 
 export function MonthlyRunningCostsPanel() {
   const { data, isLoading } = useRunningCosts();
-  const allowDelete = canDelete(useAuthStore((state) => state.user));
+  const allowDelete = canDeletePurchase(useAuthStore((state) => state.user));
   const setRunningCost = useSetRunningCost();
   const deleteBill = useDeletePurchaseBill();
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
@@ -261,9 +261,11 @@ export function MonthlyRunningCostsPanel() {
       </div>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <p className="text-xs text-muted-foreground">
-          &quot;In P&amp;L&quot; is rent, salary, electricity, thekedar, delivery and partner expenses
-          already used in <Link to="/profit-loss" className="text-primary underline-offset-2 hover:underline">Profit &amp; Loss</Link>.
-          Entries are extra running-cost bills added here; they are not in P&amp;L yet.
+          Fixed monthly costs are Rent and Akshay salary (also in{" "}
+          <Link to="/profit-loss" className="text-primary underline-offset-2 hover:underline">
+            Profit &amp; Loss
+          </Link>
+          ). Add diesel, medical, kiraya and other factory spend as entries below — those stay off P&amp;L.
         </p>
         <Button
           variant="outline"

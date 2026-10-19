@@ -83,7 +83,7 @@ async function main() {
     username: "garvit",
     email: "garvit@pnsenterprises.com",
     name: "Garvit",
-    role: "STAFF",
+    role: "MANAGER",
     password: garvitPassword,
     resetPassword: false,
   });

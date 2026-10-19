@@ -27,6 +27,8 @@ function accessLabel(role: UserRole) {
   switch (role) {
     case "ADMIN":
       return "Admin — full access";
+    case "MANAGER":
+      return "Manager — purchase delete";
     case "STAFF":
       return "Staff — add only";
     default: {
@@ -40,6 +42,8 @@ function RoleBadge({ role }: { role: UserRole }) {
   switch (role) {
     case "ADMIN":
       return <Badge>Admin</Badge>;
+    case "MANAGER":
+      return <Badge variant="outline">Manager</Badge>;
     case "STAFF":
       return <Badge variant="secondary">Staff</Badge>;
     default: {

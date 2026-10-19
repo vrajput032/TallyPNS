@@ -27,7 +27,7 @@ import {
   purchaseSectionOf,
 } from "./types";
 import { formatInr } from "@/lib/formatInr";
-import { canDelete } from "@/lib/permissions";
+import { canDeletePurchase } from "@/lib/permissions";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useAuthStore } from "@/store/authStore";
 
@@ -37,7 +37,7 @@ export function PurchaseBillDetailPage() {
   const { data: bill, isLoading } = usePurchaseBill(id);
   const deleteBill = useDeletePurchaseBill();
   const deletePayment = useDeleteVendorPayment();
-  const allowDelete = canDelete(useAuthStore((state) => state.user));
+  const allowDelete = canDeletePurchase(useAuthStore((state) => state.user));
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 

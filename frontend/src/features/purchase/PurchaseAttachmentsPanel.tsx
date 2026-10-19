@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import type { PurchaseAttachment } from "./types";
 import { useDeletePurchaseAttachment, useUploadPurchaseAttachment } from "./usePurchase";
-import { canDelete } from "@/lib/permissions";
+import { canDeletePurchase } from "@/lib/permissions";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useAuthStore } from "@/store/authStore";
 
@@ -25,7 +25,7 @@ export function PurchaseAttachmentsPanel({
   const inputRef = useRef<HTMLInputElement>(null);
   const upload = useUploadPurchaseAttachment();
   const remove = useDeletePurchaseAttachment();
-  const allowDelete = canDelete(useAuthStore((state) => state.user));
+  const allowDelete = canDeletePurchase(useAuthStore((state) => state.user));
   const [busyName, setBusyName] = useState<string | null>(null);
 
   const isCreateQueue = Boolean(onPendingFilesChange);

@@ -1,10 +1,14 @@
 import { prisma } from "../../lib/prisma.js";
 import { activeOnly } from "../../lib/activeRecords.js";
-import { monthKey, monthLabel, round2 } from "../../lib/manufacturingPnl.js";
+import {
+  FIXED_RUNNING_COST_LINE_IDS,
+  monthKey,
+  monthLabel,
+  round2,
+} from "../../lib/manufacturingPnl.js";
 import { getProfitLossSummary } from "../profit-loss/profit-loss.service.js";
 
-/** P&L cost lines that are not monthly running cost (material; commission has its own page). */
-const NON_RUNNING_COST_LINES = new Set(["raw-material", "commission"]);
+const FIXED_RUNNING_COST_LINES = new Set<string>(FIXED_RUNNING_COST_LINE_IDS);
 
 export type RunningCostLine = { id: string; label: string; amount: number; overridden: boolean };
 
@@ -19,10 +23,10 @@ export type RunningCostEntry = {
 export type RunningCostMonth = {
   key: string;
   label: string;
-  /** Costs already counted in Profit & Loss (rent, salary, electricity, thekedar, delivery, partner expenses) */
+  /** Fixed monthly costs counted in Profit & Loss (rent + Akshay salary) */
   pnlLines: RunningCostLine[];
   pnlTotal: number;
-  /** Running-cost purchase bills entered in Purchase */
+  /** Extra running-cost purchase bills (diesel, medical, kiraya, …) — not in P&L */
   entries: RunningCostEntry[];
   entriesTotal: number;
   total: number;
@@ -47,7 +51,7 @@ export async function getMonthlyRunningCosts() {
     const key = monthKey(report.year, report.month);
     const month = emptyMonth(key, report.monthLabel);
     month.pnlLines = report.costs
-      .filter((line) => !NON_RUNNING_COST_LINES.has(line.id))
+      .filter((line) => FIXED_RUNNING_COST_LINES.has(line.id))
       .filter((line) => !(line.overridden && line.amount === 0))
       .map((line) => ({
         id: line.id,

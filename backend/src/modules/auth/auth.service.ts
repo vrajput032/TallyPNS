@@ -71,6 +71,7 @@ export async function createUser(input: {
 
   switch (input.role) {
     case "ADMIN":
+    case "MANAGER":
     case "STAFF":
       break;
     default: {

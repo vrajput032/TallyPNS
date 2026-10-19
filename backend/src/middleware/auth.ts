@@ -4,7 +4,7 @@ import { prisma } from "../lib/prisma.js";
 import { sessionIsRevoked } from "../lib/sessionRevocation.js";
 import { ApiError } from "./errorHandler.js";
 
-export type RoleName = "ADMIN" | "STAFF";
+export type RoleName = "ADMIN" | "MANAGER" | "STAFF";
 
 export interface AuthPayload {
   sub: string;
@@ -64,6 +64,7 @@ export function requireAdmin(req: Request, _res: Response, next: NextFunction) {
     case "ADMIN":
       next();
       return;
+    case "MANAGER":
     case "STAFF":
       throw new ApiError(403, "Admin access required");
     default: {
@@ -82,8 +83,29 @@ export function requireCanDelete(req: Request, _res: Response, next: NextFunctio
     case "ADMIN":
       next();
       return;
+    case "MANAGER":
     case "STAFF":
       throw new ApiError(403, "You do not have permission to delete");
+    default: {
+      const _exhaustive: never = req.user.role;
+      throw new ApiError(403, `Unhandled role: ${_exhaustive}`);
+    }
+  }
+}
+
+/** Soft-delete purchase bills / attachments (still needs deletion PIN where configured). */
+export function requireCanDeletePurchase(req: Request, _res: Response, next: NextFunction) {
+  if (!req.user) {
+    throw new ApiError(401, "Missing access token");
+  }
+
+  switch (req.user.role) {
+    case "ADMIN":
+    case "MANAGER":
+      next();
+      return;
+    case "STAFF":
+      throw new ApiError(403, "You do not have permission to delete purchase bills");
     default: {
       const _exhaustive: never = req.user.role;
       throw new ApiError(403, `Unhandled role: ${_exhaustive}`);

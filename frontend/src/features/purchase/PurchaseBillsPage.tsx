@@ -42,7 +42,7 @@ import {
 } from "@/features/payments/paymentTile";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { formatInr } from "@/lib/formatInr";
-import { canDelete } from "@/lib/permissions";
+import { canDeletePurchase } from "@/lib/permissions";
 import { apiErrorMessage } from "@/lib/apiError";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
@@ -274,7 +274,7 @@ export function PurchaseBillsPage() {
     [bills, section]
   );
   const isMobile = useIsMobile();
-  const allowDelete = canDelete(useAuthStore((state) => state.user));
+  const allowDelete = canDeletePurchase(useAuthStore((state) => state.user));
   const deleteBill = useDeletePurchaseBill();
   const [deleteTarget, setDeleteTarget] = useState<PurchaseBill | null>(null);
   const [sorting, setSorting] = useState<SortingState>([{ id: "billDate", desc: true }]);

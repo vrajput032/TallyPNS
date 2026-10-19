@@ -20,27 +20,29 @@ export const ELECTRICITY_BY_MONTH: Record<string, number> = {
   "2026-08": 3_000,
 };
 
-/** Delivery ₹ by `YYYY-MM`. Empty until isolated delivery totals are added. */
-export const DELIVERY_BY_MONTH: Record<string, number> = {};
-
 /** P&L cost lines whose monthly ₹ can be overridden from Purchase → Running cost. */
 export const RUNNING_COST_LINE_IDS = [
   "rent",
   "akshay-salary",
   "electricity",
   "thekedar",
-  "delivery",
   "other-expenses",
 ] as const;
 
 export type RunningCostLineId = (typeof RUNNING_COST_LINE_IDS)[number];
+
+/**
+ * Fixed monthly lines shown on Purchase → Running cost (also the only auto monthly
+ * amounts that stay on P&L without partner-expense parsing). Kiraya and other
+ * factory spend are entered as running-cost bills.
+ */
+export const FIXED_RUNNING_COST_LINE_IDS = ["rent", "akshay-salary"] as const satisfies readonly RunningCostLineId[];
 
 export const RUNNING_COST_LINE_LABELS: Record<RunningCostLineId, string> = {
   rent: "Rent",
   "akshay-salary": "Akshay salary",
   electricity: "Electricity",
   thekedar: "Thekedar",
-  delivery: "Delivery (kiraya)",
   "other-expenses": "Other factory expenses",
 };
 
@@ -78,8 +80,6 @@ export type MonthPnlInput = {
   piecesSold: number;
   unsizedPieces: number;
   piecesSoldBySize: PiecesSoldRow[];
-  /** Kiraya / delivery from partner expenses for this month. */
-  delivery?: number;
   /** Other factory items parsed from partner expense notes. */
   otherExpenses?: number;
   /** Customer commission: factory bills in the month + lump sums for the month. */
@@ -152,10 +152,6 @@ export function electricityForMonth(year: number, month: number): number {
   return ELECTRICITY_BY_MONTH[monthKey(year, month)] ?? 0;
 }
 
-export function deliveryForMonth(year: number, month: number): number {
-  return DELIVERY_BY_MONTH[monthKey(year, month)] ?? 0;
-}
-
 export function scrapKgFromRmKg(rmKg: number): number {
   const safeKg = Number.isFinite(rmKg) && rmKg > 0 ? rmKg : 0;
   return round2(safeKg * (SCRAP_PERCENT_OF_RM / 100));
@@ -208,7 +204,6 @@ export function buildMonthPnl(input: MonthPnlInput): MonthPnl {
   const electricity =
     electricityFromExpenses > 0 ? electricityFromExpenses : electricityForMonth(input.year, input.month);
   const salary = MONTHLY_AKSHAY_SALARY;
-  const delivery = round2((input.delivery ?? 0) + deliveryForMonth(input.year, input.month));
   const otherExpenses = round2(input.otherExpenses ?? 0);
   const expenseEntries = input.expenseEntries ?? [];
 
@@ -240,7 +235,6 @@ export function buildMonthPnl(input: MonthPnlInput): MonthPnl {
     runningCost("rent", rent),
     runningCost("electricity", electricity),
     runningCost("akshay-salary", salary),
-    runningCost("delivery", delivery),
     runningCost("other-expenses", otherExpenses),
     { id: "commission", label: "Customer commission", amount: round2(input.commission ?? 0) },
   ];

@@ -12,7 +12,11 @@ import {
   fetchSupplierLedgerList,
 } from "@/store/slices/ledgerSlice";
 import { fetchSalesInvoices, fetchSalesInvoice } from "@/store/slices/salesSlice";
-import { fetchPurchaseBills, fetchPurchaseBill } from "@/store/slices/purchaseSlice";
+import {
+  fetchPurchaseBills,
+  fetchPurchaseBill,
+  fetchRunningCosts,
+} from "@/store/slices/purchaseSlice";
 import { fetchStock, fetchStockMovements } from "@/store/slices/inventorySlice";
 import {
   fetchDashboardSummary,
@@ -80,8 +84,9 @@ export function SectionDataSync() {
       }
       case "purchase": {
         dispatch(fetchPurchaseBills(silent));
+        dispatch(fetchRunningCosts(silent));
         const billId = pathname.match(/^\/purchase\/([^/]+)/)?.[1];
-        if (billId && billId !== "new") {
+        if (billId && billId !== "new" && billId !== "running-costs") {
           dispatch(fetchPurchaseBill({ id: billId, silent: true }));
         }
         break;

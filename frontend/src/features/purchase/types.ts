@@ -72,18 +72,19 @@ export const RUNNING_COST_LINE_IDS = [
   "akshay-salary",
   "electricity",
   "thekedar",
-  "delivery",
   "other-expenses",
 ] as const;
 
 export type RunningCostLineId = (typeof RUNNING_COST_LINE_IDS)[number];
+
+/** Fixed lines on the Running cost tab; other spend is added as bills. */
+export const FIXED_RUNNING_COST_LINE_IDS = ["rent", "akshay-salary"] as const satisfies readonly RunningCostLineId[];
 
 export const RUNNING_COST_LINE_LABELS: Record<RunningCostLineId, string> = {
   rent: "Rent",
   "akshay-salary": "Akshay salary",
   electricity: "Electricity",
   thekedar: "Thekedar",
-  delivery: "Delivery (kiraya)",
   "other-expenses": "Other factory expenses",
 };
 

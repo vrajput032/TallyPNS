@@ -135,7 +135,6 @@ export async function getMonthProfitLoss(month: number, year: number): Promise<M
   agg.costOverrides = overrides.get(monthKey(year, month));
   agg.commission = lumpSums.get(monthKey(year, month)) ?? 0;
   const monthExpenses = expenses.byMonth[monthKey(year, month)];
-  agg.delivery = monthExpenses?.delivery ?? 0;
   agg.otherExpenses = monthExpenses?.other ?? 0;
   agg.electricityFromExpenses = monthExpenses?.electricity ?? 0;
   agg.expenseEntries = monthExpenses?.entries ?? [];
@@ -176,7 +175,6 @@ export async function getProfitLossSummary(): Promise<{
     agg.costOverrides = overrides.get(key);
     agg.commission = lumpSums.get(key) ?? 0;
     const monthExpenses = expenses.byMonth[key];
-    agg.delivery = monthExpenses?.delivery ?? 0;
     agg.otherExpenses = monthExpenses?.other ?? 0;
     agg.electricityFromExpenses = monthExpenses?.electricity ?? 0;
     agg.expenseEntries = monthExpenses?.entries ?? [];
@@ -201,7 +199,6 @@ export async function getProfitLossSummary(): Promise<{
   const monthReports = months.map(({ year, month }) => {
     const agg = buckets.get(monthKey(year, month)) ?? newAgg(year, month);
     const monthExpenses = expenses.byMonth[monthKey(year, month)];
-    agg.delivery = agg.delivery ?? monthExpenses?.delivery ?? 0;
     agg.otherExpenses = agg.otherExpenses ?? monthExpenses?.other ?? 0;
     agg.electricityFromExpenses = agg.electricityFromExpenses ?? monthExpenses?.electricity ?? 0;
     agg.expenseEntries = agg.expenseEntries ?? monthExpenses?.entries ?? [];

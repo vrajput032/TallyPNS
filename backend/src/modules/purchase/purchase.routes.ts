@@ -1,7 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
 import { asyncHandler } from "../../middleware/asyncHandler.js";
-import { requireAuth, requireCanDelete } from "../../middleware/auth.js";
+import { requireAuth, requireCanDeletePurchase } from "../../middleware/auth.js";
 import { requireDeletePin } from "../../middleware/requireDeletePin.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import { assertAllowedAttachment, MAX_ATTACHMENT_BYTES } from "../../lib/storage.js";
@@ -188,7 +188,7 @@ purchaseRouter.post(
 
 purchaseRouter.delete(
   "/:id/attachments/:attachmentId",
-  requireCanDelete,
+  requireCanDeletePurchase,
   asyncHandler(async (req, res) => {
     await purchaseService.deletePurchaseAttachment(
       routeParam(req.params.id),
@@ -200,7 +200,7 @@ purchaseRouter.delete(
 
 purchaseRouter.delete(
   "/:id/permanent",
-  requireCanDelete,
+  requireCanDeletePurchase,
   requireDeletePin,
   asyncHandler(async (req, res) => {
     const id = routeParam(req.params.id);
@@ -220,7 +220,7 @@ purchaseRouter.delete(
 
 purchaseRouter.post(
   "/:id/restore",
-  requireCanDelete,
+  requireCanDeletePurchase,
   asyncHandler(async (req, res) => {
     const id = routeParam(req.params.id);
     await purchaseService.restorePurchaseBill(id);
@@ -241,7 +241,7 @@ purchaseRouter.post(
 
 purchaseRouter.delete(
   "/:id",
-  requireCanDelete,
+  requireCanDeletePurchase,
   requireDeletePin,
   asyncHandler(async (req, res) => {
     const id = routeParam(req.params.id);

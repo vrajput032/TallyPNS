@@ -42,7 +42,7 @@ const createUserSchema = z.object({
     .regex(/^[a-zA-Z0-9._-]+$/, "Only letters, numbers, dots, underscores, and hyphens"),
   name: z.string().trim().min(1, "Name is required"),
   password: z.string().min(8, "Password must be at least 8 characters"),
-  role: z.enum(["STAFF", "ADMIN"]),
+  role: z.enum(["STAFF", "MANAGER", "ADMIN"]),
 });
 
 type CreateUserValues = z.infer<typeof createUserSchema>;
@@ -56,6 +56,7 @@ const emptyValues: CreateUserValues = {
 
 const ROLE_OPTIONS: { value: UserRole; title: string; hint: string }[] = [
   { value: "STAFF", title: "Staff", hint: "Add and edit only" },
+  { value: "MANAGER", title: "Manager", hint: "Purchase delete with PIN" },
   { value: "ADMIN", title: "Admin", hint: "Full access, can delete" },
 ];
 

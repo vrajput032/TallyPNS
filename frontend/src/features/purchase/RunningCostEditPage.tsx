@@ -25,8 +25,8 @@ import {
 import { apiErrorMessage } from "@/lib/apiError";
 import { formatInr } from "@/lib/formatInr";
 import {
+  FIXED_RUNNING_COST_LINE_IDS,
   parseRunningCostLineId,
-  RUNNING_COST_LINE_IDS,
   RUNNING_COST_LINE_LABELS,
   type RunningCostLineId,
   type RunningCostMonth,
@@ -218,7 +218,7 @@ export function RunningCostEditPage() {
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {RUNNING_COST_LINE_IDS.map((id) => (
+                  {FIXED_RUNNING_COST_LINE_IDS.map((id) => (
                     <SelectItem key={id} value={id}>
                       {RUNNING_COST_LINE_LABELS[id]}
                     </SelectItem>
