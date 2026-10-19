@@ -45,6 +45,12 @@ export function PurchaseBillDetailPage() {
     return <DetailSkeleton />;
   }
 
+  // Reserved path segments (e.g. /purchase/running-costs) can briefly hit this
+  // route before redirect; the summary payload has no `kind`.
+  if (!bill.kind) {
+    return <DetailSkeleton />;
+  }
+
   const section = purchaseSectionOf(bill.kind);
   const listPath = `/purchase?tab=${section.toLowerCase()}`;
 

@@ -1,6 +1,6 @@
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { AppShell } from "@/components/layout/AppShell";
 import { AdminRoute } from "@/features/auth/AdminRoute";
@@ -66,6 +66,10 @@ export default function App() {
                 <Route path="/purchase" element={<PurchaseBillsPage />} />
                 <Route path="/purchase/new" element={<PurchaseBillFormPage />} />
                 <Route path="/purchase/running-costs/edit" element={<RunningCostEditPage />} />
+                <Route
+                  path="/purchase/running-costs"
+                  element={<Navigate to="/purchase?tab=running_cost" replace />}
+                />
                 <Route path="/purchase/:id/edit" element={<PurchaseBillFormPage />} />
                 <Route path="/purchase/:id" element={<PurchaseBillDetailPage />} />
                 <Route path="/inventory" element={<InventoryPage />} />
