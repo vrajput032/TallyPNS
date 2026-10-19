@@ -9,6 +9,7 @@
 | Role | Can do | Cannot do |
 |------|--------|-----------|
 | **ADMIN** | Full CRUD, user management, recycle bin, delete with PIN | Delete their own account if they are the last admin |
+| **MANAGER** | Everything Staff can, plus soft-delete purchase bills, purchase attachments, and running-cost rows (with PIN) | Delete customers/products/vendors/sales/raw material, edit sales invoices, open Users, Recycle Bin or Activity |
 | **STAFF** | View everything except the activity log, create and edit masters and vouchers (except editing sales invoices) | Delete customers/products/vendors, soft-delete invoices/bills, edit sales invoices, open Users, Recycle Bin or Activity |
 
 ## Deletion PIN
@@ -18,6 +19,6 @@ Delete and destructive edits of sales, purchase, and raw-material bills also req
 ## Seeded accounts
 
 - `admin` (ADMIN)
-- `garvit` (STAFF)
+- `garvit` (MANAGER)
 
 Passwords live only in `backend/.env` (`ADMIN_SEED_PASSWORD`, `GARVIT_SEED_PASSWORD`).

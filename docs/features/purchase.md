@@ -27,11 +27,11 @@ Supplier bills that are **not** pipe stock and **not** customers. The list has t
 
 Month-by-month cards (newest open first) with In P&L / Entries / Total at the top.
 
-- **Counted in Profit & Loss** — the factory P&L cost lines except raw material: Thekedar, Rent, Electricity, Akshay salary, Delivery (kiraya), Other factory expenses. Default amounts come from `backend/src/lib/manufacturingPnl.ts` (rent and salary ₹20,000, thekedar ₹1.5 × pieces sold) and the partner-expenses feed.
-- **Running cost entries** — `RUNNING_COST` purchase bills in that month. These are **not** added to P&L.
-- Every row has **edit** and **delete** icons (delete only for admins):
+- **Counted in Profit & Loss** — fixed monthly lines only: **Rent** and **Akshay salary** (₹20,000 each from `backend/src/lib/manufacturingPnl.ts`). Thekedar, electricity and other factory costs stay on the Profit & Loss page; kiraya / delivery is not a fixed P&L cost.
+- **Running cost entries** — `RUNNING_COST` purchase bills in that month (diesel, medical, kiraya, …). These are **not** added to P&L.
+- Every row has **edit** and **delete** icons (delete for **admin** and **manager**):
   - P&L line → edit opens the edit page for that line and month; delete (PIN) saves ₹0 for that month and hides the row.
-  - Entry → edit opens `/purchase/:id/edit`; delete (admin + PIN) moves the bill to the recycle bin.
+  - Entry → edit opens `/purchase/:id/edit`; delete (admin/manager + PIN) moves the bill to the recycle bin.
 - Lines with a saved amount show an **Edited** tag.
 
 ### Edit running cost page (`/purchase/running-costs/edit`)
