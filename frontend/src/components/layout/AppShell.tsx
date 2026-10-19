@@ -52,8 +52,8 @@ export function AppShell() {
         </div>
         <main
           className={cn(
-            "min-w-0 flex-1 overflow-x-hidden p-4 sm:p-6 print:overflow-visible print:p-0",
-            isCompactNav && "pb-[calc(6rem+env(safe-area-inset-bottom))]"
+            "min-w-0 flex-1 overflow-visible p-3 sm:p-4 print:overflow-visible print:p-0",
+            isCompactNav && "pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
           )}
         >
           <Outlet />

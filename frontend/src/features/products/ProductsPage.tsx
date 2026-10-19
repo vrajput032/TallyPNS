@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-table";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -48,10 +49,11 @@ const columns: ColumnDef<Product>[] = [
 ];
 
 export function ProductsPage() {
+  const [searchParams] = useSearchParams();
   const { data: products, isLoading } = useProducts();
   const allowDelete = canDelete(useAuthStore((state) => state.user));
   const deleteProduct = useDeleteProduct();
-  const [globalFilter, setGlobalFilter] = useState("");
+  const [globalFilter, setGlobalFilter] = useState(() => searchParams.get("q") ?? "");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 

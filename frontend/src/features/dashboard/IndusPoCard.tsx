@@ -22,8 +22,9 @@ import {
 } from "@/components/ui/table";
 import { api } from "@/lib/api";
 import { formatPipeSize, LOW_STOCK_QTY, pipeSizeMatches, SIZE_70MM_WITHOUT_CHUDI } from "@/lib/pipeSizes";
+import { isHeroTheme, useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
-import { DashboardWash } from "./DashboardWash";
+import { DashboardSnow } from "./DashboardSnow";
 import type { IndusPoSummary } from "./useDashboardSummary";
 
 function pieces(value: number) {
@@ -86,19 +87,21 @@ interface IndusPoCardProps {
 
 export function IndusPoCard({ data, stockBySize = [], isLoading }: IndusPoCardProps) {
   const navigate = useNavigate();
+  const heroMode = isHeroTheme(useTheme().theme.name);
   const [openingPo, setOpeningPo] = useState<string | null>(null);
   const cardClass =
-    "relative min-w-0 overflow-hidden border-border/40 bg-card/60 shadow-[0_4px_30px_rgba(0,0,0,0.04)] backdrop-blur-xl";
+    "relative min-w-0 overflow-hidden rounded-xl border border-border bg-card shadow-[0_2px_10px_rgba(20,60,100,0.07)]";
 
   // A summary cached before the previous-PO-first change has no previousLeft yet.
   if (!data || data.previousLeft == null) {
     if (!isLoading) return null;
     return (
       <Card className={cardClass}>
-        <CardHeader>
+        {heroMode ? <DashboardSnow seed={3} /> : null}
+        <CardHeader className="relative z-[1]">
           <CardTitle className="text-base font-medium">Indus PO remaining</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-3">
+        <CardContent className="relative z-[1] grid gap-3">
           <Skeleton className="h-20 w-full rounded-xl" />
         </CardContent>
       </Card>
@@ -115,12 +118,35 @@ export function IndusPoCard({ data, stockBySize = [], isLoading }: IndusPoCardPr
     : `${progressPercent}% of ${data.poNo} supplied`;
 
   return (
-    <Card className={cardClass}>
-      <DashboardWash tint={done ? "mint" : "gold"} />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent dark:via-white/20" />
-      <CardHeader>
-        <CardTitle className="text-base font-medium">Indus PO remaining</CardTitle>
-        <CardDescription className="text-xs">
+    <Card className={cn(cardClass, !heroMode && "bg-transparent")}>
+      {heroMode ? (
+        <DashboardSnow seed={3} />
+      ) : (
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+          <div className="absolute inset-0 bg-gradient-to-br from-[#EAF4FF] via-white to-[#cfe6ff]" />
+          <div className="absolute -left-8 top-6 size-28 rounded-full bg-white/80 blur-2xl" />
+          <div className="absolute right-10 top-2 size-20 rounded-full bg-white blur-xl" />
+          <div className="absolute bottom-8 left-1/3 size-24 rounded-full bg-[#d7ebff]/90 blur-2xl" />
+          {Array.from({ length: 16 }, (_, index) => (
+            <span
+              key={index}
+              className="absolute rounded-full bg-white shadow-[0_2px_8px_rgba(255,255,255,0.95)]"
+              style={{
+                width: index % 3 === 0 ? 10 : 6,
+                height: index % 3 === 0 ? 10 : 6,
+                left: `${(index * 13) % 100}%`,
+                top: `${(index * 19) % 100}%`,
+                animation: `float ${5 + (index % 4)}s ease-in-out infinite`,
+                animationDelay: `${index * 0.2}s`,
+              }}
+            />
+          ))}
+        </div>
+      )}
+      {heroMode ? null : <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/80" />}
+      <CardHeader className="relative z-[1] gap-1 px-3 py-2.5 sm:px-4">
+        <CardTitle className="text-sm font-semibold sm:text-base">Indus PO remaining</CardTitle>
+        <CardDescription className="text-[11px] sm:text-xs">
           {data.previousPoNo} then {data.poNo}
           {data.customerName ? ` · ${data.customerName}` : ""}
         </CardDescription>
@@ -129,7 +155,7 @@ export function IndusPoCard({ data, stockBySize = [], isLoading }: IndusPoCardPr
             <Button
               variant="ghost"
               size="sm"
-              className="text-xs"
+              className="h-7 text-xs"
               onClick={() => navigate(`/sales?customer=${data.customerId}&type=factory`)}
             >
               Sales
@@ -137,58 +163,61 @@ export function IndusPoCard({ data, stockBySize = [], isLoading }: IndusPoCardPr
           </CardAction>
         ) : null}
       </CardHeader>
-      <CardContent className="grid gap-4">
-        <div
-          className={cn(
-            "relative min-w-0 overflow-hidden rounded-xl px-3 py-4 text-center",
-            done
-              ? "bg-gradient-to-br from-emerald-200/55 via-green-100/35 to-teal-50/40 dark:from-emerald-500/20 dark:via-emerald-900/15 dark:to-transparent"
-              : "bg-gradient-to-br from-amber-200/55 via-yellow-100/35 to-orange-50/40 dark:from-amber-500/20 dark:via-amber-900/15 dark:to-transparent"
-          )}
-        >
-          <p
-            className={cn(
-              "text-[10px] font-medium uppercase tracking-wider sm:text-[11px]",
-              done ? "text-green-600 dark:text-green-400" : "text-amber-700 dark:text-amber-400"
-            )}
-          >
-            {done ? "Both POs complete" : "Pieces left"}
-          </p>
-          <p
-            className={cn(
-              "mt-1 text-3xl font-bold tabular-nums sm:text-4xl",
-              done ? "text-green-600 dark:text-green-400" : "text-amber-800 dark:text-amber-300"
-            )}
-          >
-            {pieces(data.remaining)}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {onPrevious
-              ? `Finish ${data.previousPoNo} first: ${pieces(data.previousLeft)} left · then ${data.poNo}: ${pieces(data.currentLeft)}`
-              : `${data.previousPoNo} complete · ${data.poNo}: ${pieces(data.currentLeft)} left of ${pieces(data.poQuantity)}`}
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-end justify-between gap-2 text-sm">
-            <span className="text-muted-foreground">{progressLabel}</span>
-            <span className="shrink-0 text-xs text-muted-foreground">
-              {data.invoiceCount} invoice{data.invoiceCount === 1 ? "" : "s"} since {poDateLabel(data.previousPoDate)}
-            </span>
+      <CardContent className="relative z-[1] grid gap-3 px-3 pb-3 sm:gap-3.5 sm:px-4 sm:pb-4">
+        <div className="grid items-center gap-3 lg:grid-cols-[auto_minmax(0,1fr)_minmax(0,1.6fr)]">
+          <div className="relative mx-auto flex size-[4.5rem] items-center justify-center sm:size-20">
+            <svg viewBox="0 0 36 36" className="size-full -rotate-90" aria-hidden>
+              <circle cx="18" cy="18" r="15.5" fill="none" className="stroke-muted" strokeWidth="3.5" />
+              <circle
+                cx="18"
+                cy="18"
+                r="15.5"
+                fill="none"
+                stroke={done ? "#168452" : "#E8B83D"}
+                strokeWidth="3.5"
+                strokeLinecap="round"
+                strokeDasharray={`${(progressPercent / 100) * 97.4} 97.4`}
+              />
+            </svg>
+            <div className="absolute flex flex-col items-center leading-none">
+              <span className="text-sm font-bold tabular-nums text-[#15385F] dark:text-foreground">
+                {progressPercent}%
+              </span>
+              <span className="text-[9px] font-medium text-muted-foreground">Supplied</span>
+            </div>
           </div>
-          <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted">
-            <div
+          <div className="min-w-0 text-center lg:text-left">
+            <p
               className={cn(
-                "h-full rounded-full transition-all duration-700 ease-out",
-                done ? "bg-green-500" : progressPercent >= 50 ? "bg-primary" : "bg-amber-500"
+                "text-[10px] font-semibold tracking-[0.16em] uppercase",
+                done ? "text-green-600" : "text-[#D91F32]",
               )}
-              style={{ width: `${progressPercent}%` }}
-            />
+            >
+              {done ? "Both POs complete" : "Pieces left"}
+            </p>
+            <p
+              className={cn(
+                "mt-0.5 text-3xl font-bold tabular-nums sm:text-4xl",
+                done ? "text-green-600" : "text-[#D91F32]",
+              )}
+            >
+              {pieces(data.remaining)}
+            </p>
+            <p className="mt-1 text-[11px] text-muted-foreground sm:text-xs">
+              {onPrevious
+                ? `Finish ${data.previousPoNo} first: ${pieces(data.previousLeft)} left · then ${data.poNo}: ${pieces(data.currentLeft)}`
+                : `${data.previousPoNo} complete · ${data.poNo}: ${pieces(data.currentLeft)} left of ${pieces(data.poQuantity)}`}
+            </p>
           </div>
-        </div>
-
-        <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4">
-          <div className="relative min-w-0 overflow-hidden rounded-xl bg-gradient-to-br from-sky-200/40 via-muted/50 to-indigo-100/30 px-2 py-3 text-center dark:from-sky-500/15 dark:via-muted/40 dark:to-transparent sm:px-3">
+          <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4">
+          <div
+            className={cn(
+              "relative min-w-0 overflow-hidden rounded-xl px-2 py-3 text-center sm:px-3",
+              heroMode
+                ? "bg-muted"
+                : "bg-gradient-to-br from-sky-200/40 via-muted/50 to-indigo-100/30 dark:from-sky-500/15 dark:via-muted/40 dark:to-transparent",
+            )}
+          >
             <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-[11px]">
               Last PO
             </p>
@@ -197,7 +226,14 @@ export function IndusPoCard({ data, stockBySize = [], isLoading }: IndusPoCardPr
               {data.previousPoNo} · {poDateLabel(data.previousPoDate)}
             </p>
           </div>
-          <div className="relative min-w-0 overflow-hidden rounded-xl bg-gradient-to-br from-violet-200/40 via-muted/50 to-fuchsia-100/25 px-2 py-3 text-center dark:from-violet-500/15 dark:via-muted/40 dark:to-transparent sm:px-3">
+          <div
+            className={cn(
+              "relative min-w-0 overflow-hidden rounded-xl px-2 py-3 text-center sm:px-3",
+              heroMode
+                ? "bg-muted"
+                : "bg-gradient-to-br from-violet-200/40 via-muted/50 to-fuchsia-100/25 dark:from-violet-500/15 dark:via-muted/40 dark:to-transparent",
+            )}
+          >
             <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-[11px]">
               Given
             </p>
@@ -240,10 +276,29 @@ export function IndusPoCard({ data, stockBySize = [], isLoading }: IndusPoCardPr
               of {pieces(data.poQuantity)} · {data.poNo}
             </p>
           </div>
+          </div>
         </div>
 
-        <div className="min-w-0 rounded-md border">
-          <Table className="text-[11px] sm:text-sm [&_td]:px-1.5 [&_th]:px-1.5 sm:[&_td]:px-2 sm:[&_th]:px-2">
+        <div className="space-y-1.5">
+          <div className="flex items-end justify-between gap-2 text-xs sm:text-sm">
+            <span className="text-muted-foreground">{progressLabel}</span>
+            <span className="shrink-0 text-muted-foreground">
+              {data.invoiceCount} invoice{data.invoiceCount === 1 ? "" : "s"} since {poDateLabel(data.previousPoDate)}
+            </span>
+          </div>
+          <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className={cn(
+                "h-full rounded-full transition-all duration-700 ease-out",
+                done ? "bg-[#168452]" : "bg-gradient-to-r from-[#E8B83D] to-[#FFBF42]",
+              )}
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="-mx-1 min-w-0 overflow-x-auto rounded-md border sm:mx-0">
+          <Table className="min-w-[28rem] text-[11px] sm:min-w-0 sm:text-sm [&_td]:px-1.5 [&_th]:px-1.5 sm:[&_td]:px-2 sm:[&_th]:px-2">
             <TableHeader>
               <TableRow>
                 <TableHead>Size</TableHead>

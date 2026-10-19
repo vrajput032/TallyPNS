@@ -8,17 +8,22 @@ export type DashboardTint =
   | "gold"
   | "rose"
   | "orange"
-  | "teal";
+  | "teal"
+  | "crimson"
+  | "navy";
 
 const WASH: Record<DashboardTint, string> = {
   sky: "bg-gradient-to-br from-sky-300/40 via-sky-100/20 to-transparent dark:from-sky-500/20 dark:via-sky-900/10 dark:to-transparent",
   mint: "bg-gradient-to-br from-emerald-300/40 via-teal-100/20 to-transparent dark:from-emerald-500/20 dark:via-teal-900/10 dark:to-transparent",
   lilac: "bg-gradient-to-br from-violet-300/40 via-fuchsia-100/15 to-transparent dark:from-violet-500/20 dark:via-fuchsia-900/10 dark:to-transparent",
   peach: "bg-gradient-to-br from-orange-300/35 via-amber-100/20 to-transparent dark:from-orange-500/20 dark:via-amber-900/10 dark:to-transparent",
-  gold: "bg-gradient-to-br from-amber-300/40 via-yellow-100/20 to-transparent dark:from-amber-500/20 dark:via-yellow-900/10 dark:to-transparent",
+  gold: "bg-gradient-to-br from-amber-300/45 via-yellow-100/25 to-transparent dark:from-amber-500/25 dark:via-yellow-900/10 dark:to-transparent",
   rose: "bg-gradient-to-br from-rose-300/40 via-pink-100/20 to-transparent dark:from-rose-500/20 dark:via-pink-900/10 dark:to-transparent",
   orange: "bg-gradient-to-br from-orange-400/35 via-orange-100/15 to-transparent dark:from-orange-500/22 dark:via-orange-900/10 dark:to-transparent",
   teal: "bg-gradient-to-br from-teal-300/40 via-cyan-100/15 to-transparent dark:from-teal-500/20 dark:via-cyan-900/10 dark:to-transparent",
+  crimson:
+    "bg-gradient-to-br from-red-400/40 via-rose-100/20 to-transparent dark:from-red-500/25 dark:via-rose-900/10 dark:to-transparent",
+  navy: "bg-gradient-to-br from-blue-500/35 via-sky-100/20 to-transparent dark:from-blue-500/25 dark:via-blue-900/10 dark:to-transparent",
 };
 
 const GLOW: Record<DashboardTint, string> = {
@@ -26,10 +31,12 @@ const GLOW: Record<DashboardTint, string> = {
   mint: "bg-emerald-200/45 dark:bg-emerald-400/15",
   lilac: "bg-violet-200/45 dark:bg-violet-400/15",
   peach: "bg-orange-200/40 dark:bg-orange-400/15",
-  gold: "bg-amber-200/45 dark:bg-amber-400/15",
+  gold: "bg-amber-200/50 dark:bg-amber-400/20",
   rose: "bg-rose-200/45 dark:bg-rose-400/15",
   orange: "bg-orange-200/45 dark:bg-orange-400/15",
   teal: "bg-teal-200/45 dark:bg-teal-400/15",
+  crimson: "bg-red-300/45 dark:bg-red-400/20",
+  navy: "bg-blue-300/45 dark:bg-blue-400/20",
 };
 
 export function DashboardWash({ tint }: { tint: DashboardTint }) {

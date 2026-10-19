@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 export type ThemeName =
+  | "steel"
+  | "sky-krypton"
   | "royal"
   | "azure"
   | "sky"
@@ -28,12 +30,97 @@ export interface Theme {
   dark?: boolean;
 }
 
+export const DEFAULT_THEME: ThemeName = "sky-krypton";
+
+/** Steel (dark) + Sky Krypton (light) — hero accents on home + nav. */
+export function isHeroTheme(name: ThemeName): boolean {
+  return name === "steel" || name === "sky-krypton";
+}
+
+export function isSteelTheme(name: ThemeName): boolean {
+  return name === "steel";
+}
+
+/** Dashboard home wash behind stat tiles (CSS palette tokens). */
+export function heroDashboardWash(name: ThemeName): string | undefined {
+  if (!isHeroTheme(name)) return undefined;
+  if (isSteelTheme(name)) {
+    return [
+      "radial-gradient(ellipse 80% 55% at 12% 8%, color-mix(in srgb, var(--primary) 28%, transparent), transparent 55%)",
+      "radial-gradient(ellipse 70% 50% at 88% 12%, color-mix(in srgb, var(--ring) 18%, transparent), transparent 55%)",
+      "radial-gradient(ellipse 55% 40% at 50% 0%, color-mix(in srgb, var(--accent) 45%, transparent), transparent 50%)",
+    ].join(", ");
+  }
+  return [
+    "radial-gradient(ellipse 80% 55% at 12% 8%, color-mix(in srgb, #D91F32 12%, transparent), transparent 55%)",
+    "radial-gradient(ellipse 70% 50% at 88% 12%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 55%)",
+    "radial-gradient(ellipse 55% 40% at 50% 0%, color-mix(in srgb, var(--ring) 18%, transparent), transparent 50%)",
+  ].join(", ");
+}
+
 const NEUTRAL_PAGE_GRADIENT = "linear-gradient(160deg, #ffffff 0%, #f4f4f5 50%, #e4e4e7 100%)";
 
 const THEMED_PAGE_GRADIENT =
   "linear-gradient(160deg, var(--card) 0%, var(--background) 45%, color-mix(in srgb, var(--primary) 16%, var(--background)) 100%)";
 
+/** Dark Steel Navy with red/gold glows. */
+const STEEL_PAGE_GRADIENT =
+  "radial-gradient(ellipse 85% 55% at 8% 0%, rgba(201,31,50,0.28), transparent 52%), radial-gradient(ellipse 70% 50% at 92% 8%, rgba(255,191,66,0.16), transparent 48%), radial-gradient(ellipse 60% 40% at 50% 100%, rgba(23,59,87,0.55), transparent 55%), linear-gradient(165deg, #071A2B 0%, #0c2238 45%, #101D2B 100%)";
+
+/** Light Sky Krypton wash. */
+const SKY_KRYPTON_PAGE_GRADIENT =
+  "radial-gradient(ellipse 80% 50% at 10% 0%, rgba(217,31,50,0.10), transparent 50%), radial-gradient(ellipse 70% 45% at 90% 5%, rgba(7,86,166,0.14), transparent 48%), radial-gradient(ellipse 55% 40% at 50% 0%, rgba(232,184,61,0.16), transparent 45%), linear-gradient(135deg, #EAF4FF 0%, #F8FAFD 55%, #EAF4FF 100%)";
+
 export const THEMES: Theme[] = [
+  {
+    name: "steel",
+    label: "Steel",
+    swatches: ["#C91F32", "#FFBF42", "#173B57", "#071A2B"],
+    dark: true,
+    pageGradient: STEEL_PAGE_GRADIENT,
+    tokens: {
+      "--primary": "#C91F32",
+      "--primary-foreground": "#ffffff",
+      "--accent": "#173B57",
+      "--accent-foreground": "#FFBF42",
+      "--background": "#071A2B",
+      "--foreground": "#E7EEF5",
+      "--card": "#101D2B",
+      "--card-foreground": "#E7EEF5",
+      "--muted": "#173B57",
+      "--muted-foreground": "#A8B8C9",
+      "--border": "#2A4058",
+      "--ring": "#FFBF42",
+      "--sidebar": "#0A1F33",
+      "--sidebar-foreground": "#E7EEF5",
+      "--sidebar-primary": "#C91F32",
+      "--sidebar-primary-foreground": "#ffffff",
+    },
+  },
+  {
+    name: "sky-krypton",
+    label: "Sky Krypton",
+    swatches: ["#0756A6", "#D91F32", "#E8B83D", "#EAF4FF"],
+    pageGradient: SKY_KRYPTON_PAGE_GRADIENT,
+    tokens: {
+      "--primary": "#0756A6",
+      "--primary-foreground": "#ffffff",
+      "--accent": "#FFF4D6",
+      "--accent-foreground": "#15385F",
+      "--background": "#EAF4FF",
+      "--foreground": "#15385F",
+      "--card": "#FFFFFF",
+      "--card-foreground": "#15385F",
+      "--muted": "#F3F7FC",
+      "--muted-foreground": "#526D8C",
+      "--border": "#D3E2F2",
+      "--ring": "#E8B83D",
+      "--sidebar": "#F3F7FC",
+      "--sidebar-foreground": "#15385F",
+      "--sidebar-primary": "#0756A6",
+      "--sidebar-primary-foreground": "#ffffff",
+    },
+  },
   {
     name: "royal",
     label: "Royal",
@@ -337,7 +424,20 @@ export const THEMES: Theme[] = [
   },
 ];
 
-const STORAGE_KEY = "pns-theme";
+/** Bumped when the product default theme changes so browsers pick up the new default. */
+const STORAGE_KEY = "pns-theme-v4";
+
+const LEGACY_THEME_MAP: Record<string, ThemeName> = {
+  superman: "steel",
+};
+
+function resolveStoredTheme(stored: string | null): ThemeName {
+  if (!stored) return DEFAULT_THEME;
+  if (THEMES.some((t) => t.name === stored)) return stored as ThemeName;
+  const mapped = LEGACY_THEME_MAP[stored];
+  if (mapped) return mapped;
+  return DEFAULT_THEME;
+}
 
 type ThemeContextValue = {
   theme: Theme;
@@ -353,11 +453,9 @@ export function useTheme() {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [themeName, setThemeName] = useState<ThemeName>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored && THEMES.some((t) => t.name === stored)) return stored as ThemeName;
-    return "royal";
-  });
+  const [themeName, setThemeName] = useState<ThemeName>(() =>
+    resolveStoredTheme(localStorage.getItem(STORAGE_KEY))
+  );
 
   const theme = THEMES.find((t) => t.name === themeName)!;
 
@@ -367,6 +465,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       root.style.setProperty(key, value);
     }
     root.style.setProperty("--page-gradient", theme.pageGradient ?? THEMED_PAGE_GRADIENT);
+    root.dataset.theme = themeName;
     root.classList.toggle("dark", Boolean(theme.dark));
     root.style.colorScheme = theme.dark ? "dark" : "light";
     localStorage.setItem(STORAGE_KEY, themeName);

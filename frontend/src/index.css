@@ -39,20 +39,24 @@
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
 
-  /* theme token fallbacks — overridden at runtime by ThemeProvider */
-  --primary: #0f172a;
+  /* theme token fallbacks — overridden at runtime by ThemeProvider (sky-krypton default) */
+  --primary: #0756A6;
   --primary-foreground: #ffffff;
-  --accent: #f1f5f9;
-  --accent-foreground: #0f172a;
-  --background: #faf9f6;
-  --foreground: #1a1a2e;
+  --accent: #FFF4D6;
+  --accent-foreground: #15385F;
+  --background: #EAF4FF;
+  --foreground: #15385F;
   --card: #ffffff;
-  --card-foreground: #1a1a2e;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --border: #e2e8f0;
-  --ring: #1d4ed8;
-  --page-gradient: linear-gradient(160deg, #ffffff 0%, #f4f4f5 50%, #e4e4e7 100%);
+  --card-foreground: #15385F;
+  --muted: #F3F7FC;
+  --muted-foreground: #526D8C;
+  --border: #D3E2F2;
+  --ring: #E8B83D;
+  --sidebar: #F3F7FC;
+  --sidebar-foreground: #15385F;
+  --sidebar-primary: #0756A6;
+  --sidebar-primary-foreground: #ffffff;
+  --page-gradient: radial-gradient(ellipse 80% 50% at 10% 0%, rgba(217,31,50,0.10), transparent 50%), radial-gradient(ellipse 70% 45% at 90% 5%, rgba(7,86,166,0.14), transparent 48%), radial-gradient(ellipse 55% 40% at 50% 0%, rgba(232,184,61,0.16), transparent 45%), linear-gradient(135deg, #EAF4FF 0%, #F8FAFD 55%, #EAF4FF 100%);
 }
 
 .dark {

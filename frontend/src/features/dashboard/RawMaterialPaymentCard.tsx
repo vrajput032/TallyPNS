@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { isHeroTheme, useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
+import { DashboardSnow } from "./DashboardSnow";
 import { DashboardWash } from "./DashboardWash";
 import type { RawMaterialSummary } from "./useDashboardSummary";
 
@@ -18,14 +20,19 @@ interface RawMaterialPaymentCardProps {
 
 export function RawMaterialPaymentCard({ data, isLoading }: RawMaterialPaymentCardProps) {
   const navigate = useNavigate();
+  const heroMode = isHeroTheme(useTheme().theme.name);
+  const cardClass = heroMode
+    ? "relative min-w-0 overflow-hidden rounded-xl border border-border bg-card shadow-[0_2px_10px_rgba(20,60,100,0.07)]"
+    : "relative overflow-hidden border-border/40 bg-card/60 shadow-[0_4px_30px_rgba(0,0,0,0.04)] backdrop-blur-xl";
 
   if (isLoading) {
     return (
-      <Card className="relative overflow-hidden border-border/40 bg-card/60 backdrop-blur-xl shadow-[0_4px_30px_rgba(0,0,0,0.04)]">
-        <CardHeader>
+      <Card className={cardClass}>
+        {heroMode ? <DashboardSnow seed={5} /> : null}
+        <CardHeader className="relative z-[1]">
           <CardTitle className="text-base font-medium">Raw Material Payments</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-3">
+        <CardContent className="relative z-[1] grid gap-3">
           <Skeleton className="h-20 w-full rounded-xl" />
         </CardContent>
       </Card>
@@ -37,10 +44,12 @@ export function RawMaterialPaymentCard({ data, isLoading }: RawMaterialPaymentCa
   const paidPercent = data.totalBilled > 0 ? Math.round((data.totalPaid / data.totalBilled) * 100) : 0;
 
   return (
-    <Card className="relative overflow-hidden border-border/40 bg-card/60 shadow-[0_4px_30px_rgba(0,0,0,0.04)] backdrop-blur-xl">
-      <DashboardWash tint={data.balance > 0 ? "orange" : "mint"} />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent dark:via-white/20" />
-      <CardHeader className="flex-row items-center justify-between space-y-0">
+    <Card className={cardClass}>
+      {heroMode ? <DashboardSnow seed={5} /> : <DashboardWash tint={data.balance > 0 ? "orange" : "mint"} />}
+      {heroMode ? null : (
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent dark:via-white/20" />
+      )}
+      <CardHeader className="relative z-[1] flex-row items-center justify-between space-y-0">
         <CardTitle className="text-base font-medium">Raw Material Payments</CardTitle>
         <Button
           variant="ghost"
@@ -51,7 +60,7 @@ export function RawMaterialPaymentCard({ data, isLoading }: RawMaterialPaymentCa
           View all
         </Button>
       </CardHeader>
-      <CardContent className="grid gap-4">
+      <CardContent className="relative z-[1] grid gap-4">
         {/* Progress bar */}
         <div className="space-y-2">
           <div className="flex items-end justify-between text-sm">
@@ -75,7 +84,14 @@ export function RawMaterialPaymentCard({ data, isLoading }: RawMaterialPaymentCa
 
         {/* Stats row */}
         <div className="grid min-w-0 grid-cols-3 gap-2">
-          <div className="relative min-w-0 overflow-hidden rounded-xl bg-gradient-to-br from-sky-200/40 via-muted/50 to-indigo-100/25 px-2 py-3 text-center dark:from-sky-500/15 dark:via-muted/40 dark:to-transparent sm:px-3">
+          <div
+            className={cn(
+              "relative min-w-0 overflow-hidden rounded-xl px-2 py-3 text-center sm:px-3",
+              heroMode
+                ? "bg-muted"
+                : "bg-gradient-to-br from-sky-200/40 via-muted/50 to-indigo-100/25 dark:from-sky-500/15 dark:via-muted/40 dark:to-transparent",
+            )}
+          >
             <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-[11px]">
               Total billed
             </p>

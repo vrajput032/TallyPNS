@@ -1,12 +1,13 @@
 import {
+  Boxes,
+  ChartNoAxesCombined,
   Factory,
   LayoutDashboard,
   ShoppingCart,
-  TrendingUp,
-  Warehouse,
   type LucideIcon,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
+import { isHeroTheme, useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 type MobileTab = {
@@ -18,8 +19,8 @@ type MobileTab = {
 };
 
 export const mobileTabItems: MobileTab[] = [
-  { to: "/sales", label: "Sales", icon: TrendingUp },
-  { to: "/inventory", label: "Inventory", shortLabel: "Stock", icon: Warehouse },
+  { to: "/sales", label: "Sales", icon: ChartNoAxesCombined },
+  { to: "/inventory", label: "Inventory", shortLabel: "Stock", icon: Boxes },
   { to: "/", label: "Dashboard", icon: LayoutDashboard, center: true },
   { to: "/purchase", label: "Purchase", icon: ShoppingCart },
   { to: "/raw-material", label: "Raw material", shortLabel: "Raw mat.", icon: Factory },
@@ -32,6 +33,8 @@ function isTabActive(pathname: string, to: string) {
 
 export function MobileTabBar() {
   const { pathname } = useLocation();
+  const { theme } = useTheme();
+  const heroMode = isHeroTheme(theme.name);
 
   return (
     <nav
@@ -41,12 +44,13 @@ export function MobileTabBar() {
       <div
         className={cn(
           "pointer-events-auto relative mx-auto flex max-w-lg items-end justify-between gap-0.5 rounded-[28px] border px-1.5 pb-1.5 pt-2",
-          "border-white/30 bg-white/55 shadow-[0_10px_40px_rgba(15,23,42,0.14)]",
+          "border-border/60 bg-card/75 shadow-[0_10px_40px_color-mix(in_srgb,var(--sidebar-primary)_18%,transparent)]",
           "backdrop-blur-2xl backdrop-saturate-150",
-          "dark:border-white/10 dark:bg-zinc-900/55 dark:shadow-[0_10px_40px_rgba(0,0,0,0.45)]"
+          "dark:border-white/10 dark:bg-card/70 dark:shadow-[0_10px_40px_rgba(0,0,0,0.45)]"
         )}
       >
-        <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent dark:via-white/20" />
+        <div className="pointer-events-none absolute inset-0 rounded-[28px] bg-gradient-to-r from-primary/10 via-accent/35 to-[color-mix(in_srgb,var(--sidebar-primary)_12%,transparent)]" />
+        <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-ring/70 to-transparent" />
         {mobileTabItems.map(({ to, label, shortLabel, icon: Icon, center }) => {
           const active = isTabActive(pathname, to);
 
@@ -58,21 +62,21 @@ export function MobileTabBar() {
               aria-label={label}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "relative flex min-w-0 flex-1 flex-col items-center justify-end gap-0.5 rounded-2xl px-0.5 py-1.5 text-[10px] font-medium transition-all",
+                "relative z-[1] flex min-w-0 flex-1 flex-col items-center justify-end gap-0.5 rounded-2xl px-0.5 py-1.5 text-[10px] font-medium transition-all",
                 center && "-mt-5 min-h-[4.25rem] justify-center gap-1 px-1 py-2",
                 center
                   ? active
-                    ? "bg-primary/90 text-primary-foreground shadow-lg shadow-primary/30 ring-1 ring-white/20 backdrop-blur-md"
-                    : "border border-white/35 bg-white/70 text-foreground shadow-md ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-white/10 dark:ring-white/10"
+                    ? cn(
+                        "bg-primary text-primary-foreground shadow-lg shadow-primary/35",
+                        heroMode && "ring-2 ring-ring/80"
+                      )
+                    : "border border-border/70 bg-card/90 text-foreground shadow-md ring-1 ring-[color-mix(in_srgb,var(--sidebar-primary)_20%,transparent)]"
                   : active
                     ? "text-primary"
                     : "text-muted-foreground active:scale-95"
               )}
             >
-              <Icon
-                className={cn("size-[1.125rem] shrink-0", center && "size-6", active && !center && "stroke-[2.5]")}
-                strokeWidth={active ? 2.5 : 2}
-              />
+              <Icon className={cn("size-[1.125rem] shrink-0", center && "size-6")} />
               <span className={cn("max-w-full truncate leading-none", center && "text-[9px] sm:text-[10px]")}>
                 {shortLabel ?? label}
               </span>

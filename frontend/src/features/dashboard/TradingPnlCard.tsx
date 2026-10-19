@@ -18,7 +18,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatInr } from "@/lib/formatInr";
+import { isHeroTheme, useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
+import { DashboardSnow } from "./DashboardSnow";
 import { DashboardWash } from "./DashboardWash";
 import type { RawMaterialTradingPnlSummary, TradingPnlSummary } from "./useDashboardSummary";
 
@@ -96,18 +98,22 @@ function cardCopy(props: TradingPnlCardProps): CardCopy {
 export function TradingPnlCard(props: TradingPnlCardProps) {
   const { data, isLoading } = props;
   const navigate = useNavigate();
+  const heroMode = isHeroTheme(useTheme().theme.name);
   const copy = cardCopy(props);
+  const snowSeed = props.variant === "goods" ? 2 : 8;
 
-  const cardClass =
-    "relative min-w-0 overflow-hidden border-border/40 bg-card/60 shadow-[0_4px_30px_rgba(0,0,0,0.04)] backdrop-blur-xl";
+  const cardClass = heroMode
+    ? "relative min-w-0 overflow-hidden rounded-xl border border-border bg-card shadow-[0_2px_10px_rgba(20,60,100,0.07)]"
+    : "relative min-w-0 overflow-hidden border-border/40 bg-card/60 shadow-[0_4px_30px_rgba(0,0,0,0.04)] backdrop-blur-xl";
 
   if (isLoading && !data) {
     return (
       <Card className={cardClass}>
-        <CardHeader>
+        {heroMode ? <DashboardSnow seed={snowSeed} /> : null}
+        <CardHeader className="relative z-[1]">
           <CardTitle className="text-base font-medium">{copy.title}</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-3">
+        <CardContent className="relative z-[1] grid gap-3">
           <Skeleton className="h-20 w-full rounded-xl" />
         </CardContent>
       </Card>
@@ -121,9 +127,11 @@ export function TradingPnlCard(props: TradingPnlCardProps) {
 
   return (
     <Card className={cardClass}>
-      <DashboardWash tint={data.profit < 0 ? "rose" : "mint"} />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent dark:via-white/20" />
-      <CardHeader>
+      {heroMode ? <DashboardSnow seed={snowSeed} /> : <DashboardWash tint={data.profit < 0 ? "rose" : "mint"} />}
+      {heroMode ? null : (
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent dark:via-white/20" />
+      )}
+      <CardHeader className="relative z-[1]">
         <CardTitle className="text-base font-medium">{copy.title}</CardTitle>
         <CardDescription className="text-xs">{copy.description}</CardDescription>
         <CardAction className="flex gap-1">
@@ -140,9 +148,16 @@ export function TradingPnlCard(props: TradingPnlCardProps) {
           ))}
         </CardAction>
       </CardHeader>
-      <CardContent className="grid gap-4">
+      <CardContent className="relative z-[1] grid gap-4">
         <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4">
-          <div className="relative min-w-0 overflow-hidden rounded-xl bg-gradient-to-br from-sky-200/40 via-muted/50 to-indigo-100/25 px-2 py-3 text-center dark:from-sky-500/15 dark:via-muted/40 dark:to-transparent sm:px-3">
+          <div
+            className={cn(
+              "relative min-w-0 overflow-hidden rounded-xl px-2 py-3 text-center sm:px-3",
+              heroMode
+                ? "bg-muted"
+                : "bg-gradient-to-br from-sky-200/40 via-muted/50 to-indigo-100/25 dark:from-sky-500/15 dark:via-muted/40 dark:to-transparent",
+            )}
+          >
             <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-[11px]">
               Sold
             </p>
@@ -151,7 +166,14 @@ export function TradingPnlCard(props: TradingPnlCardProps) {
             </p>
             <p className="truncate text-[10px] text-muted-foreground sm:text-xs">{copy.soldNote}</p>
           </div>
-          <div className="relative min-w-0 overflow-hidden rounded-xl bg-gradient-to-br from-orange-200/40 via-muted/50 to-amber-100/25 px-2 py-3 text-center dark:from-orange-500/15 dark:via-muted/40 dark:to-transparent sm:px-3">
+          <div
+            className={cn(
+              "relative min-w-0 overflow-hidden rounded-xl px-2 py-3 text-center sm:px-3",
+              heroMode
+                ? "bg-muted"
+                : "bg-gradient-to-br from-orange-200/40 via-muted/50 to-amber-100/25 dark:from-orange-500/15 dark:via-muted/40 dark:to-transparent",
+            )}
+          >
             <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-[11px]">
               Bought
             </p>
@@ -160,7 +182,14 @@ export function TradingPnlCard(props: TradingPnlCardProps) {
             </p>
             <p className="truncate text-[10px] text-muted-foreground sm:text-xs">{copy.boughtNote}</p>
           </div>
-          <div className="relative min-w-0 overflow-hidden rounded-xl bg-gradient-to-br from-violet-200/40 via-muted/50 to-fuchsia-100/25 px-2 py-3 text-center dark:from-violet-500/15 dark:via-muted/40 dark:to-transparent sm:px-3">
+          <div
+            className={cn(
+              "relative min-w-0 overflow-hidden rounded-xl px-2 py-3 text-center sm:px-3",
+              heroMode
+                ? "bg-muted"
+                : "bg-gradient-to-br from-violet-200/40 via-muted/50 to-fuchsia-100/25 dark:from-violet-500/15 dark:via-muted/40 dark:to-transparent",
+            )}
+          >
             <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-[11px]">
               {data.gst < 0 ? "GST credit" : "GST payable"}
             </p>
