@@ -96,9 +96,31 @@ export async function ensureStorageReady() {
   await setupPromise;
 }
 
+/** Phone uploads sometimes omit a filename; never throw on that. */
+export function attachmentStorageName(originalName: string | undefined, fallback = "bill-copy"): string {
+  const cleaned = (originalName || "")
+    .replace(/[^\w.\-()+ ]+/g, "_")
+    .replace(/^\.+$/g, "")
+    .trim()
+    .slice(0, 80);
+  return cleaned || fallback;
+}
+
+export function attachmentMimeType(file: { mimetype?: string; originalname?: string }): string {
+  const mime = (file.mimetype || "").split(";")[0].trim().toLowerCase();
+  if (mime === "image/jpg" || mime === "image/pjpeg") return "image/jpeg";
+  if (ALLOWED_ATTACHMENT_MIME.has(mime)) return mime;
+  const name = (file.originalname || "").toLowerCase();
+  if (name.endsWith(".png")) return "image/png";
+  if (name.endsWith(".webp")) return "image/webp";
+  if (name.endsWith(".pdf")) return "application/pdf";
+  if (name.endsWith(".heic") || name.endsWith(".heif")) return "image/heic";
+  return "image/jpeg";
+}
+
 export function assertAllowedAttachment(file: Express.Multer.File) {
-  const mime = (file.mimetype || "").toLowerCase();
-  const name = file.originalname.toLowerCase();
+  const mime = (file.mimetype || "").split(";")[0].trim().toLowerCase();
+  const name = (file.originalname || "").toLowerCase();
   const okMime = ALLOWED_ATTACHMENT_MIME.has(mime);
   const okExt =
     name.endsWith(".pdf") ||
@@ -128,14 +150,25 @@ export async function uploadObject(params: {
   buffer: Buffer;
   mimeType: string;
 }) {
-  await ensureStorageReady();
+  try {
+    await ensureStorageReady();
+  } catch (error) {
+    // Buckets already exist in production. A setup failure must not block the upload.
+    console.error("[storage] bucket setup failed", error);
+  }
   const supabase = getSupabaseAdmin();
-  const { error } = await supabase.storage.from(params.bucket).upload(params.path, params.buffer, {
-    contentType: params.mimeType,
-    upsert: true,
-  });
-  if (error) {
-    throw new ApiError(500, `Upload failed: ${error.message}`);
+  try {
+    const { error } = await supabase.storage.from(params.bucket).upload(params.path, params.buffer, {
+      contentType: params.mimeType || "application/octet-stream",
+      upsert: true,
+    });
+    if (error) {
+      throw new ApiError(500, `Upload failed: ${error.message}`);
+    }
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    const message = error instanceof Error ? error.message : "Upload failed";
+    throw new ApiError(500, `Upload failed: ${message}`);
   }
   return publicObjectUrl(params.bucket, params.path);
 }

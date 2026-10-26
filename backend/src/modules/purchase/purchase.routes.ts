@@ -61,6 +61,8 @@ purchaseRouter.put(
       summary: `Set ${RUNNING_COST_LINE_LABELS[data.lineId]} to ₹${data.amount} for ${data.fromMonth} → ${data.toMonth}`,
       amount: data.amount,
       href: "/purchase?tab=running_cost",
+      notifyDevices: true,
+      pushTitle: "Running cost",
     });
     res.json({ months });
   })
@@ -79,6 +81,8 @@ purchaseRouter.post(
       entityId: data.lineId,
       summary: `Reset ${RUNNING_COST_LINE_LABELS[data.lineId]} to default for ${data.fromMonth} → ${data.toMonth}`,
       href: "/purchase?tab=running_cost",
+      notifyDevices: true,
+      pushTitle: "Running cost",
     });
     res.json({ months });
   })
@@ -121,15 +125,19 @@ purchaseRouter.post(
     const data = createPurchaseBillSchema.parse(req.body);
     const bill = await purchaseService.createPurchaseBill(data);
     const party = bill.vendor?.name?.trim() || bill.title?.trim() || bill.billNo;
+    const runningCost = bill.kind === "RUNNING_COST";
     recordRequestActivity(req, {
       module: "PURCHASE",
       action: "CREATED",
       entityId: bill.id,
       entityNo: bill.billNo,
-      summary: `Created purchase bill ${bill.billNo} for ${party}`,
+      summary: runningCost
+        ? `Added running cost ${party}`
+        : `Created purchase bill ${bill.billNo} for ${party}`,
       amount: Number(bill.totalAmount),
-      href: `/purchase/${bill.id}`,
+      href: runningCost ? "/purchase?tab=running_cost" : `/purchase/${bill.id}`,
       notifyDevices: true,
+      pushTitle: runningCost ? "Running cost" : undefined,
     });
     res.status(201).json(bill);
   })
@@ -142,15 +150,19 @@ purchaseRouter.put(
     const data = createPurchaseBillSchema.parse(req.body);
     const bill = await purchaseService.updatePurchaseBill(routeParam(req.params.id), data);
     const party = bill.vendor?.name?.trim() || bill.title?.trim() || bill.billNo;
+    const runningCost = bill.kind === "RUNNING_COST";
     recordRequestActivity(req, {
       module: "PURCHASE",
       action: "UPDATED",
       entityId: bill.id,
       entityNo: bill.billNo,
-      summary: `Updated purchase bill ${bill.billNo} for ${party}`,
+      summary: runningCost
+        ? `Updated running cost ${party}`
+        : `Updated purchase bill ${bill.billNo} for ${party}`,
       amount: Number(bill.totalAmount),
-      href: `/purchase/${bill.id}`,
+      href: runningCost ? "/purchase?tab=running_cost" : `/purchase/${bill.id}`,
       notifyDevices: true,
+      pushTitle: runningCost ? "Running cost" : undefined,
     });
     res.json(bill);
   })

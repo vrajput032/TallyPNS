@@ -195,6 +195,25 @@ export async function runTestBroadcastToAllDevices(now = new Date()) {
   return { date: istDateKey(now), devices: subs.length, ...result };
 }
 
+/** 5:00 PM IST daily: remind every subscribed device to update running cost. */
+export async function runDailyRunningCostReminder(now = new Date()) {
+  requirePush();
+  const subs = await prisma.pushSubscription.findMany();
+  if (subs.length === 0) {
+    return { date: istDateKey(now), skipped: "No devices subscribed", sent: 0, removed: 0, failed: 0 };
+  }
+  const payload: PushPayload = {
+    title: "Running cost",
+    body: "garvit running cost update karde agar nahi ki h to",
+    url: "/purchase?tab=running_cost",
+    tag: "running-cost-reminder",
+    playSound: true,
+    silent: false,
+  };
+  const { result } = await sendToSubscriptions(subs, payload);
+  return { date: istDateKey(now), devices: subs.length, ...result };
+}
+
 /** 8:00 PM IST daily: remaining pieces on the active Indus PO. */
 export async function runDailyIndusPoRemaining(now = new Date()) {
   requirePush();

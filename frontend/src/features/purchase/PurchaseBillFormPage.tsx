@@ -94,7 +94,7 @@ function sectionCopy(section: PurchaseSection): SectionCopy {
         titlePlaceholder: "Rent, diesel, maintenance…",
         titleError: "Enter what the expense is for",
         itemsTitle: "Cost lines",
-        hint: "Monthly running cost: describe each charge, qty (usually 1), amount, and GST if any.",
+        hint: "Describe each charge and enter the amount.",
         descriptionPlaceholder: "e.g. September diesel",
         notesPlaceholder: "Paid to, meter reading, period covered…",
         defaultGst: 0,
@@ -176,13 +176,20 @@ export function PurchaseBillFormPage() {
       supplierGstin: existingBill.supplierGstin ?? existingBill.vendor?.gstin ?? "",
       vehicleNo: existingBill.vehicleNo ?? "",
       notes: existingBill.notes ?? "",
-      items: existingBill.items.map((item) => ({
-        description: item.description ?? item.product?.name ?? "",
-        quantity: Number(item.quantity),
-        pricePerKg: 0,
-        rate: Number(item.rate),
-        gstRate: Number(item.gstRate),
-      })),
+      items: existingBill.items.map((item) => {
+        const quantity = Number(item.quantity);
+        const rate = Number(item.rate);
+        const gstRate = Number(item.gstRate);
+        const runningCost = purchaseSectionOf(existingBill.kind) === "RUNNING_COST";
+        const amount = quantity * rate * (1 + gstRate / 100);
+        return {
+          description: item.description ?? item.product?.name ?? "",
+          quantity: runningCost ? 1 : quantity,
+          pricePerKg: 0,
+          rate: runningCost ? amount : rate,
+          gstRate: runningCost ? 0 : gstRate,
+        };
+      }),
     });
   }, [existingBill, form]);
 
@@ -245,10 +252,10 @@ export function PurchaseBillFormPage() {
       items: values.items.map((item) => ({
         productId: null,
         description: item.description.trim(),
-        quantity: item.quantity,
+        quantity: section === "RUNNING_COST" ? 1 : item.quantity,
         pricePerKg: null,
         rate: item.rate,
-        gstRate: item.gstRate,
+        gstRate: section === "RUNNING_COST" ? 0 : item.gstRate,
       })),
     };
   }
@@ -274,6 +281,11 @@ export function PurchaseBillFormPage() {
     createBill.mutate(buildPayload(values), {
       onSuccess: async (bill) => {
         await uploadPending(bill.id);
+        if (section === "RUNNING_COST") {
+          toast.success("Running cost saved");
+          navigate(listPath);
+          return;
+        }
         toast.success(`Bill ${bill.billNo} created`);
         navigate(`/purchase/${bill.id}`);
       },
@@ -290,9 +302,14 @@ export function PurchaseBillFormPage() {
       {
         onSuccess: async (bill) => {
           await uploadPending(bill.id);
-          toast.success(`Bill ${bill.billNo} updated`);
           setPinDialogOpen(false);
           setPendingValues(null);
+          if (section === "RUNNING_COST") {
+            toast.success("Running cost updated");
+            navigate(listPath);
+            return;
+          }
+          toast.success(`Bill ${bill.billNo} updated`);
           navigate(`/purchase/${bill.id}`);
         },
         onError: (error: unknown) => {
@@ -436,6 +453,8 @@ export function PurchaseBillFormPage() {
             <CardContent>
               <PurchaseLineItemsField
                 mode="EQUIPMENT"
+                amountOnly={section === "RUNNING_COST"}
+                showGst={section !== "RUNNING_COST"}
                 hint={copy.hint}
                 descriptionPlaceholder={copy.descriptionPlaceholder}
                 fields={fields}

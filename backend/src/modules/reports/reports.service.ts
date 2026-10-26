@@ -11,7 +11,9 @@ export async function getProfitAndLoss(from?: Date, to?: Date) {
       select: { totalAmount: true },
     }),
     prisma.purchaseBill.findMany({
-      where: dateFilter ? { ...activeOnly, billDate: dateFilter } : activeOnly,
+      where: dateFilter
+        ? { ...activeOnly, billDate: dateFilter, kind: { not: "RUNNING_COST" } }
+        : { ...activeOnly, kind: { not: "RUNNING_COST" } },
       select: { totalAmount: true },
     }),
   ]);
@@ -60,7 +62,7 @@ export async function getBalanceSheet(asOn?: Date) {
       select: { totalAmount: true },
     }),
     prisma.purchaseBill.findMany({
-      where: { ...activeOnly, billDate: { lte: on } },
+      where: { ...activeOnly, billDate: { lte: on }, kind: { not: "RUNNING_COST" } },
       select: { totalAmount: true },
     }),
     prisma.paymentReceipt.findMany({
@@ -139,7 +141,7 @@ export async function getTrialBalance(asOn?: Date) {
       select: { totalAmount: true },
     }),
     prisma.purchaseBill.findMany({
-      where: { ...activeOnly, billDate: { lte: on } },
+      where: { ...activeOnly, billDate: { lte: on }, kind: { not: "RUNNING_COST" } },
       select: { totalAmount: true },
     }),
   ]);

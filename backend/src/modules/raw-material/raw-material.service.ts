@@ -4,6 +4,8 @@ import { prisma } from "../../lib/prisma.js";
 import { activeOnly } from "../../lib/activeRecords.js";
 import { piecesFromKg } from "../../lib/rawMaterialYield.js";
 import {
+  attachmentMimeType,
+  attachmentStorageName,
   deleteObject,
   publicObjectUrl,
   RAW_MATERIAL_BUCKET,
@@ -197,9 +199,9 @@ export async function addRawMaterialAttachment(billId: string, file: Express.Mul
     throw new ApiError(404, "Raw material bill not found");
   }
 
-  const safeName = file.originalname.replace(/[^\w.\-()+ ]+/g, "_").slice(0, 120);
+  const safeName = attachmentStorageName(file.originalname);
   const storagePath = `${billId}/${Date.now()}-${safeName}`;
-  const mimeType = file.mimetype || "application/octet-stream";
+  const mimeType = attachmentMimeType(file);
 
   await uploadObject({
     bucket: RAW_MATERIAL_BUCKET,
@@ -211,7 +213,7 @@ export async function addRawMaterialAttachment(billId: string, file: Express.Mul
   const attachment = await prisma.rawMaterialAttachment.create({
     data: {
       billId,
-      fileName: file.originalname.slice(0, 200),
+      fileName: (file.originalname || safeName).slice(0, 200),
       mimeType,
       storagePath,
       sizeBytes: file.size,

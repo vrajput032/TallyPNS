@@ -2,6 +2,8 @@ import { prisma } from "../../lib/prisma.js";
 import { activeOnly, deletedOnly } from "../../lib/activeRecords.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import {
+  attachmentMimeType,
+  attachmentStorageName,
   deleteObject,
   publicObjectUrl,
   PURCHASE_BUCKET,
@@ -386,9 +388,9 @@ export async function addPurchaseAttachment(
     throw new ApiError(404, "Purchase bill not found");
   }
 
-  const safeName = file.originalname.replace(/[^\w.\-()+ ]+/g, "_").slice(0, 120);
+  const safeName = attachmentStorageName(file.originalname);
   const storagePath = `${billId}/${Date.now()}-${safeName}`;
-  const mimeType = file.mimetype || "application/octet-stream";
+  const mimeType = attachmentMimeType(file);
 
   await uploadObject({
     bucket: PURCHASE_BUCKET,
@@ -400,7 +402,7 @@ export async function addPurchaseAttachment(
   const attachment = await prisma.purchaseAttachment.create({
     data: {
       purchaseBillId: billId,
-      fileName: file.originalname.slice(0, 200),
+      fileName: (file.originalname || safeName).slice(0, 200),
       mimeType,
       storagePath,
       sizeBytes: file.size,

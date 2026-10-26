@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { formatInr } from "@/lib/formatInr";
 import { piecesFromKg } from "@/lib/rawMaterialYield";
 import { apiErrorMessage } from "@/lib/apiError";
+import { isBillImage, isPdfFile, prepareAttachmentFile } from "@/lib/prepareAttachmentFile";
 import type { ParsedRawMaterialBill } from "./types";
 import { RawMaterialAttachmentsPanel } from "./RawMaterialAttachmentsPanel";
 import {
@@ -205,13 +206,39 @@ export function RawMaterialBillFormPage() {
     }
   }
 
+  async function attachCopy(file: File) {
+    const prepared = await prepareAttachmentFile(file);
+    const label = isBillImage(file) ? "Photo" : "Bill copy";
+    if (isEditing && id) {
+      await uploadAttachment.mutateAsync({ id, file: prepared });
+      toast.success(`${label} attached`);
+      return;
+    }
+    setPendingFiles((files) => [prepared, ...files]);
+    toast.success(`${label} added — it attaches when you save the bill`);
+  }
+
   async function onPickFile(file: File | undefined) {
     if (!file) return;
+    if (isBillImage(file)) {
+      try {
+        await attachCopy(file);
+      } catch (error) {
+        toast.error(errorMessage(error, "Could not attach photo"));
+      }
+      return;
+    }
+    if (!isPdfFile(file)) {
+      toast.error("Choose a PDF to read the bill, or a JPG/PNG photo to attach");
+      return;
+    }
     try {
       const parsed = await parseBill.mutateAsync(file);
       applyParsed(parsed);
-      if (!isEditing) {
-        setPendingFiles((files) => (files.includes(file) ? files : [file, ...files]));
+      try {
+        await attachCopy(file);
+      } catch (error) {
+        toast.error(errorMessage(error, "Bill read, but the file was not attached"));
       }
     } catch (error) {
       toast.error(errorMessage(error, "Could not read this PDF"));
@@ -304,13 +331,13 @@ export function RawMaterialBillFormPage() {
         </CardHeader>
         <CardContent className="grid gap-2">
           <p className="text-sm text-muted-foreground">
-            Tally tax invoices (like N.V. Auto) are read automatically. You can still correct any
-            field before saving.
+            A Tally tax invoice PDF (like N.V. Auto) is read automatically. A photo is saved as
+            the bill copy. You can still correct any field before saving.
           </p>
           <input
             ref={fileRef}
             type="file"
-            accept="application/pdf,.pdf"
+            accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif"
             className="hidden"
             onChange={(event) => {
               void onPickFile(event.target.files?.[0]);

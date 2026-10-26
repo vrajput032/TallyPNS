@@ -155,7 +155,7 @@ async function salesReceiptValues(): Promise<SheetValues> {
 
 async function purchaseValues(): Promise<SheetValues> {
   const purchases = await prisma.purchaseBill.findMany({
-    where: { deletedAt: null },
+    where: { deletedAt: null, kind: { not: "RUNNING_COST" } },
     include: {
       vendor: { select: { name: true, gstin: true } },
       payments: { select: { amount: true } },
@@ -203,7 +203,7 @@ async function purchaseValues(): Promise<SheetValues> {
 
 async function purchaseItemValues(): Promise<SheetValues> {
   const items = await prisma.purchaseBillItem.findMany({
-    where: { purchaseBill: { deletedAt: null } },
+    where: { purchaseBill: { deletedAt: null, kind: { not: "RUNNING_COST" } } },
     include: {
       purchaseBill: { select: { billNo: true, billDate: true, kind: true } },
       product: { select: { name: true, hsn: true } },

@@ -41,6 +41,8 @@ export interface PurchaseLineItemValue {
 interface PurchaseLineItemsFieldProps<TFieldValues extends FieldValues> {
   mode?: "CATALOG" | "EQUIPMENT";
   showGst?: boolean;
+  /** Running cost: description and amount only. */
+  amountOnly?: boolean;
   /** Overrides the equipment helper text above the lines */
   hint?: string;
   descriptionPlaceholder?: string;
@@ -58,6 +60,7 @@ interface PurchaseLineItemsFieldProps<TFieldValues extends FieldValues> {
 export function PurchaseLineItemsField<TFieldValues extends FieldValues>({
   mode = "CATALOG",
   showGst = true,
+  amountOnly = false,
   hint,
   descriptionPlaceholder = "e.g. CNC / Traub",
   fields,
@@ -81,6 +84,18 @@ export function PurchaseLineItemsField<TFieldValues extends FieldValues>({
     return registerFormNumber(register, fieldPath(index, key));
   }
 
+  function handleAmountChange(index: number, raw: string) {
+    setValue(fieldPath(index, "quantity"), 1 as never, { shouldDirty: true });
+    setValue(fieldPath(index, "gstRate"), 0 as never, { shouldDirty: true });
+    if (raw === "" || raw === "-") {
+      setValue(fieldPath(index, "rate"), undefined as never, { shouldDirty: true });
+      return;
+    }
+    const amount = Number(raw);
+    if (Number.isNaN(amount)) return;
+    setValue(fieldPath(index, "rate"), amount as never, { shouldDirty: true });
+  }
+
   function handlePricePerKgChange(index: number, raw: string) {
     if (raw === "" || raw === "-") {
       setValue(fieldPath(index, "pricePerKg"), undefined as never, { shouldDirty: true });
@@ -92,6 +107,62 @@ export function PurchaseLineItemsField<TFieldValues extends FieldValues>({
     const rate = Math.round(pricePerKg * KG_PER_TON * 100) / 100;
     setValue(fieldPath(index, "pricePerKg"), pricePerKg as never, { shouldDirty: true });
     setValue(fieldPath(index, "rate"), rate as never, { shouldDirty: true });
+  }
+
+  if (amountOnly) {
+    return (
+      <div className="grid gap-4">
+        <p className="text-sm text-muted-foreground">
+          {hint ?? "Describe the charge and enter the amount."}
+        </p>
+        <div className="flex justify-end">
+          <Button type="button" variant="outline" size="sm" onClick={onAdd}>
+            <Plus className="size-4" />
+            Add line
+          </Button>
+        </div>
+        <div className="grid gap-3">
+          {fields.map((field, index) => {
+            const item = items[index];
+            const qty = Number(item?.quantity) || 0;
+            const rate = Number(item?.rate) || 0;
+            const gst = Number(item?.gstRate) || 0;
+            const shown = qty === 1 && gst === 0 ? item?.rate : qty * rate * (1 + gst / 100);
+            return (
+              <div key={field.id} className="grid gap-3 rounded-md border bg-card p-3 sm:grid-cols-[1fr_10rem_auto] sm:items-end">
+                <div className="grid gap-1.5">
+                  <Label>Description</Label>
+                  <Input
+                    placeholder={descriptionPlaceholder}
+                    {...register(fieldPath(index, "description"))}
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label>Amount (₹)</Label>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    value={numberInputValue(shown)}
+                    onChange={(event) => handleAmountChange(index, event.target.value)}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  disabled={fields.length === 1}
+                  onClick={() => onRemove(index)}
+                  aria-label="Remove line"
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+        {errorMessage && <p className="text-sm text-destructive">{errorMessage}</p>}
+      </div>
+    );
   }
 
   return (

@@ -17,6 +17,8 @@ export type RecordActivityInput = {
   href?: string | null;
   /** Push to all subscribed devices (inventory, sales, purchase, etc.). */
   notifyDevices?: boolean;
+  /** Push title. Defaults to the module name. */
+  pushTitle?: string;
 };
 
 function pushTitleForModule(module: ActivityModule): string {
@@ -71,7 +73,7 @@ function pushForActivity(input: RecordActivityInput): void {
       ? `${actor}: ${input.summary}`
       : input.summary;
   broadcastOperationalNotification({
-    title: pushTitleForModule(input.module),
+    title: input.pushTitle?.trim() || pushTitleForModule(input.module),
     body,
     url: input.href?.trim() || "/",
     tag: `ops-${input.module.toLowerCase()}`,

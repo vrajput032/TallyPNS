@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { apiErrorMessage } from "@/lib/apiError";
+import { prepareAttachmentFile } from "@/lib/prepareAttachmentFile";
 import { canDelete } from "@/lib/permissions";
 import { useAuthStore } from "@/store/authStore";
 import type { RawMaterialAttachment } from "./types";
@@ -31,9 +32,10 @@ export function RawMaterialAttachmentsPanel({
   const isCreateQueue = Boolean(onPendingFilesChange);
 
   async function handleFiles(input: HTMLInputElement) {
-    const files = Array.from(input.files ?? []);
+    const picked = Array.from(input.files ?? []);
     input.value = "";
-    if (files.length === 0) return;
+    if (picked.length === 0) return;
+    const files = await Promise.all(picked.map((file) => prepareAttachmentFile(file)));
 
     if (isCreateQueue) {
       onPendingFilesChange?.([...(pendingFiles ?? []), ...files]);
@@ -71,7 +73,7 @@ export function RawMaterialAttachmentsPanel({
         <input
           ref={fileInputRef}
           type="file"
-          accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.webp"
+          accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif"
           multiple
           className="hidden"
           onChange={(e) => void handleFiles(e.currentTarget)}

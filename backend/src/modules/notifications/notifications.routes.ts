@@ -70,6 +70,19 @@ notificationsRouter.post(
   })
 );
 
+/** 5 PM IST running-cost reminder (GitHub Actions): same cron secret as `/cron`. */
+notificationsRouter.post(
+  "/cron/running-cost",
+  asyncHandler(async (req, res) => {
+    const cfg = getPushConfig();
+    const secret = req.header("x-notifications-cron-secret")?.trim() ?? "";
+    if (!cfg.cronSecret || secret !== cfg.cronSecret) {
+      throw new ApiError(401, "Invalid cron secret");
+    }
+    res.json(await notificationsService.runDailyRunningCostReminder());
+  })
+);
+
 /** 8 PM IST Indus PO remaining (GitHub Actions): same cron secret as `/cron`. */
 notificationsRouter.post(
   "/cron/indus-po",

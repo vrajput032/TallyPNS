@@ -242,7 +242,9 @@ export function PurchaseBillDetailPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Item</TableHead>
-                  <TableHead className="text-right">Qty</TableHead>
+                  {purchaseSectionOf(bill.kind) === "RUNNING_COST" ? null : (
+                    <TableHead className="text-right">Qty</TableHead>
+                  )}
                   <TableHead className="text-right">Amount</TableHead>
                 </TableRow>
               </TableHeader>
@@ -250,7 +252,9 @@ export function PurchaseBillDetailPage() {
                 {bill.items.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell>{purchaseLineLabel(item)}</TableCell>
-                    <TableCell className="text-right">{Number(item.quantity).toLocaleString("en-IN")}</TableCell>
+                    {purchaseSectionOf(bill.kind) === "RUNNING_COST" ? null : (
+                      <TableCell className="text-right">{Number(item.quantity).toLocaleString("en-IN")}</TableCell>
+                    )}
                     <TableCell className="text-right">{formatInr(item.amount)}</TableCell>
                   </TableRow>
                 ))}

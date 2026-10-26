@@ -181,7 +181,7 @@ export async function getGstSummary(month?: number, year?: number) {
       orderBy: [{ invoiceDate: "asc" }, { invoiceNo: "asc" }],
     }),
     prisma.purchaseBill.findMany({
-      where: { ...activeOnly, billDate: dateFilter },
+      where: { ...activeOnly, billDate: dateFilter, kind: { not: "RUNNING_COST" } },
       include: {
         vendor: { select: { name: true } },
         items: { select: { gstRate: true, quantity: true, rate: true } },
