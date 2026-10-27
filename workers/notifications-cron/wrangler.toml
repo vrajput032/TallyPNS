@@ -1,6 +1,8 @@
 name = "tallypns-notifications-cron"
 main = "src/index.js"
 compatibility_date = "2026-10-26"
+workers_dev = false
+preview_urls = false
 
 # UTC. GitHub Actions was starting these same jobs 3–6 hours late.
 [triggers]
