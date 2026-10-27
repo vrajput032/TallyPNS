@@ -1,9 +1,8 @@
 name: Payment reminder test broadcast (2 PM IST)
 
+# Manual only. 2:00 PM IST is sent by workers/notifications-cron.
+# GitHub was starting this schedule 4–6 hours late.
 on:
-  schedule:
-    # 08:30 UTC = 2:00 PM IST. Sends a test push to every subscribed device.
-    - cron: "30 8 * * *"
   workflow_dispatch:
 
 jobs:

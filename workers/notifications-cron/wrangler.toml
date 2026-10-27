@@ -1,0 +1,15 @@
+name = "tallypns-notifications-cron"
+main = "src/index.js"
+compatibility_date = "2026-10-26"
+
+# UTC. GitHub Actions was starting these same jobs 3–6 hours late.
+[triggers]
+crons = [
+  "30 5 * * *",  # 11:00 AM IST — payment reminders
+  "30 8 * * *",  # 2:00 PM IST — test broadcast
+  "30 11 * * *", # 5:00 PM IST — running cost
+  "30 14 * * *", # 8:00 PM IST — Indus PO remaining
+]
+
+[vars]
+API_URL = "https://tallypns-api.onrender.com"

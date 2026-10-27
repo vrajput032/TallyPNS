@@ -1,9 +1,8 @@
 name: Daily running cost reminder
 
+# Manual only. 5:00 PM IST is sent by workers/notifications-cron.
+# GitHub scheduled this for 11:30 UTC on 26 Oct 2026 and started it at 17:29 UTC (10:59 PM IST).
 on:
-  schedule:
-    # 11:30 UTC = 5:00 PM IST. GitHub may start scheduled runs a few minutes late.
-    - cron: "30 11 * * *"
   workflow_dispatch:
 
 jobs:

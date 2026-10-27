@@ -1,9 +1,8 @@
 name: Daily Indus PO remaining
 
+# Manual only. 8:00 PM IST is sent by workers/notifications-cron.
+# GitHub was starting this schedule 3–6 hours late.
 on:
-  schedule:
-    # 14:30 UTC = 8:00 PM IST. GitHub may start scheduled runs a few minutes late.
-    - cron: "30 14 * * *"
   workflow_dispatch:
 
 jobs:

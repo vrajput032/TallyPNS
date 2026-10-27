@@ -1,9 +1,8 @@
 name: Daily payment reminders
 
+# Manual only. 11:00 AM IST is sent by workers/notifications-cron.
+# GitHub was starting this schedule 4–6 hours late.
 on:
-  schedule:
-    # 05:30 UTC = 11:00 AM IST. GitHub may start scheduled runs a few minutes late.
-    - cron: "30 5 * * *"
   workflow_dispatch:
     inputs:
       force:
