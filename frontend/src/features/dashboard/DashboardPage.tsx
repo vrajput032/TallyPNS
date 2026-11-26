@@ -39,6 +39,9 @@ import { TradingPnlCard } from "./TradingPnlCard";
 import { useDashboardSummary } from "./useDashboardSummary";
 import { useMonthlySales } from "./useMonthlySales";
 
+/** Indus PO is fulfilled — hidden for now. Flip to true to bring the card back. */
+const SHOW_INDUS_PO = false;
+
 function useScrollReveal(threshold = 0.12) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -361,9 +364,11 @@ export function DashboardPage() {
         </div>
       </div>
 
-      <RevealCard className="min-w-0">
-        <IndusPoCard data={data?.indusPo} stockBySize={stockBySize} isLoading={isLoading} />
-      </RevealCard>
+      {SHOW_INDUS_PO && (
+        <RevealCard className="min-w-0">
+          <IndusPoCard data={data?.indusPo} stockBySize={stockBySize} isLoading={isLoading} />
+        </RevealCard>
+      )}
 
       <div className="grid min-w-0 gap-2.5 lg:grid-cols-2 lg:gap-3">
         <PanelCard title="Sales Overview" heroMode={heroMode}>
